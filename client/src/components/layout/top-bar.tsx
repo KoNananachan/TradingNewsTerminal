@@ -31,7 +31,7 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-2 py-1 bg-accent text-black font-bold uppercase tracking-widest text-xs">
           <Activity className="w-3.5 h-3.5" />
-          <span>Bloomberg</span>
+          <span>TradingNewsTerminal</span>
         </div>
         <div className="h-5 w-px bg-border mx-1" />
         <span className="text-xs font-mono text-neutral px-2 py-0.5 border border-border bg-black">

@@ -33,6 +33,10 @@ export function startWebSocketServer(server: Server) {
         }
         (ws as any).isAlive = false;
         ws.ping();
+        // Also send text heartbeat so browser clients reset their timeout
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
       });
     }, PING_INTERVAL);
 
