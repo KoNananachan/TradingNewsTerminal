@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-02-27
+
+### Added
+- Multi-language UI support (English, 中文, 日本語, 한국어, Español, Français)
+- Language selector in Settings panel (persisted in localStorage)
+- All Hyperliquid perpetual contracts shown in trading market list (previously only BTC/ETH)
+- Auto-seed database on server startup (categories + default tracked stocks)
+- Text-based WebSocket heartbeat to prevent browser client timeout
+- `DEPLOY.md` deployment workflow reference
+
+### Changed
+- Scraper `FETCH_LIMIT` increased from 10 to 100 for faster initial data population
+- Renamed top-bar branding from "Bloomberg" to "TradingNewsTerminal"
+
+### Fixed
+- WebSocket connect/disconnect loop caused by missing browser-visible heartbeat
+- AI analysis foreign key errors due to missing categories (no seed on fresh DB)
+- Empty watchlist and map on production (no default data)
+
 ## [0.2.0] - 2025-02-27
 
 ### Added

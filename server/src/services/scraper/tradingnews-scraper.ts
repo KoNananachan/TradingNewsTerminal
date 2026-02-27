@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 
 const API_URL = 'https://tradingnews.press/api/v1/analysis/snapshot';
-const FETCH_LIMIT = 10;
+const FETCH_LIMIT = 100;
 
 interface ApiAsset {
   type: string;

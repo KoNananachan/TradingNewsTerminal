@@ -6,6 +6,7 @@ import { Badge } from '../common/badge';
 import { CategorySidebar } from './category-sidebar';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useT } from '../../i18n';
 import { Clock, MapPin, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export function NewsFeed() {
@@ -13,6 +14,7 @@ export function NewsFeed() {
   const searchQuery = useAppStore((s) => s.searchQuery);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const setArticleCount = useAppStore((s) => s.setArticleCount);
+  const t = useT();
 
   const { data, isLoading } = useNews({
     category: selectedCategory,
@@ -31,7 +33,7 @@ export function NewsFeed() {
       headerRight={
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent bg-black px-2 py-0.5 border border-accent uppercase tracking-tighter">
-            <Zap className="w-3 h-3" /> LIVE
+            <Zap className="w-3 h-3" /> {t('live')}
           </div>
         </div>
       }
@@ -39,22 +41,22 @@ export function NewsFeed() {
     >
       <div className="bg-bearish/10 border-b border-bearish/30 px-3 py-1">
         <p className="text-[9px] font-mono text-bearish font-bold uppercase tracking-wider">
-          DYOR: AI SIGNALS MAY VARY. VERIFY BEFORE TRADING.
+          {t('newsDisclaimer')}
         </p>
       </div>
       <CategorySidebar />
       
       {/* Table Header for Alignment */}
       <div className="grid grid-cols-[60px_1fr_90px] px-2 py-1 border-b border-border bg-black text-[9px] font-bold text-neutral uppercase tracking-widest">
-        <span>TIME</span>
-        <span>EVENT DESCRIPTION</span>
-        <span className="text-right">TICKERS</span>
+        <span>{t('time')}</span>
+        <span>{t('eventDescription')}</span>
+        <span className="text-right">{t('tickers')}</span>
       </div>
 
       <div className="flex-1 overflow-auto no-scrollbar bg-black">
         {isLoading && (
           <div className="flex items-center justify-center h-32">
-            <span className="text-[10px] font-mono text-accent animate-pulse uppercase">SYNCHRONIZING...</span>
+            <span className="text-[10px] font-mono text-accent animate-pulse uppercase">{t('synchronizing')}</span>
           </div>
         )}
         

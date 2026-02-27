@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
-import { useAllMids } from '../../hooks/use-hyperliquid';
+import { useAllMids, useMeta } from '../../hooks/use-hyperliquid';
 import { useStockQuotes } from '../../api/hooks/use-stocks';
+import { useT } from '../../i18n';
 import { Search } from 'lucide-react';
-
-const ALLOWED_CRYPTO = ['BTC', 'ETH'];
 
 interface MarketItem {
   symbol: string;
@@ -19,18 +18,20 @@ interface MarketOverviewProps {
 
 export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewProps) {
   const { data: mids } = useAllMids();
+  const { data: meta } = useMeta();
   const { data: stocks } = useStockQuotes();
+  const t = useT();
   const [filter, setFilter] = useState('');
 
   const items = useMemo(() => {
     const result: MarketItem[] = [];
 
-    // Crypto: only BTC & ETH
-    if (mids) {
-      for (const coin of ALLOWED_CRYPTO) {
-        const price = mids[coin];
+    // All Hyperliquid perpetual contracts
+    if (mids && meta) {
+      for (const asset of meta.universe) {
+        const price = mids[asset.name];
         if (price) {
-          result.push({ symbol: coin, price: parseFloat(price), changePercent: null, type: 'crypto' });
+          result.push({ symbol: asset.name, price: parseFloat(price), changePercent: null, type: 'crypto' });
         }
       }
     }
@@ -45,7 +46,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
     if (!filter) return result;
     const q = filter.toUpperCase();
     return result.filter((m) => m.symbol.includes(q));
-  }, [mids, stocks, filter]);
+  }, [mids, meta, stocks, filter]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -56,7 +57,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
           type="text"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter markets..."
+          placeholder={t('filterMarkets')}
           className="w-full bg-black/60 border border-border/30 pl-7 pr-2 py-1 text-[10px] font-mono text-white placeholder:text-neutral/30"
         />
       </div>
@@ -93,7 +94,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
         ))}
         {items.length === 0 && (
           <div className="text-center py-6 text-neutral/40 text-[9px] font-mono uppercase">
-            {mids || stocks ? 'No markets found' : 'Loading markets...'}
+            {mids || stocks ? t('noMarkets') : t('loadingMarkets')}
           </div>
         )}
       </div>

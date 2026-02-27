@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { useAllMids, useUserState } from '../../hooks/use-hyperliquid';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 import { api } from '../../api/client';
 import { Wallet } from 'lucide-react';
 
@@ -17,6 +18,7 @@ export function TradeForm({ coin }: TradeFormProps) {
   const addNotification = useAppStore((s) => s.addNotification);
   const tradingSourceArticleId = useAppStore((s) => s.tradingSourceArticleId);
 
+  const t = useT();
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [size, setSize] = useState('');
@@ -105,7 +107,7 @@ export function TradeForm({ coin }: TradeFormProps) {
               : 'bg-black text-neutral/50 border-border/30 hover:border-border'
           }`}
         >
-          Long
+          {t('long')}
         </button>
         <button
           type="button"
@@ -116,7 +118,7 @@ export function TradeForm({ coin }: TradeFormProps) {
               : 'bg-black text-neutral/50 border-border/30 hover:border-border'
           }`}
         >
-          Short
+          {t('short')}
         </button>
       </div>
 
@@ -142,7 +144,7 @@ export function TradeForm({ coin }: TradeFormProps) {
       {orderType === 'limit' && (
         <div>
           <label className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50 mb-1 block">
-            Price (USD)
+            {t('priceUsd')}
           </label>
           <input
             type="number"
@@ -160,7 +162,7 @@ export function TradeForm({ coin }: TradeFormProps) {
         <div className="flex items-center justify-between px-1 py-1.5 border border-border/20 bg-black/40 rounded">
           <div className="flex items-center gap-1.5">
             <Wallet className="w-3 h-3 text-accent/60" />
-            <span className="text-[8px] font-black uppercase tracking-[0.1em] text-neutral/50">Available</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.1em] text-neutral/50">{t('available')}</span>
           </div>
           <span className="text-[11px] font-mono font-bold text-white">
             {availableUsd != null ? `$${fmtUsd(availableUsd)}` : '—'}
@@ -173,7 +175,7 @@ export function TradeForm({ coin }: TradeFormProps) {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50">
-            Size ({coin})
+            {t('size')} ({coin})
           </label>
           {maxSize != null && midPrice && (
             <span className="text-[8px] font-mono text-neutral/40">
@@ -209,7 +211,7 @@ export function TradeForm({ coin }: TradeFormProps) {
       {/* Leverage */}
       <div>
         <label className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50 mb-1 block">
-          Leverage
+          {t('leverage')}
         </label>
         <div className="flex gap-1">
           {leverageOptions.map((lev) => (
@@ -233,13 +235,13 @@ export function TradeForm({ coin }: TradeFormProps) {
       {midPrice && size && (
         <div className="flex flex-col gap-1 px-1 text-[9px] font-mono text-neutral/50">
           <div className="flex justify-between">
-            <span>Notional Value:</span>
+            <span>{t('notionalValue')}:</span>
             <span className="text-white font-bold">
               ${fmtUsd(parseFloat(size || '0') * (orderType === 'limit' ? parseFloat(price || '0') : midPrice))}
             </span>
           </div>
           <div className="flex justify-between">
-            <span>Margin Required:</span>
+            <span>{t('marginRequired')}:</span>
             <span className="text-accent font-bold">
               ${fmtUsd(parseFloat(size || '0') * (orderType === 'limit' ? parseFloat(price || '0') : midPrice) / leverage)}
             </span>
@@ -258,8 +260,8 @@ export function TradeForm({ coin }: TradeFormProps) {
         }`}
       >
         {!isConnected
-          ? 'Connect Wallet'
-          : `${side === 'buy' ? 'Long' : 'Short'} ${coin}`}
+          ? t('connectWallet')
+          : `${side === 'buy' ? t('long') : t('short')} ${coin}`}
       </button>
     </form>
   );

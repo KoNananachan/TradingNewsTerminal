@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { Locale } from '../i18n/translations';
 
 export interface Notification {
   id: number;
@@ -83,6 +84,10 @@ interface AppState {
   // Settings
   settingsPanelOpen: boolean;
   settings: UserSettings;
+
+  // Locale
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
 
   setSelectedCategory: (category: string | null) => void;
   setSelectedArticleId: (id: number | null) => void;
@@ -183,6 +188,10 @@ export const useAppStore = create<AppState>()(
       // Settings
       settingsPanelOpen: false,
       settings: DEFAULT_SETTINGS,
+
+      // Locale
+      locale: 'en' as Locale,
+      setLocale: (locale) => set({ locale }),
 
       setSelectedCategory: (category) => set({ selectedCategory: category }),
       setSelectedArticleId: (id) => set({ selectedArticleId: id }),
@@ -322,6 +331,7 @@ export const useAppStore = create<AppState>()(
         stockPanelView: state.stockPanelView,
         compareSymbols: state.compareSymbols,
         hiddenPanels: state.hiddenPanels,
+        locale: state.locale,
       }),
     }
   )

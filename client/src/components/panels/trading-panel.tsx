@@ -6,6 +6,7 @@ import { TradeForm } from '../trading/trade-form';
 import { RecentFills } from '../trading/recent-fills';
 import { MarketOverview } from '../trading/market-overview';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3 } from 'lucide-react';
 
 type TradingTab = 'portfolio' | 'trade' | 'fills';
@@ -16,6 +17,7 @@ export function TradingPanel() {
   const [selectedCoin, setSelectedCoin] = useState('BTC');
   const tradingCoin = useAppStore((s) => s.tradingCoin);
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
+  const t = useT();
 
   // Respond to external coin selection from news detail
   useEffect(() => {
@@ -27,9 +29,9 @@ export function TradingPanel() {
   }, [tradingCoin, setTradingCoin]);
 
   const tabs: { id: TradingTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'trade', label: 'TRADE', icon: <ArrowRightLeft className="w-3 h-3" /> },
-    { id: 'portfolio', label: 'PORTFOLIO', icon: <Wallet className="w-3 h-3" /> },
-    { id: 'fills', label: 'FILLS', icon: <History className="w-3 h-3" /> },
+    { id: 'trade', label: t('trade'), icon: <ArrowRightLeft className="w-3 h-3" /> },
+    { id: 'portfolio', label: t('portfolio'), icon: <Wallet className="w-3 h-3" /> },
+    { id: 'fills', label: t('fills'), icon: <History className="w-3 h-3" /> },
   ];
 
   return (
@@ -108,7 +110,7 @@ export function TradingPanel() {
           <div className="h-full overflow-hidden flex flex-col">
             <div className="px-3 py-1.5 border-b border-border/20 bg-black/60 shrink-0">
               <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-                Recent Fills
+                {t('recentFills')}
               </span>
             </div>
             <RecentFills />

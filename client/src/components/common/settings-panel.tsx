@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Volume2, RefreshCw, Gauge, Palette, Rss, Brain, ArrowRightLeft } from 'lucide-react';
+import { Bell, Volume2, RefreshCw, Gauge, Palette, Rss, Brain, ArrowRightLeft, Globe } from 'lucide-react';
 import { useAppStore, type UserSettings } from '../../stores/use-app-store';
+import { useT, LOCALE_LABELS, type Locale } from '../../i18n';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -56,6 +57,9 @@ export function SettingsPanel() {
   const settings = useAppStore((s) => s.settings);
   const setSettingsPanelOpen = useAppStore((s) => s.setSettingsPanelOpen);
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -87,23 +91,46 @@ export function SettingsPanel() {
         >
           {/* Header */}
           <div className="px-4 py-2.5 border-b border-border/40">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-300">Settings</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-300">{t('settings')}</span>
           </div>
 
           <div className="p-4 space-y-5">
+            {/* Language group */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
+                <Globe className="w-3 h-3" />
+                {t('language')}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pl-5">
+                {(Object.entries(LOCALE_LABELS) as [Locale, string][]).map(([code, label]) => (
+                  <button
+                    key={code}
+                    onClick={() => setLocale(code)}
+                    className={`px-2.5 py-1.5 rounded border text-[11px] font-mono transition-all ${
+                      locale === code
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-border/40 text-neutral hover:border-border hover:text-gray-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Notifications group */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <Bell className="w-3 h-3" />
-                Notifications
+                {t('notifications')}
               </div>
               <div className="space-y-2.5 pl-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-300">Breaking news alerts</span>
+                  <span className="text-[11px] text-gray-300">{t('breakingAlerts')}</span>
                   <Toggle checked={settings.breakingAlerts} onChange={(v) => set('breakingAlerts', v)} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-300">Sound</span>
+                  <span className="text-[11px] text-gray-300">{t('sound')}</span>
                   <Toggle checked={settings.soundEnabled} onChange={(v) => set('soundEnabled', v)} />
                 </div>
               </div>
@@ -113,11 +140,11 @@ export function SettingsPanel() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <Gauge className="w-3 h-3" />
-                Display
+                {t('display')}
               </div>
               <div className="space-y-3 pl-5">
                 <div>
-                  <span className="text-[11px] text-gray-300 block mb-1.5">Ticker scroll speed</span>
+                  <span className="text-[11px] text-gray-300 block mb-1.5">{t('tickerSpeed')}</span>
                   <Slider
                     value={settings.tickerSpeed}
                     min={20}
@@ -130,7 +157,7 @@ export function SettingsPanel() {
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <RefreshCw className="w-3 h-3 text-neutral" />
-                    <span className="text-[11px] text-gray-300">Auto-refresh interval</span>
+                    <span className="text-[11px] text-gray-300">{t('autoRefresh')}</span>
                   </div>
                   <Slider
                     value={settings.autoRefreshInterval}
@@ -148,7 +175,7 @@ export function SettingsPanel() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <Palette className="w-3 h-3" />
-                Theme
+                {t('theme')}
               </div>
               <div className="flex gap-2 pl-5">
                 {(['dark', 'midnight'] as const).map((t) => (
@@ -171,7 +198,7 @@ export function SettingsPanel() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <Rss className="w-3 h-3" />
-                Data Source
+                {t('dataSource')}
               </div>
               <div className="pl-5 space-y-1.5">
                 <RadioOption
@@ -181,7 +208,7 @@ export function SettingsPanel() {
                   checked={settings.dataSource === 'tradingnews'}
                   onChange={(v) => set('dataSource', v)}
                 />
-                <p className="text-[9px] text-neutral/40 font-mono pl-5">More data sources coming soon...</p>
+                <p className="text-[9px] text-neutral/40 font-mono pl-5">{t('comingSoon')}</p>
               </div>
             </div>
 
@@ -189,7 +216,7 @@ export function SettingsPanel() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <Brain className="w-3 h-3" />
-                AI Analysis
+                {t('aiAnalysis')}
               </div>
               <div className="pl-5 space-y-1.5">
                 <RadioOption
@@ -199,7 +226,7 @@ export function SettingsPanel() {
                   checked={settings.aiProvider === 'tradingnews'}
                   onChange={(v) => set('aiProvider', v)}
                 />
-                <p className="text-[9px] text-neutral/40 font-mono pl-5">More AI providers coming soon...</p>
+                <p className="text-[9px] text-neutral/40 font-mono pl-5">{t('comingSoon')}</p>
               </div>
             </div>
 
@@ -207,7 +234,7 @@ export function SettingsPanel() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral">
                 <ArrowRightLeft className="w-3 h-3" />
-                Trading Channel
+                {t('tradingChannel')}
               </div>
               <div className="pl-5 space-y-1.5">
                 <RadioOption
@@ -217,7 +244,7 @@ export function SettingsPanel() {
                   checked={settings.tradingChannel === 'hyperliquid'}
                   onChange={(v) => set('tradingChannel', v)}
                 />
-                <p className="text-[9px] text-neutral/40 font-mono pl-5">More trading channels coming soon...</p>
+                <p className="text-[9px] text-neutral/40 font-mono pl-5">{t('comingSoon')}</p>
               </div>
             </div>
 
