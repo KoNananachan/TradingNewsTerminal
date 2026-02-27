@@ -6,6 +6,7 @@ import { lazy, Suspense } from 'react';
 import { NewsFeed } from '../panels/news-feed';
 import { StockPanel } from '../panels/stock-panel';
 import { AiInsights } from '../panels/ai-insights';
+import { AiChatPanel } from '../panels/ai-chat-panel';
 import { TerminalLog } from '../layout/terminal-log';
 import { useAppStore } from '../../stores/use-app-store';
 
@@ -34,6 +35,7 @@ export const PANEL_IDS = {
   AI: 'ai-insights',
   LOG: 'terminal-log',
   TRADING: 'trading',
+  AI_CHAT: 'ai-chat',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -43,6 +45,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.AI]: 'AI INSIGHTS',
   [PANEL_IDS.LOG]: 'TERMINAL LOG',
   [PANEL_IDS.TRADING]: 'TRADING',
+  [PANEL_IDS.AI_CHAT]: 'AI CHAT',
 };
 
 export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
@@ -116,6 +119,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             children: [
               { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
               { type: 'tab', name: 'AI INSIGHTS', component: PANEL_IDS.AI, id: PANEL_IDS.AI },
+              { type: 'tab', name: 'AI CHAT', component: PANEL_IDS.AI_CHAT, id: PANEL_IDS.AI_CHAT },
             ],
           },
           {
@@ -241,6 +245,7 @@ export function DockLayout() {
       case PANEL_IDS.AI: return <AiInsights />;
       case PANEL_IDS.LOG: return <TerminalLog />;
       case PANEL_IDS.TRADING: return <LazyWrap><TradingPanel /></LazyWrap>;
+      case PANEL_IDS.AI_CHAT: return <AiChatPanel />;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return extra(node);

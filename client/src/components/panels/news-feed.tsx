@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import { useNews } from '../../api/hooks/use-news';
 import { useAppStore } from '../../stores/use-app-store';
+import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { GlassCard } from '../common/glass-card';
 import { Badge } from '../common/badge';
 import { CategorySidebar } from './category-sidebar';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useT } from '../../i18n';
+import { Actions } from 'flexlayout-react';
+import { getModel, PANEL_IDS } from '../layout/dock-layout';
 import { Clock, MapPin, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export function NewsFeed() {
@@ -14,7 +17,19 @@ export function NewsFeed() {
   const searchQuery = useAppStore((s) => s.searchQuery);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const setArticleCount = useAppStore((s) => s.setArticleCount);
+  const setTradingCoin = useAppStore((s) => s.setTradingCoin);
+  const hlAssets = useHyperliquidAssets();
   const t = useT();
+
+  const handleTickerClick = (symbol: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't open article detail
+    if (!hlAssets.has(symbol)) return;
+    setTradingCoin(symbol);
+    const model = getModel();
+    if (model) {
+      try { model.doAction(Actions.selectTab(PANEL_IDS.TRADING)); } catch {}
+    }
+  };
 
   const { data, isLoading } = useNews({
     category: selectedCategory,
@@ -108,16 +123,21 @@ export function NewsFeed() {
                   {/* Signal Column */}
                   <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/30 pl-2">
                     {article.recommendations.length > 0 ? (
-                      article.recommendations.slice(0, 2).map((rec) => (
-                        <div
-                          key={rec.id}
-                          className="flex items-center gap-1 font-mono text-[9px] font-bold"
-                          style={{ color: getActionColor(rec.action) }}
-                        >
-                          <span className="text-white">{rec.symbol}</span>
-                          {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
-                        </div>
-                      ))
+                      article.recommendations.slice(0, 2).map((rec) => {
+                        const tradeable = hlAssets.has(rec.symbol);
+                        return (
+                          <div
+                            key={rec.id}
+                            onClick={(e) => handleTickerClick(rec.symbol, e)}
+                            className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
+                            style={{ color: getActionColor(rec.action) }}
+                            title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
+                          >
+                            <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
+                            {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
+                          </div>
+                        );
+                      })
                     ) : (
                       <span className="text-[8px] font-mono text-neutral/20 uppercase tracking-tighter">---</span>
                     )}

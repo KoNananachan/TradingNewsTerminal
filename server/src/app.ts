@@ -9,6 +9,7 @@ import categoriesRouter from './routes/categories.js';
 import mapEventsRouter from './routes/map-events.js';
 import watchlistRouter from './routes/watchlist.js';
 import auditRouter from './routes/audit.js';
+import chatRouter from './routes/chat.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/map-events', mapEventsRouter);
   app.use('/api/watchlist', watchlistRouter);
   app.use('/api/audit', auditRouter);
+  app.use('/api/chat', chatRouter);
 
   // Manual scrape trigger
   app.post('/api/scrape', async (_req, res) => {
