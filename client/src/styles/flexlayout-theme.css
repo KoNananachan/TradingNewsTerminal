@@ -1,0 +1,296 @@
+/* FlexLayout Bloomberg Terminal Theme Override */
+/* Import base dark theme from flexlayout-react */
+
+/* Global Layout */
+.flexlayout__layout {
+  --color-bg: #000000;
+  --color-border: #333333;
+  --color-accent: #ff9900;
+  --color-text: #cccccc;
+
+  background-color: #000000;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* Tabset (tab bar container) */
+.flexlayout__tabset {
+  background-color: #000000;
+  border: 1px solid #333333;
+  overflow: hidden;
+}
+
+.flexlayout__tabset_header {
+  background-color: #0a0a0a;
+  border-bottom: 1px solid #333333;
+}
+
+/* Tab strip (the row of tabs) */
+.flexlayout__tabset_tabbar_outer {
+  background-color: #0a0a0a;
+  border-bottom: 1px solid #333333;
+}
+
+.flexlayout__tabset_tabbar_inner {
+  /* no extra spacing */
+}
+
+.flexlayout__tabset_tabbar_outer_top {
+  border-bottom: 1px solid #333333;
+}
+
+/* Individual tab buttons */
+.flexlayout__tab_button {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #666666;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: none;
+}
+
+.flexlayout__tab_button:hover {
+  color: #cccccc;
+  background-color: #111111;
+}
+
+.flexlayout__tab_button--selected {
+  color: #ff9900;
+  background-color: #000000;
+  border-bottom: 2px solid #ff9900;
+}
+
+.flexlayout__tab_button_leading {
+  display: none;
+}
+
+.flexlayout__tab_button_content {
+  /* inherits font from parent */
+}
+
+.flexlayout__tab_button_textbox {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 10px;
+  color: #ff9900;
+  background: #111111;
+  border: 1px solid #ff9900;
+  padding: 2px 6px;
+}
+
+/* Tab close button */
+.flexlayout__tab_button_trailing {
+  width: 12px;
+  height: 12px;
+  margin-left: 6px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.flexlayout__tab_button:hover .flexlayout__tab_button_trailing {
+  opacity: 0.6;
+}
+
+.flexlayout__tab_button_trailing:hover {
+  opacity: 1 !important;
+}
+
+/* Tab content area */
+.flexlayout__tab {
+  background-color: #000000;
+  overflow: hidden;
+}
+
+/* Splitters */
+.flexlayout__splitter {
+  background-color: #333333;
+}
+
+.flexlayout__splitter:hover {
+  background-color: #ff9900;
+}
+
+.flexlayout__splitter_drag {
+  background-color: #ff9900;
+  z-index: 1000;
+}
+
+/* Horizontal splitter */
+.flexlayout__splitter_vert {
+  width: 2px !important;
+}
+
+/* Vertical splitter */
+.flexlayout__splitter_horz {
+  height: 2px !important;
+}
+
+/* Drag drop indicator (when dragging tabs) */
+.flexlayout__tab_floating {
+  border: 2px solid #ff9900;
+  background-color: rgba(255, 153, 0, 0.1);
+  box-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
+}
+
+.flexlayout__outline_rect {
+  border: 2px solid #ff9900;
+  background-color: rgba(255, 153, 0, 0.08);
+}
+
+.flexlayout__outline_rect_edge {
+  border: 2px solid #ff9900;
+  background-color: rgba(255, 153, 0, 0.08);
+}
+
+.flexlayout__edge_rect {
+  background-color: rgba(255, 153, 0, 0.15);
+  border: 1px solid #ff9900;
+}
+
+/* Tabset overflow button (when too many tabs) */
+.flexlayout__tab_toolbar_button {
+  color: #666666;
+  cursor: pointer;
+}
+
+.flexlayout__tab_toolbar_button:hover {
+  color: #ff9900;
+}
+
+/* Overflow menu */
+.flexlayout__popup_menu {
+  background-color: #0a0a0a;
+  border: 1px solid #333333;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.flexlayout__popup_menu_item {
+  font-size: 11px;
+  color: #cccccc;
+  padding: 6px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.flexlayout__popup_menu_item:hover {
+  background-color: #111111;
+  color: #ff9900;
+}
+
+/* Border panels (bottom/left/right docking areas) */
+.flexlayout__border_top,
+.flexlayout__border_bottom,
+.flexlayout__border_left,
+.flexlayout__border_right {
+  background-color: #0a0a0a;
+  border-color: #333333;
+}
+
+.flexlayout__border_button {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #666666;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 0;
+}
+
+.flexlayout__border_button--selected {
+  color: #ff9900;
+  background-color: #111111;
+}
+
+.flexlayout__border_button:hover {
+  color: #cccccc;
+}
+
+/* Tabset toolbar (maximize etc.) */
+.flexlayout__tab_toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+.flexlayout__tab_toolbar_button-max svg,
+.flexlayout__tab_toolbar_button-min svg {
+  width: 12px;
+  height: 12px;
+  color: #666666;
+}
+
+.flexlayout__tab_toolbar_button-max:hover svg,
+.flexlayout__tab_toolbar_button-min:hover svg {
+  color: #ff9900;
+}
+
+/* Floating windows */
+.flexlayout__floating_window_content {
+  background-color: #000000;
+  border: 1px solid #333333;
+}
+
+.flexlayout__floating_window_tab {
+  background-color: #000000;
+}
+
+/* Remove all border-radius globally within flexlayout */
+.flexlayout__layout *,
+.flexlayout__layout *::before,
+.flexlayout__layout *::after {
+  border-radius: 0 !important;
+}
+
+/* Midnight theme overrides */
+[data-theme="midnight"] .flexlayout__layout {
+  --color-accent: #00ffff;
+}
+
+[data-theme="midnight"] .flexlayout__tabset {
+  border-color: #444477;
+}
+
+[data-theme="midnight"] .flexlayout__tabset_tabbar_outer {
+  background-color: #000022;
+  border-bottom-color: #444477;
+}
+
+[data-theme="midnight"] .flexlayout__tab_button--selected {
+  color: #00ffff;
+  border-bottom-color: #00ffff;
+}
+
+[data-theme="midnight"] .flexlayout__splitter {
+  background-color: #444477;
+}
+
+[data-theme="midnight"] .flexlayout__splitter:hover {
+  background-color: #00ffff;
+}
+
+[data-theme="midnight"] .flexlayout__outline_rect,
+[data-theme="midnight"] .flexlayout__outline_rect_edge,
+[data-theme="midnight"] .flexlayout__edge_rect {
+  border-color: #00ffff;
+  background-color: rgba(0, 255, 255, 0.08);
+}
+
+[data-theme="midnight"] .flexlayout__tab {
+  background-color: #000022;
+}
+
+[data-theme="midnight"] .flexlayout__tab_button:hover {
+  background-color: #000044;
+}
+
+[data-theme="midnight"] .flexlayout__tab_button--selected {
+  background-color: #000022;
+}

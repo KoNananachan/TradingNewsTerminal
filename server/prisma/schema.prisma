@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model NewsArticle {
+  id          Int      @id @default(autoincrement())
+  externalId  String   @unique
+  title       String
+  content     String?
+  summary     String?
+  url         String
+  imageUrl    String?
+  publishedAt DateTime?
+  scrapedAt   DateTime @default(now())
+
+  // AI enrichment
+  categorySlug String?
+  category     NewsCategory? @relation(fields: [categorySlug], references: [slug])
+  sentiment    String?       // BULLISH, BEARISH, NEUTRAL
+  sentimentScore Float?      // -1 to 1
+  locationName String?
+  latitude     Float?
+  longitude    Float?
+
+  recommendations StockRecommendation[]
+  aiLogs          AiAnalysisLog[]
+  analyzed        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsCategory {
+  slug        String @id
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  articles    NewsArticle[]
+}
+
+model StockRecommendation {
+  id         Int    @id @default(autoincrement())
+  articleId  Int
+  article    NewsArticle @relation(fields: [articleId], references: [id])
+  symbol     String
+  action     String   // BUY, SELL, HOLD, WATCH
+  confidence Float    // 0-1
+  reason     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([symbol])
+  @@index([articleId])
+}
+
+model StockQuote {
+  id              Int      @id @default(autoincrement())
+  symbol          String   @unique
+  name            String?
+  price           Float
+  change          Float?
+  changePercent   Float?
+  volume          BigInt?
+  marketCap       Float?
+  dayHigh         Float?
+  dayLow          Float?
+  previousClose   Float?
+
+  updatedAt DateTime @updatedAt
+}
+
+model TrackedStock {
+  id        Int      @id @default(autoincrement())
+  symbol    String   @unique
+  name      String?
+  source    String   @default("default") // default, ai-recommended
+  addedAt   DateTime @default(now())
+}
+
+// ── Audit Models ──
+
+model ScrapeRun {
+  id           Int      @id @default(autoincrement())
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  status       String   @default("running") // running, success, error
+  itemsFetched Int      @default(0)
+  itemsNew     Int      @default(0)
+  itemsSkipped Int      @default(0)
+  itemsFailed  Int      @default(0)
+  errorMessage String?
+  durationMs   Int?
+}
+
+model AiAnalysisLog {
+  id               Int      @id @default(autoincrement())
+  articleId        Int
+  article          NewsArticle @relation(fields: [articleId], references: [id])
+  model            String?
+  provider         String?
+  rawResponse      String?
+  parsedResult     String?
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  startedAt        DateTime @default(now())
+  durationMs       Int?
+  status           String   // success, parse_error, api_error
+  errorMessage     String?
+  categorySlug     String?
+  sentimentLabel   String?
+  sentimentScore   Float?
+
+  @@index([articleId])
+}
+
+model UserSession {
+  id            Int      @id @default(autoincrement())
+  walletAddress String
+  chainId       Int?
+  eventType     String   // connect, disconnect
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([walletAddress])
+}
+
+model TradeOrder {
+  id              Int      @id @default(autoincrement())
+  walletAddress   String
+  coin            String
+  side            String   // buy, sell
+  orderType       String   // market, limit
+  size            Float
+  price           Float?
+  leverage        Int      @default(1)
+  midPrice        Float?
+  notionalValue   Float?
+  marginRequired  Float?
+  status          String   @default("demo") // demo, submitted, filled
+  sourceArticleId Int?
+  createdAt       DateTime @default(now())
+
+  @@index([walletAddress])
+}

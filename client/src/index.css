@@ -1,0 +1,260 @@
+@import "tailwindcss";
+@import "flexlayout-react/style/dark.css";
+@import "./styles/flexlayout-theme.css";
+
+@theme {
+  /* Bloomberg Terminal Theme */
+  --color-bg: #000000;
+  --color-panel: #000000;
+  --color-hover: #111111;
+  --color-border: #333333;
+  --color-accent: #ff9900; /* Amber/Orange */
+  --color-accent-glow: rgba(255, 153, 0, 0.4);
+  
+  --color-orange: #ff9900;
+  --color-bullish: #00ff00; /* Bright Green */
+  --color-bullish-glow: rgba(0, 255, 0, 0.2);
+  --color-bearish: #ff0000; /* Bright Red */
+  --color-bearish-glow: rgba(255, 0, 0, 0.2);
+  --color-neutral: #cccccc;
+  --color-ai: #00ffff; /* Cyan for AI */
+  --color-ai-glow: rgba(0, 255, 255, 0.3);
+
+  /* Force monospace for a more terminal feel, or a very rigid sans */
+  --font-sans: 'JetBrains Mono', 'Consolas', monospace;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+  /* Remove all rounded corners for a boxy, professional look */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
+}
+
+/* Midnight theme overrides (Alternative Pro Theme) */
+[data-theme="midnight"] {
+  --color-bg: #000022;
+  --color-panel: #000033;
+  --color-hover: #000044;
+  --color-border: #444477;
+  --color-accent: #00ffff;
+  --color-accent-glow: rgba(0, 255, 255, 0.4);
+}
+
+[data-theme="midnight"] body {
+  background-image: none;
+}
+
+/* Bloomberg Terminal Inspired Background */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  /* Optional: subtle grid lines, typical of old CRT terminals */
+  background-image: 
+    linear-gradient(rgba(51, 51, 51, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(51, 51, 51, 0.3) 1px, transparent 1px);
+  background-size: 20px 20px; /* Tighter grid */
+  color: #ff9900; /* Default text color is amber */
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100vh;
+  /* Disable text selection by default for a more app-like feel */
+  user-select: none;
+}
+
+/* Scrollbar styling - Bloomberg style (hidden or ultra-thin, solid color) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-bg);
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 0;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bloomberg Terminal Utilities */
+.glass {
+  background: var(--color-panel);
+  /* Remove blur and transparency for solid terminal look */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--color-border);
+}
+
+.glass-hover:hover {
+  background: var(--color-hover);
+  border-color: var(--color-accent);
+}
+
+.terminal-border {
+  border: 1px solid var(--color-border);
+  /* Solid shadow instead of soft inner glow */
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+.text-gradient-ai {
+  color: var(--color-ai);
+  text-shadow: 0 0 4px var(--color-ai-glow);
+}
+
+.text-gradient-bullish {
+  color: var(--color-bullish);
+  text-shadow: 0 0 2px var(--color-bullish-glow);
+}
+
+.text-gradient-bearish {
+  color: var(--color-bearish);
+  text-shadow: 0 0 2px var(--color-bearish-glow);
+}
+
+/* Text selections should be highlighted clearly */
+::selection {
+  background: var(--color-accent);
+  color: #000;
+}
+
+/* Data text helpers */
+.data-value {
+  font-family: var(--font-mono);
+  font-weight: bold;
+}
+
+.data-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-neutral);
+  letter-spacing: 0.05em;
+}
+
+/* Animations */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.8; filter: brightness(1.2); }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 80s linear infinite;
+}
+
+.ticker-container:hover .animate-ticker {
+  animation-play-state: paused;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Price Flash Animations */
+@keyframes price-flash-up {
+  0% { background: rgba(0,255,0,0.4); color: #fff; }
+  100% { background: transparent; }
+}
+@keyframes price-flash-down {
+  0% { background: rgba(255,0,0,0.4); color: #fff; }
+  100% { background: transparent; }
+}
+.flash-up { animation: price-flash-up 0.8s ease-out }
+.flash-down { animation: price-flash-down 0.8s ease-out }
+
+/* Panel Focus Glow */
+.panel-focused {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+[data-theme="midnight"] .panel-focused {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* Sharp focus states */
+input:focus, button:focus {
+  outline: none;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent) !important;
+}
+
+/* Inputs styling */
+input {
+  background-color: #111;
+  color: #fff;
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+}
+
+input::placeholder {
+  color: #666;
+}
+
+/* Global table styling for data density */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--color-neutral);
+  border-bottom: 1px solid var(--color-border);
+  padding: 4px;
+}
+
+td {
+  padding: 4px;
+  border-bottom: 1px solid #1a1a1a;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+tr:hover td {
+  background-color: var(--color-hover);
+}

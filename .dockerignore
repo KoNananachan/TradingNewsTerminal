@@ -1,0 +1,6 @@
+node_modules
+server/dist
+client/dist
+server/prisma/dev.db
+.git
+.env
