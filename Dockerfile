@@ -38,4 +38,4 @@ ENV NODE_ENV=production
 EXPOSE 8080
 
 WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma db push --schema=prisma/schema.prisma --skip-generate && node dist/index.js"]
+CMD ["sh", "-c", "node dist/scripts/restore-db.js && npx prisma db push --schema=prisma/schema.prisma --skip-generate && node dist/index.js"]

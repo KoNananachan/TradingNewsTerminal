@@ -16,6 +16,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(8080),
   WS_PORT: z.coerce.number().default(3002),
   SCRAPE_INTERVAL_MINUTES: z.coerce.number().default(10),
+  GCS_BUCKET: z.string().default(''),
+  GCS_BACKUP_INTERVAL_MINUTES: z.coerce.number().default(5),
 });
 
 export const env = envSchema.parse(process.env);

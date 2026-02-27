@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-02-27
+
+### Added
+- Database persistence across Cloud Run deployments via GCS backup/restore
+- Periodic database backup to Google Cloud Storage (every 5 minutes)
+- Automatic database restore from GCS on instance startup
+
+### Fixed
+- World map missing dots: AI geo-location coordinates lost due to `|| null` falsy bug (now `?? null`)
+- AI prompt improved to more aggressively extract location data for news articles
+
 ## [0.3.0] - 2025-02-27
 
 ### Added
