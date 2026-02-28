@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
-import { useStockDetail } from '../../api/hooks/use-stocks';
+import { useStockDetail, type StockProfile } from '../../api/hooks/use-stocks';
 import {
   useWatchlist,
   useAddToWatchlist,
@@ -11,7 +11,7 @@ import {
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { Sparkline } from '../common/sparkline';
-import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin } from 'lucide-react';
+import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin, Building2, Target, DollarSign, BarChart3, ExternalLink } from 'lucide-react';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarketHeatmap } from './market-heatmap';
@@ -403,10 +403,34 @@ function WatchlistView({
   );
 }
 
+const RANGE_OPTIONS = ['1D', '5D', '1M', '3M', '6M', '1Y', 'ALL'] as const;
+type RangeOption = typeof RANGE_OPTIONS[number];
+
+const RANGE_API_MAP: Record<RangeOption, string> = {
+  '1D': '1d', '5D': '5d', '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', 'ALL': 'max',
+};
+
+const INTRADAY_RANGES = new Set(['1D', '5D', '1M']);
+
+function computeSMA(data: number[], period: number): (number | null)[] {
+  const result: (number | null)[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) { result.push(null); continue; }
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += data[j];
+    result.push(sum / period);
+  }
+  return result;
+}
+
+type DetailTab = 'chart' | 'fundamentals' | 'financials';
+
 function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const { data } = useStockDetail(symbol);
+  const [range, setRange] = useState<RangeOption>('1Y');
+  const [detailTab, setDetailTab] = useState<DetailTab>('chart');
+  const { data } = useStockDetail(symbol, { range: RANGE_API_MAP[range] });
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
 
   useEffect(() => {
@@ -438,6 +462,10 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
       rightPriceScale: { borderColor: 'rgba(63,63,70,0.3)' },
     });
 
+    const validHistory = data.history.filter(
+      (h) => h.open != null && h.high != null && h.low != null && h.close != null,
+    );
+
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#22c55e',
       downColor: '#ef4444',
@@ -448,7 +476,7 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
     });
 
     candleSeries.setData(
-      data.history.map((h) => ({
+      validHistory.map((h) => ({
         time: h.time as any,
         open: h.open,
         high: h.high,
@@ -456,6 +484,62 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         close: h.close,
       })),
     );
+
+    // Volume histogram (bottom 20%)
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+    });
+
+    chart.priceScale('volume').applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
+
+    volumeSeries.setData(
+      validHistory.map((h) => ({
+        time: h.time as any,
+        value: h.volume ?? 0,
+        color: (h.close ?? 0) >= (h.open ?? 0) ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+      })),
+    );
+
+    // SMA overlays (only for daily+ intervals)
+    const isIntraday = INTRADAY_RANGES.has(range);
+    if (!isIntraday && validHistory.length >= 20) {
+      const closes = validHistory.map((h) => h.close);
+
+      const sma20Data = computeSMA(closes, 20);
+      const sma20Series = chart.addLineSeries({
+        color: '#3b82f6',
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        title: 'SMA20',
+      });
+      sma20Series.setData(
+        validHistory
+          .map((h, i) => ({ time: h.time as any, value: sma20Data[i]! }))
+          .filter((p) => p.value != null),
+      );
+
+      if (validHistory.length >= 50) {
+        const sma50Data = computeSMA(closes, 50);
+        const sma50Series = chart.addLineSeries({
+          color: '#f97316',
+          lineWidth: 1,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+          title: 'SMA50',
+        });
+        sma50Series.setData(
+          validHistory
+            .map((h, i) => ({ time: h.time as any, value: sma50Data[i]! }))
+            .filter((p) => p.value != null),
+        );
+      }
+    }
 
     chart.timeScale().fitContent();
     chartRef.current = chart;
@@ -475,9 +559,13 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
       chart.remove();
       chartRef.current = null;
     };
-  }, [data]);
+  }, [data, range, detailTab]);
 
   const recs = data?.recommendations || [];
+  const isIntraday = INTRADAY_RANGES.has(range);
+
+  const q = data?.quote;
+  const p = data?.profile;
 
   return (
     <GlassCard
@@ -486,15 +574,22 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
           <button onClick={onBack} className="p-1 -ml-1 text-neutral hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <span className="font-mono font-black text-white">{symbol}</span>
-          {data?.quote && (
-            <span className="text-gray-400 font-mono text-[11px]">${data.quote.price.toFixed(2)}</span>
-          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-white">{symbol}</span>
+              {q && <span className="text-gray-400 font-mono text-[11px]">${q.price.toFixed(2)}</span>}
+            </div>
+            {(q?.name || p?.sector) && (
+              <div className="text-[8px] font-mono text-neutral/50 uppercase tracking-wider">
+                {q?.name}{p?.sector ? ` · ${p.sector}` : ''}
+              </div>
+            )}
+          </div>
         </div>
       }
       headerRight={
         (() => {
-          const cp = data?.quote?.changePercent;
+          const cp = q?.changePercent;
           if (cp === null || cp === undefined) return undefined;
           const isUp = cp >= 0;
           return (
@@ -502,82 +597,133 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
               isUp ? 'bg-bullish/10 text-bullish border border-bullish/20' : 'bg-bearish/10 text-bearish border border-bearish/20'
             }`}>
               {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {Math.abs(cp).toFixed(2)}%
+              {isUp ? '+' : ''}{cp.toFixed(2)}%
             </div>
           );
         })()
       }
       className="h-full"
     >
-      <div ref={chartContainerRef} className="flex-1 min-h-0 w-full" />
+      {/* Detail Tabs */}
+      <div className="shrink-0 flex items-center border-b border-border/30 bg-black/20">
+        {(['chart', 'fundamentals', 'financials'] as DetailTab[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setDetailTab(tab)}
+            className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all ${
+              detailTab === tab
+                ? 'border-accent text-accent'
+                : 'border-transparent text-neutral hover:text-gray-300'
+            }`}
+          >
+            {tab === 'chart' ? 'Chart' : tab === 'fundamentals' ? 'Profile' : 'Financials'}
+          </button>
+        ))}
+        {/* Range selector inline for chart tab */}
+        {detailTab === 'chart' && (
+          <div className="ml-auto flex items-center gap-0.5 pr-2">
+            {RANGE_OPTIONS.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-2 py-0.5 text-[9px] font-mono font-black transition-all ${
+                  range === r
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-neutral/50 hover:text-white'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Key Stats */}
-      {data?.quote && (
+      {detailTab === 'chart' && (
+        <>
+          {/* SMA legend */}
+          {!isIntraday && (
+            <div className="shrink-0 flex items-center gap-3 px-3 py-1 bg-black/10 text-[8px] font-mono text-neutral/50">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-blue-500 inline-block" />SMA20</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-orange-500 inline-block" />SMA50</span>
+            </div>
+          )}
+          <div ref={chartContainerRef} className="flex-1 min-h-0 w-full" />
+        </>
+      )}
+
+      {detailTab === 'fundamentals' && (
+        <div className="flex-1 overflow-auto no-scrollbar">
+          <FundamentalsView quote={q} profile={p} />
+        </div>
+      )}
+
+      {detailTab === 'financials' && (
+        <div className="flex-1 overflow-auto no-scrollbar">
+          <FinancialsView quote={q} profile={p} />
+        </div>
+      )}
+
+      {/* Key Stats Bar (always visible) */}
+      {q && (
         <div className="shrink-0 border-t border-border/30 bg-black/20">
           <div className="grid grid-cols-4">
-            <StatCell label="Mkt Cap" value={formatCompact(data.quote.marketCap)} />
-            <StatCell label="Volume" value={formatCompact(data.quote.volume)} />
-            <StatCell
-              label="Day Range"
-              value={data.quote.dayLow != null && data.quote.dayHigh != null
-                ? `${data.quote.dayLow.toFixed(2)} – ${data.quote.dayHigh.toFixed(2)}`
-                : '--'}
-            />
-            <StatCell label="Prev Close" value={data.quote.previousClose?.toFixed(2) ?? '--'} />
+            <StatCell label="Mkt Cap" value={formatCompact(q.marketCap)} />
+            <StatCell label="P/E" value={q.pe != null ? q.pe.toFixed(2) : '--'} />
+            <StatCell label="EPS" value={q.eps != null ? `$${q.eps.toFixed(2)}` : '--'} />
+            <StatCell label="Beta" value={q.beta != null ? q.beta.toFixed(2) : '--'} />
           </div>
           <div className="grid grid-cols-4 border-t border-border/10">
-            <StatCell label="P/E" value={data.quote.pe != null ? data.quote.pe.toFixed(2) : '--'} />
-            <StatCell label="EPS" value={data.quote.eps != null ? `$${data.quote.eps.toFixed(2)}` : '--'} />
+            <StatCell label="Volume" value={formatCompact(q.volume)} />
+            <StatCell label="Avg Vol" value={formatCompact(q.avgVolume)} />
             <StatCell
               label="52W Range"
-              value={data.quote.fiftyTwoWeekLow != null && data.quote.fiftyTwoWeekHigh != null
-                ? `${data.quote.fiftyTwoWeekLow.toFixed(2)} – ${data.quote.fiftyTwoWeekHigh.toFixed(2)}`
+              value={q.fiftyTwoWeekLow != null && q.fiftyTwoWeekHigh != null
+                ? `${q.fiftyTwoWeekLow.toFixed(0)}–${q.fiftyTwoWeekHigh.toFixed(0)}`
                 : '--'}
             />
-            <StatCell label="Avg Vol" value={formatCompact(data.quote.avgVolume)} />
+            <StatCell
+              label="Day Range"
+              value={q.dayLow != null && q.dayHigh != null
+                ? `${q.dayLow.toFixed(2)}–${q.dayHigh.toFixed(2)}`
+                : '--'}
+            />
           </div>
         </div>
       )}
 
       {/* Related News */}
       {recs.length > 0 && (
-        <div className="shrink-0 border-t border-border/30 flex flex-col max-h-[45%]">
-          <div className="flex items-center gap-2 px-4 py-2 bg-black/30 border-b border-border/20 shrink-0">
-            <Newspaper className="w-3.5 h-3.5 text-accent" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-neutral">
-              Related News
-            </span>
-            <span className="text-[9px] font-mono text-neutral/50 ml-auto">{recs.length}</span>
+        <div className="shrink-0 border-t border-border/30 flex flex-col max-h-[35%]">
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-black/30 border-b border-border/20 shrink-0">
+            <Newspaper className="w-3 h-3 text-accent" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-neutral">Signals</span>
+            <span className="text-[8px] font-mono text-neutral/50 ml-auto">{recs.length}</span>
           </div>
           <div className="overflow-y-auto no-scrollbar flex-1">
             {recs.map((rec) => (
               <button
                 key={rec.id}
                 onClick={() => setSelectedArticleId(rec.article.id)}
-                className="w-full text-left px-4 py-2.5 flex items-start gap-3 hover:bg-accent/[0.04] transition-colors border-b border-border/10 last:border-0 group"
+                className="w-full text-left px-4 py-2 flex items-start gap-2.5 hover:bg-accent/[0.04] transition-colors border-b border-border/10 last:border-0 group"
               >
-                <div className="shrink-0 mt-0.5">
-                  <span
-                    className="inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border"
-                    style={{
-                      backgroundColor: getActionColor(rec.action) + '15',
-                      color: getActionColor(rec.action),
-                      borderColor: getActionColor(rec.action) + '30',
-                    }}
-                  >
-                    {rec.action}
-                  </span>
-                </div>
+                <span
+                  className="shrink-0 mt-0.5 inline-block px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider border"
+                  style={{
+                    backgroundColor: getActionColor(rec.action) + '15',
+                    color: getActionColor(rec.action),
+                    borderColor: getActionColor(rec.action) + '30',
+                  }}
+                >
+                  {rec.action}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-gray-300 leading-snug line-clamp-2 group-hover:text-white transition-colors">
+                  <p className="text-[10px] text-gray-300 leading-snug line-clamp-2 group-hover:text-white">
                     {cleanTitle(rec.article.title)}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-2.5 h-2.5 text-neutral/50" />
-                    <span className="text-[9px] font-mono text-neutral/50">
-                      {new Date(rec.article.scrapedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
+                  <span className="text-[8px] font-mono text-neutral/40">
+                    {new Date(rec.article.scrapedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
                 </div>
               </button>
             ))}
@@ -586,6 +732,201 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
       )}
     </GlassCard>
   );
+}
+
+// ── Bloomberg-style Fundamentals View ──
+function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+  return (
+    <div className="p-3 space-y-3">
+      {/* Company Info */}
+      {p && (p.sector || p.industry) && (
+        <Section icon={<Building2 className="w-3 h-3" />} title="Company">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <KV label="Sector" value={p.sector} />
+            <KV label="Industry" value={p.industry} />
+            <KV label="Employees" value={p.employees != null ? formatCompact(p.employees) : null} />
+            <KV label="HQ" value={p.city && p.country ? `${p.city}, ${p.country}` : p.country} />
+          </div>
+          {p.website && (
+            <a href={p.website} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-mono text-accent/70 hover:text-accent">
+              <ExternalLink className="w-2.5 h-2.5" />{p.website.replace(/^https?:\/\/(www\.)?/, '')}
+            </a>
+          )}
+          {p.description && (
+            <p className="mt-2 text-[9px] font-mono text-neutral/60 leading-relaxed line-clamp-4">
+              {p.description}
+            </p>
+          )}
+        </Section>
+      )}
+
+      {/* Analyst Targets */}
+      {p && p.targetMeanPrice != null && (
+        <Section icon={<Target className="w-3 h-3" />} title="Analyst Consensus">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+            <KV label="Target Low" value={`$${p.targetLowPrice?.toFixed(2)}`} />
+            <KV label="Target Mean" value={`$${p.targetMeanPrice?.toFixed(2)}`} accent />
+            <KV label="Target High" value={`$${p.targetHighPrice?.toFixed(2)}`} />
+          </div>
+          {q?.price && p.targetMeanPrice && (
+            <div className="mt-2">
+              <TargetBar current={q.price} low={p.targetLowPrice} mean={p.targetMeanPrice} high={p.targetHighPrice} />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+            <KV label="Recommendation" value={p.recommendationKey?.toUpperCase()} />
+            <KV label="# Analysts" value={p.numberOfAnalysts?.toString()} />
+          </div>
+        </Section>
+      )}
+
+      {/* Valuation */}
+      <Section icon={<DollarSign className="w-3 h-3" />} title="Valuation">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <KV label="P/E (TTM)" value={q?.pe != null ? q.pe.toFixed(2) : null} />
+          <KV label="P/E (Fwd)" value={q?.forwardPE != null ? q.forwardPE.toFixed(2) : null} />
+          <KV label="P/B" value={q?.priceToBook != null ? q.priceToBook.toFixed(2) : null} />
+          <KV label="Book Value" value={q?.bookValue != null ? `$${q.bookValue.toFixed(2)}` : null} />
+          <KV label="EPS (TTM)" value={q?.eps != null ? `$${q.eps.toFixed(2)}` : null} />
+          <KV label="EPS (Fwd)" value={q?.epsForward != null ? `$${q.epsForward.toFixed(2)}` : null} />
+        </div>
+      </Section>
+
+      {/* Trading Data */}
+      <Section icon={<BarChart3 className="w-3 h-3" />} title="Trading">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <KV label="Open" value={q?.open != null ? `$${q.open.toFixed(2)}` : null} />
+          <KV label="Prev Close" value={q?.previousClose != null ? `$${q.previousClose.toFixed(2)}` : null} />
+          <KV label="50D Avg" value={q?.fiftyDayAvg != null ? `$${q.fiftyDayAvg.toFixed(2)}` : null} />
+          <KV label="200D Avg" value={q?.twoHundredDayAvg != null ? `$${q.twoHundredDayAvg.toFixed(2)}` : null} />
+          <KV label="Beta" value={q?.beta != null ? q.beta.toFixed(2) : null} />
+          <KV label="Short Ratio" value={q?.shortRatio != null ? q.shortRatio.toFixed(2) : null} />
+          <KV label="Shares Out" value={formatCompact(q?.sharesOutstanding)} hint="outstanding" />
+          <KV label="Float" value={formatCompact(q?.floatShares)} />
+          <KV label="Div Yield" value={q?.dividendYield != null ? `${(q.dividendYield * 100).toFixed(2)}%` : null} />
+          <KV label="Div Rate" value={q?.dividendRate != null ? `$${q.dividendRate.toFixed(2)}` : null} />
+          {q?.earningsDate && <KV label="Earnings" value={new Date(q.earningsDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} />}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+// ── Bloomberg-style Financials View ──
+function FinancialsView({ quote: _q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+  if (!p) {
+    return (
+      <div className="flex items-center justify-center h-full text-[10px] font-mono text-neutral/40 uppercase">
+        No financial data available
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-3">
+      {/* Profitability */}
+      <Section icon={<TrendingUp className="w-3 h-3" />} title="Profitability">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <KV label="Profit Margin" value={fmtPct(p.profitMargins)} />
+          <KV label="ROE" value={fmtPct(p.returnOnEquity)} />
+          <KV label="ROA" value={fmtPct(p.returnOnAssets)} />
+          <KV label="Rev Growth" value={fmtPct(p.revenueGrowth)} />
+          <KV label="Earnings Growth" value={fmtPct(p.earningsGrowth)} />
+        </div>
+      </Section>
+
+      {/* Income & Revenue */}
+      <Section icon={<DollarSign className="w-3 h-3" />} title="Income Statement">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <KV label="Revenue" value={formatCompact(p.totalRevenue)} />
+          <KV label="Gross Profit" value={formatCompact(p.grossProfit)} />
+          <KV label="EBITDA" value={formatCompact(p.ebitda)} />
+          <KV label="Free Cash Flow" value={formatCompact(p.freeCashflow)} />
+          <KV label="Op. Cash Flow" value={formatCompact(p.operatingCashflow)} />
+        </div>
+      </Section>
+
+      {/* Balance Sheet */}
+      <Section icon={<BarChart3 className="w-3 h-3" />} title="Balance Sheet">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <KV label="Total Cash" value={formatCompact(p.totalCash)} />
+          <KV label="Total Debt" value={formatCompact(p.totalDebt)} />
+          <KV label="D/E Ratio" value={p.debtToEquity != null ? p.debtToEquity.toFixed(2) : null} />
+          <KV label="Current Ratio" value={p.currentRatio != null ? p.currentRatio.toFixed(2) : null} />
+        </div>
+        {p.totalCash != null && p.totalDebt != null && (
+          <div className="mt-2">
+            <CashDebtBar cash={p.totalCash} debt={p.totalDebt} />
+          </div>
+        )}
+      </Section>
+    </div>
+  );
+}
+
+// ── Reusable sub-components ──
+
+function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-border/20 bg-black/20">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/20 bg-black/30">
+        <span className="text-accent/60">{icon}</span>
+        <span className="text-[9px] font-black uppercase tracking-widest text-neutral">{title}</span>
+      </div>
+      <div className="px-3 py-2">{children}</div>
+    </div>
+  );
+}
+
+function KV({ label, value, accent, hint }: { label: string; value: string | null | undefined; accent?: boolean; hint?: string }) {
+  return (
+    <div className="flex items-baseline justify-between py-0.5">
+      <span className="text-[8px] font-mono text-neutral/50 uppercase tracking-wider">{label}</span>
+      <span className={`text-[10px] font-mono font-bold ${accent ? 'text-accent' : 'text-gray-300'}`}>
+        {value || '--'}
+        {hint && <span className="text-neutral/30 ml-0.5 text-[7px]">{hint}</span>}
+      </span>
+    </div>
+  );
+}
+
+function TargetBar({ current, low, mean, high }: { current: number; low: number | null; mean: number; high: number | null }) {
+  const lo = low ?? mean * 0.8;
+  const hi = high ?? mean * 1.2;
+  const range = hi - lo || 1;
+  const pctCurrent = Math.max(0, Math.min(100, ((current - lo) / range) * 100));
+  const pctMean = Math.max(0, Math.min(100, ((mean - lo) / range) * 100));
+
+  return (
+    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-bearish/30 via-neutral/10 to-bullish/30" />
+      <div className="absolute top-0 bottom-0 w-0.5 bg-accent" style={{ left: `${pctMean}%` }} title={`Target: $${mean.toFixed(2)}`} />
+      <div className="absolute top-0 bottom-0 w-1 bg-white rounded-full" style={{ left: `${pctCurrent}%`, transform: 'translateX(-50%)' }} title={`Current: $${current.toFixed(2)}`} />
+    </div>
+  );
+}
+
+function CashDebtBar({ cash, debt }: { cash: number; debt: number }) {
+  const total = cash + debt || 1;
+  const cashPct = (cash / total) * 100;
+  return (
+    <div className="space-y-1">
+      <div className="flex h-1.5 rounded-full overflow-hidden">
+        <div className="bg-bullish/60" style={{ width: `${cashPct}%` }} />
+        <div className="bg-bearish/60" style={{ width: `${100 - cashPct}%` }} />
+      </div>
+      <div className="flex justify-between text-[7px] font-mono text-neutral/40">
+        <span>Cash {formatCompact(cash)}</span>
+        <span>Debt {formatCompact(debt)}</span>
+      </div>
+    </div>
+  );
+}
+
+function fmtPct(v: number | null | undefined): string | null {
+  if (v == null) return null;
+  return `${(v * 100).toFixed(2)}%`;
 }
 
 function getActionColor(action: string) {

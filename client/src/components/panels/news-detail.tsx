@@ -26,6 +26,7 @@ export function NewsDetail() {
 
   const handleTrade = (symbol: string) => {
     setTradingCoin(symbol);
+    setSelectedArticleId(null); // close drawer so trading panel is visible
     // Activate the trading tab in flexlayout
     const model = getModel();
     if (model) {

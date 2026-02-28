@@ -33,8 +33,8 @@ export function useChat() {
       setStreamedText('');
       setError(null);
 
-      // Client-side 90s timeout
-      const timeout = setTimeout(() => controller.abort(), 90_000);
+      // Client-side 150s timeout (allows server-side retries)
+      const timeout = setTimeout(() => controller.abort(), 150_000);
 
       let accumulated = '';
 

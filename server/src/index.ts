@@ -9,6 +9,10 @@ import { backupDatabase } from './lib/gcs-backup.js';
 const app = createApp();
 
 const server = app.listen(env.PORT, async () => {
+  // Keep-alive > Cloud Run's 60s idle timeout
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+
   console.log(`[Server] HTTP server running on port ${env.PORT}`);
 
   await seedDatabase();

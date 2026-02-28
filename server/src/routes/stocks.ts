@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { getQuote, getQuotes, getHistory } from '../services/stocks/yahoo-finance.js';
+import { getQuote, getQuotes, getHistory, getProfile } from '../services/stocks/yahoo-finance.js';
 
 const INDICES = [
   '^GSPC',   // S&P 500
@@ -132,27 +132,46 @@ router.get('/:symbol', async (req, res) => {
   try {
     const symbol = req.params.symbol.toUpperCase();
 
-    const [dbQuote, liveQuote, history, recommendations] = await Promise.all([
+    const range = (req.query.range as string) || undefined;
+    const interval = (req.query.interval as string) || undefined;
+
+    const [dbQuote, liveQuote, history, recommendations, profile] = await Promise.all([
       prisma.stockQuote.findUnique({ where: { symbol } }),
       getQuote(symbol).catch(() => null),
-      getHistory(symbol),
+      getHistory(symbol, { range, interval }),
       prisma.stockRecommendation.findMany({
         where: { symbol },
         include: { article: { select: { id: true, title: true, scrapedAt: true } } },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
+      getProfile(symbol).catch(() => null),
     ]);
 
-    // Extract extended fields from live quote
+    // Merge all extended fields from live quote
     const ext = liveQuote as Record<string, unknown> | null;
     const extended = {
       pe: (ext?.pe as number) ?? null,
+      forwardPE: (ext?.forwardPE as number) ?? null,
       eps: (ext?.eps as number) ?? null,
+      epsForward: (ext?.epsForward as number) ?? null,
       fiftyTwoWeekHigh: (ext?.fiftyTwoWeekHigh as number) ?? null,
       fiftyTwoWeekLow: (ext?.fiftyTwoWeekLow as number) ?? null,
       avgVolume: (ext?.avgVolume as number) ?? null,
       dividendYield: (ext?.dividendYield as number) ?? null,
+      dividendRate: (ext?.dividendRate as number) ?? null,
+      beta: (ext?.beta as number) ?? null,
+      open: (ext?.open as number) ?? null,
+      sharesOutstanding: (ext?.sharesOutstanding as number) ?? null,
+      floatShares: (ext?.floatShares as number) ?? null,
+      bookValue: (ext?.bookValue as number) ?? null,
+      priceToBook: (ext?.priceToBook as number) ?? null,
+      shortRatio: (ext?.shortRatio as number) ?? null,
+      earningsDate: (ext?.earningsDate as string) ?? null,
+      fiftyDayAvg: (ext?.fiftyDayAvg as number) ?? null,
+      twoHundredDayAvg: (ext?.twoHundredDayAvg as number) ?? null,
+      fiftyDayAvgChg: (ext?.fiftyDayAvgChg as number) ?? null,
+      twoHundredDayAvgChg: (ext?.twoHundredDayAvgChg as number) ?? null,
     };
 
     const quote = dbQuote
@@ -163,6 +182,7 @@ router.get('/:symbol', async (req, res) => {
 
     res.json({
       quote,
+      profile,
       history: history.map((h) => ({
         time: h.date,
         open: h.open,

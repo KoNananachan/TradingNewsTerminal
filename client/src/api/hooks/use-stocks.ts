@@ -14,12 +14,56 @@ export interface StockQuote {
   dayLow: number | null;
   previousClose: number | null;
   updatedAt: string;
+  open?: number | null;
   pe?: number | null;
+  forwardPE?: number | null;
   eps?: number | null;
+  epsForward?: number | null;
   fiftyTwoWeekHigh?: number | null;
   fiftyTwoWeekLow?: number | null;
   avgVolume?: number | null;
   dividendYield?: number | null;
+  dividendRate?: number | null;
+  beta?: number | null;
+  sharesOutstanding?: number | null;
+  floatShares?: number | null;
+  bookValue?: number | null;
+  priceToBook?: number | null;
+  shortRatio?: number | null;
+  earningsDate?: string | null;
+  fiftyDayAvg?: number | null;
+  twoHundredDayAvg?: number | null;
+  fiftyDayAvgChg?: number | null;
+  twoHundredDayAvgChg?: number | null;
+}
+
+export interface StockProfile {
+  sector: string | null;
+  industry: string | null;
+  description: string | null;
+  employees: number | null;
+  website: string | null;
+  city: string | null;
+  country: string | null;
+  targetMeanPrice: number | null;
+  targetHighPrice: number | null;
+  targetLowPrice: number | null;
+  numberOfAnalysts: number | null;
+  recommendationKey: string | null;
+  profitMargins: number | null;
+  returnOnEquity: number | null;
+  returnOnAssets: number | null;
+  revenueGrowth: number | null;
+  earningsGrowth: number | null;
+  totalRevenue: number | null;
+  grossProfit: number | null;
+  ebitda: number | null;
+  totalDebt: number | null;
+  totalCash: number | null;
+  freeCashflow: number | null;
+  operatingCashflow: number | null;
+  debtToEquity: number | null;
+  currentRatio: number | null;
 }
 
 interface HistoryPoint {
@@ -33,6 +77,7 @@ interface HistoryPoint {
 
 interface StockDetail {
   quote: StockQuote | null;
+  profile: StockProfile | null;
   history: HistoryPoint[];
   recommendations: Array<{
     id: number;
@@ -63,10 +108,20 @@ export function useStockNames(symbols: string[]) {
   });
 }
 
-export function useStockDetail(symbol: string | null) {
+export function useStockDetail(
+  symbol: string | null,
+  options?: { range?: string; interval?: string },
+) {
+  const range = options?.range;
+  const interval = options?.interval;
+  const params = new URLSearchParams();
+  if (range) params.set('range', range);
+  if (interval) params.set('interval', interval);
+  const qs = params.toString();
+
   return useQuery({
-    queryKey: ['stocks', symbol],
-    queryFn: () => api.get<StockDetail>(`/stocks/${symbol}`),
+    queryKey: ['stocks', symbol, range, interval],
+    queryFn: () => api.get<StockDetail>(`/stocks/${symbol}${qs ? `?${qs}` : ''}`),
     enabled: symbol !== null,
   });
 }

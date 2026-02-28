@@ -39,16 +39,23 @@ export function useWebSocket() {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        const isReconnect = reconnectAttemptRef.current > 0;
         reconnectAttemptRef.current = 0;
         setWsConnected(true);
         resetHeartbeat();
-        useAppStore.getState().addLogEntry({ type: 'info', message: 'WebSocket connected' });
+        useAppStore.getState().addLogEntry({
+          type: 'info',
+          message: isReconnect ? 'WebSocket reconnected' : 'WebSocket connected',
+        });
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         clearTimeout(heartbeatTimerRef.current);
         setWsConnected(false);
-        useAppStore.getState().addLogEntry({ type: 'alert', message: 'WebSocket disconnected' });
+        // Only log unexpected disconnects (code 1000 = normal closure)
+        if (event.code !== 1000) {
+          useAppStore.getState().addLogEntry({ type: 'alert', message: `WebSocket disconnected (code ${event.code})` });
+        }
         scheduleReconnect();
       };
 

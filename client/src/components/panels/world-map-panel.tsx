@@ -2,16 +2,20 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMapEvents, type MapEvent } from '../../api/hooks/use-map-events';
+import { useConflicts, type ConflictEvent } from '../../api/hooks/use-conflicts';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { cleanTitle } from '../../utils/clean-title';
-import { Crosshair, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { Crosshair, Zap, Maximize2, Minimize2, Flame } from 'lucide-react';
 
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const SOURCE_ID = 'news-events';
 const CIRCLE_LAYER = 'news-circles';
 const FLASH_SOURCE = 'flash-events';
 const FLASH_LAYER = 'flash-ring';
+const CONFLICT_SOURCE = 'conflict-zones';
+const CONFLICT_HEAT_LAYER = 'conflict-heat';
+const CONFLICT_POINTS_LAYER = 'conflict-points';
 
 function getSentimentColor(sentiment: string | null): string {
   if (sentiment === 'BULLISH') return '#22c55e';
@@ -56,6 +60,24 @@ function flashGeoJSON(evts: MapEvent[]): GeoJSON.FeatureCollection {
   };
 }
 
+function conflictGeoJSON(events: ConflictEvent[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: (events || [])
+      .filter(e => e.lat !== 0 || e.lng !== 0)
+      .map(e => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [e.lng, e.lat] },
+        properties: {
+          name: e.name,
+          count: e.count,
+          url: e.url,
+          title: e.title,
+        },
+      })),
+  };
+}
+
 export function WorldMapPanel() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -73,6 +95,9 @@ export function WorldMapPanel() {
   // Track previous event IDs to detect new arrivals
   const prevEventIdsRef = useRef<Set<number>>(new Set());
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: conflicts } = useConflicts();
+  const [showConflicts, setShowConflicts] = useState(true);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -109,6 +134,46 @@ export function WorldMapPanel() {
 
     map.on('load', () => {
       if (destroyed) return;
+
+      // Conflict data source + layers (rendered below news dots)
+      map.addSource(CONFLICT_SOURCE, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      map.addLayer({
+        id: CONFLICT_HEAT_LAYER,
+        type: 'heatmap',
+        source: CONFLICT_SOURCE,
+        paint: {
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0.2, 500, 0.6, 5000, 1, 50000, 2],
+          'heatmap-intensity': 1.2,
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 8, 5, 25, 10, 40],
+          'heatmap-color': [
+            'interpolate', ['linear'], ['heatmap-density'],
+            0, 'rgba(0,0,0,0)',
+            0.2, 'rgba(255,100,0,0.3)',
+            0.4, 'rgba(255,80,0,0.5)',
+            0.6, 'rgba(255,50,0,0.65)',
+            0.8, 'rgba(220,20,0,0.8)',
+            1, 'rgba(180,0,0,0.9)',
+          ],
+          'heatmap-opacity': 0.7,
+        },
+      });
+
+      map.addLayer({
+        id: CONFLICT_POINTS_LAYER,
+        type: 'circle',
+        source: CONFLICT_SOURCE,
+        paint: {
+          'circle-color': '#ef4444',
+          'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 0, 3, 500, 5, 5000, 7, 50000, 10],
+          'circle-opacity': 0.6,
+          'circle-stroke-width': 0.5,
+          'circle-stroke-color': 'rgba(255,100,100,0.4)',
+        },
+      });
 
       // Main data source
       map.addSource(SOURCE_ID, {
@@ -242,8 +307,41 @@ export function WorldMapPanel() {
       }, 0);
     };
 
+    // Conflict points click handler
+    map.on('click', CONFLICT_POINTS_LAYER, (e) => {
+      if (!e.features?.length) return;
+      const props = e.features[0].properties;
+      if (!props) return;
+      const titleText = props.title
+        ? `<div style="font-size:11px;color:#d4d4d8;line-height:1.5;margin-bottom:8px;">${props.title}</div>`
+        : '';
+      const linkBtn = props.url
+        ? `<a href="${props.url}" target="_blank" rel="noopener" style="font-size:9px;color:#ef4444;font-weight:900;text-decoration:none;letter-spacing:0.1em;">VIEW SOURCE &rarr;</a>`
+        : '';
+      const html = `
+        <div class="terminal-popup single">
+          <div class="popup-header" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.2);color:#ef4444;">
+            <span class="pulse-dot" style="background:#ef4444;box-shadow:0 0 10px #ef4444;"></span>CONFLICT ZONE
+          </div>
+          <div style="padding:12px 16px;font-family:'JetBrains Mono',monospace;">
+            <div style="font-size:12px;color:#f4f4f5;font-weight:700;margin-bottom:6px;">${props.name}</div>
+            <div style="font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:8px;">${Number(props.count).toLocaleString()} conflict mentions (3d)</div>
+            ${titleText}
+            ${linkBtn}
+          </div>
+        </div>
+      `;
+      if (popupRef.current) popupRef.current.remove();
+      popupRef.current = new maplibregl.Popup({ maxWidth: '320px', offset: 15, className: 'custom-terminal-popup', closeButton: false })
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map);
+    });
+
     map.on('mouseenter', CIRCLE_LAYER, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', CIRCLE_LAYER, () => { map.getCanvas().style.cursor = ''; });
+    map.on('mouseenter', CONFLICT_POINTS_LAYER, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', CONFLICT_POINTS_LAYER, () => { map.getCanvas().style.cursor = ''; });
 
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(mapContainerRef.current!);
@@ -330,11 +428,40 @@ export function WorldMapPanel() {
     }
   }, [isMapReady, events, visitedMapNodes]);
 
+  // Update conflict layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    const source = map.getSource(CONFLICT_SOURCE) as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(showConflicts && conflicts ? conflictGeoJSON(conflicts) : { type: 'FeatureCollection', features: [] });
+    }
+
+    if (map.getLayer(CONFLICT_HEAT_LAYER)) {
+      map.setLayoutProperty(CONFLICT_HEAT_LAYER, 'visibility', showConflicts ? 'visible' : 'none');
+    }
+    if (map.getLayer(CONFLICT_POINTS_LAYER)) {
+      map.setLayoutProperty(CONFLICT_POINTS_LAYER, 'visibility', showConflicts ? 'visible' : 'none');
+    }
+  }, [isMapReady, conflicts, showConflicts]);
+
   return (
     <div ref={wrapperRef} className="h-full">
     <GlassCard
       headerRight={
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowConflicts(v => !v)}
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-none ${
+              showConflicts
+                ? 'text-red-400 bg-red-500/10 border-red-500/30'
+                : 'text-neutral bg-black/40 border-border/30 opacity-50'
+            }`}
+            title={showConflicts ? 'Hide Conflicts' : 'Show Conflicts'}
+          >
+            <Flame className="w-3 h-3" /> CONFLICTS
+          </button>
           <div className="text-[10px] font-mono font-bold text-neutral bg-black/40 px-2 py-0.5 border border-border/30 flex items-center gap-2 tracking-widest leading-none">
             <Crosshair className="w-3 h-3 text-accent"/> {events?.length || 0} NODES
           </div>
