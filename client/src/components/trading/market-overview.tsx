@@ -6,12 +6,18 @@ import { Search } from 'lucide-react';
 
 interface MarketItem {
   symbol: string;
+  displayName?: string;
   price: number;
   changePercent: number | null;
-  type: 'crypto' | 'stock';
+  type: 'crypto' | 'stock' | 'commodity';
 }
 
-export type MarketType = 'crypto' | 'stock';
+export type MarketType = 'crypto' | 'stock' | 'commodity';
+
+// Hyperliquid perps that are actually commodity/index proxies
+const COMMODITY_PERPS: Record<string, string> = {
+  PAXG: 'Gold',
+};
 
 interface MarketOverviewProps {
   onSelectCoin: (coin: string, type: MarketType) => void;
@@ -35,21 +41,30 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
       }
     }
 
-    // All Hyperliquid perpetual contracts (after stocks)
+    // Hyperliquid perpetual contracts - separate commodities from crypto
     if (mids && meta) {
       for (const asset of meta.universe) {
         const price = mids[asset.name];
         if (price) {
-          result.push({ symbol: asset.name, price: parseFloat(price), changePercent: null, type: 'crypto' });
+          const commodityName = COMMODITY_PERPS[asset.name];
+          result.push({
+            symbol: asset.name,
+            displayName: commodityName,
+            price: parseFloat(price),
+            changePercent: null,
+            type: commodityName ? 'commodity' : 'crypto',
+          });
         }
       }
     }
 
-    // Sort: priority stocks first, then remaining stocks, then crypto
+    // Sort: stocks → commodities → crypto
     const PRIORITY_STOCKS = ['AAPL', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'MSFT', 'META', 'AMD', 'NFLX', 'COIN', 'MSTR', 'JPM', 'V', 'BA', 'DIS', 'INTC', 'PYPL', 'UBER', 'SQ', 'PLTR'];
+    const TYPE_ORDER = { stock: 0, commodity: 1, crypto: 2 };
     result.sort((a, b) => {
-      // Stocks before crypto
-      if (a.type !== b.type) return a.type === 'stock' ? -1 : 1;
+      // Type ordering: stock → commodity → crypto
+      const typeOrd = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+      if (typeOrd !== 0) return typeOrd;
       // Within stocks: priority list first
       if (a.type === 'stock') {
         const ai = PRIORITY_STOCKS.indexOf(a.symbol);
@@ -91,13 +106,17 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white">{m.symbol}</span>
+              <span className="font-bold text-white">
+                {m.displayName ? `${m.displayName}` : m.symbol}
+              </span>
               <span className={`text-[7px] px-1 border uppercase tracking-wider font-black ${
-                m.type === 'crypto'
-                  ? 'text-yellow-400/70 border-yellow-400/20'
-                  : 'text-blue-400/70 border-blue-400/20'
+                m.type === 'commodity'
+                  ? 'text-amber-400/70 border-amber-400/20'
+                  : m.type === 'crypto'
+                    ? 'text-yellow-400/70 border-yellow-400/20'
+                    : 'text-blue-400/70 border-blue-400/20'
               }`}>
-                {m.type === 'crypto' ? 'PERP' : 'STK'}
+                {m.type === 'commodity' ? 'CMDTY' : m.type === 'crypto' ? 'PERP' : 'STK'}
               </span>
             </div>
             <div className="text-right">

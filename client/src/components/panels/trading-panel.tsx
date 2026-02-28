@@ -89,6 +89,7 @@ export function TradingPanel() {
                 <BookOpen className="w-3 h-3 text-accent" />
                 <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
                   {selectedCoin}{coinType === 'stock' ? '/USDH Spot' : '-USD Perp'}
+                  {coinType === 'commodity' && <span className="ml-1 text-amber-400/60">(Commodity)</span>}
                 </span>
               </div>
               <Orderbook coin={selectedCoin} />
