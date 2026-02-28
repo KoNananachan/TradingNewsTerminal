@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-02-28
+
+### Added
+- Conflict zones layer on world map (GDELT GEO API, no auth required)
+  - Heatmap + point markers for active conflict regions
+  - Whitelist filter covering Middle East, Africa, Eastern Europe, South Asia, Americas
+  - Click popup showing location, mention count, source article link
+  - Toggle button in map header to show/hide conflict layer
+- Stock panel: Profile & Financials tabs (Bloomberg-style layout)
+  - Company info (sector, industry, employees, HQ, website)
+  - Analyst targets (mean/high/low price, recommendation)
+  - Financials breakdown (revenue, margins, cash flow, debt ratios)
+- Stock chart: range selector (1D/5D/1M/3M/6M/1Y/ALL)
+- Stock chart: volume histogram overlay (bottom 20%)
+- Stock chart: SMA20 and SMA50 moving average lines
+- Extended stock quote fields (beta, forwardPE, sharesOutstanding, bookValue, etc.)
+- Yahoo Finance: profile and financials data fetching
+- `/api/conflicts` endpoint for conflict zone data
+
+### Fixed
+- News detail TRADE button not navigating to trading panel (drawer was blocking view)
+- AI chat client timeout too short (90s → 150s to allow server-side retries)
+
+### Changed
+- Chat route: added retry logic (2 attempts) and diagnostic logging
+- AI prompts and news analyzer improvements
+- WebSocket reconnect stability improvements
+
+## [0.5.0] - 2025-02-27
+
+### Added
+- AI Chat panel with SSE streaming and markdown rendering
+- Extended stock stats and improved geo-location accuracy
+
+### Fixed
+- Category ordering, AI chat timeout, fullscreen mode
+- Trading panel USDH/USDC handling
+- Use publishedAt instead of scrapedAt for news timestamps in AI chat
+
 ## [0.4.0] - 2025-02-27
 
 ### Added
