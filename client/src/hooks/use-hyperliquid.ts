@@ -9,6 +9,7 @@ import {
   getOpenOrders,
   getSpotBalances,
   getMeta,
+  getSpotMeta,
 } from '../lib/hyperliquid/api';
 
 // Refresh intervals
@@ -41,9 +42,27 @@ export function useMeta() {
   });
 }
 
+export function useSpotMeta() {
+  return useQuery({
+    queryKey: ['hl', 'spotMeta'],
+    queryFn: getSpotMeta,
+    refetchInterval: SLOW,
+  });
+}
+
 export function useHyperliquidAssets(): Set<string> {
-  const { data } = useMeta();
-  return useMemo(() => new Set(data?.universe.map(a => a.name) ?? []), [data]);
+  const { data: perpMeta } = useMeta();
+  const { data: spotMeta } = useSpotMeta();
+  return useMemo(() => {
+    const set = new Set<string>();
+    if (perpMeta) {
+      for (const a of perpMeta.universe) set.add(a.name);
+    }
+    if (spotMeta) {
+      for (const t of spotMeta.tokens) set.add(t.name);
+    }
+    return set;
+  }, [perpMeta, spotMeta]);
 }
 
 export function useUserState() {

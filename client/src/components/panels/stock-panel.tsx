@@ -513,16 +513,29 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
 
       {/* Key Stats */}
       {data?.quote && (
-        <div className="shrink-0 grid grid-cols-4 border-t border-border/30 bg-black/20">
-          <StatCell label="Mkt Cap" value={formatCompact(data.quote.marketCap)} />
-          <StatCell label="Volume" value={formatCompact(data.quote.volume)} />
-          <StatCell
-            label="Day Range"
-            value={data.quote.dayLow != null && data.quote.dayHigh != null
-              ? `${data.quote.dayLow.toFixed(2)} – ${data.quote.dayHigh.toFixed(2)}`
-              : '--'}
-          />
-          <StatCell label="Prev Close" value={data.quote.previousClose?.toFixed(2) ?? '--'} />
+        <div className="shrink-0 border-t border-border/30 bg-black/20">
+          <div className="grid grid-cols-4">
+            <StatCell label="Mkt Cap" value={formatCompact(data.quote.marketCap)} />
+            <StatCell label="Volume" value={formatCompact(data.quote.volume)} />
+            <StatCell
+              label="Day Range"
+              value={data.quote.dayLow != null && data.quote.dayHigh != null
+                ? `${data.quote.dayLow.toFixed(2)} – ${data.quote.dayHigh.toFixed(2)}`
+                : '--'}
+            />
+            <StatCell label="Prev Close" value={data.quote.previousClose?.toFixed(2) ?? '--'} />
+          </div>
+          <div className="grid grid-cols-4 border-t border-border/10">
+            <StatCell label="P/E" value={data.quote.pe != null ? data.quote.pe.toFixed(2) : '--'} />
+            <StatCell label="EPS" value={data.quote.eps != null ? `$${data.quote.eps.toFixed(2)}` : '--'} />
+            <StatCell
+              label="52W Range"
+              value={data.quote.fiftyTwoWeekLow != null && data.quote.fiftyTwoWeekHigh != null
+                ? `${data.quote.fiftyTwoWeekLow.toFixed(2)} – ${data.quote.fiftyTwoWeekHigh.toFixed(2)}`
+                : '--'}
+            />
+            <StatCell label="Avg Vol" value={formatCompact(data.quote.avgVolume)} />
+          </div>
         </div>
       )}
 

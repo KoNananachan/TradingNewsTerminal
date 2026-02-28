@@ -33,6 +33,11 @@ model NewsArticle {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([categorySlug])
+  @@index([analyzed])
+  @@index([scrapedAt])
+  @@index([latitude, longitude])
 }
 
 model NewsCategory {

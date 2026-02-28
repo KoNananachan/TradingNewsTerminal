@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, TrendingUp, TrendingDown, Zap, X } from 'lucide-react';
 import { useAppStore } from '../../stores/use-app-store';
@@ -14,19 +14,22 @@ export function BreakingNewsFlash() {
   const [activeNews, setActiveNews] = useState<FlashArticle | null>(null);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const breakingAlerts = useAppStore((s) => s.settings.breakingAlerts);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Listen to WebSocket events (this is a mock/placeholder for the actual WS logic)
-  // In a real app, this would be triggered by useWebSocket's incoming messages
   useEffect(() => {
     const handleBreakingNews = (e: any) => {
       if (!breakingAlerts) return;
       if (e.detail) {
+        if (timerRef.current) clearTimeout(timerRef.current);
         setActiveNews(e.detail);
-        setTimeout(() => setActiveNews(null), 8000);
+        timerRef.current = setTimeout(() => setActiveNews(null), 8000);
       }
     };
     window.addEventListener('breaking-news', handleBreakingNews);
-    return () => window.removeEventListener('breaking-news', handleBreakingNews);
+    return () => {
+      window.removeEventListener('breaking-news', handleBreakingNews);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [breakingAlerts]);
 
   return (

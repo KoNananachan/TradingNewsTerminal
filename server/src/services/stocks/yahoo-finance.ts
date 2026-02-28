@@ -12,6 +12,12 @@ interface YahooQuoteResult {
   regularMarketDayHigh?: number;
   regularMarketDayLow?: number;
   regularMarketPreviousClose?: number;
+  trailingPE?: number;
+  epsTrailingTwelveMonths?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  averageDailyVolume3Month?: number;
+  trailingAnnualDividendYield?: number;
 }
 
 export async function getQuote(symbol: string) {
@@ -43,6 +49,12 @@ export async function getQuote(symbol: string) {
       dayHigh: result.regularMarketDayHigh ?? null,
       dayLow: result.regularMarketDayLow ?? null,
       previousClose: result.regularMarketPreviousClose ?? null,
+      pe: result.trailingPE ?? null,
+      eps: result.epsTrailingTwelveMonths ?? null,
+      fiftyTwoWeekHigh: result.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: result.fiftyTwoWeekLow ?? null,
+      avgVolume: result.averageDailyVolume3Month ?? null,
+      dividendYield: result.trailingAnnualDividendYield ?? null,
     };
   } catch (err) {
     console.error(`[Yahoo] Error fetching quote for ${symbol}:`, err instanceof Error ? err.message : err);

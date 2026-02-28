@@ -132,8 +132,9 @@ router.get('/:symbol', async (req, res) => {
   try {
     const symbol = req.params.symbol.toUpperCase();
 
-    const [quote, history, recommendations] = await Promise.all([
+    const [dbQuote, liveQuote, history, recommendations] = await Promise.all([
       prisma.stockQuote.findUnique({ where: { symbol } }),
+      getQuote(symbol).catch(() => null),
       getHistory(symbol),
       prisma.stockRecommendation.findMany({
         where: { symbol },
@@ -142,6 +143,23 @@ router.get('/:symbol', async (req, res) => {
         take: 10,
       }),
     ]);
+
+    // Extract extended fields from live quote
+    const ext = liveQuote as Record<string, unknown> | null;
+    const extended = {
+      pe: (ext?.pe as number) ?? null,
+      eps: (ext?.eps as number) ?? null,
+      fiftyTwoWeekHigh: (ext?.fiftyTwoWeekHigh as number) ?? null,
+      fiftyTwoWeekLow: (ext?.fiftyTwoWeekLow as number) ?? null,
+      avgVolume: (ext?.avgVolume as number) ?? null,
+      dividendYield: (ext?.dividendYield as number) ?? null,
+    };
+
+    const quote = dbQuote
+      ? { ...dbQuote, ...extended }
+      : liveQuote
+        ? { ...liveQuote, ...extended }
+        : null;
 
     res.json({
       quote,

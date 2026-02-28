@@ -29,13 +29,18 @@ interface ApiItem {
   raw_news: ApiRawNews;
 }
 
-// In-memory cache of known external IDs
+// In-memory cache of known external IDs (capped to prevent unbounded growth)
+const MAX_KNOWN_IDS = 50_000;
 const knownIds = new Set<string>();
 let cacheLoaded = false;
 
 async function loadKnownIds() {
   if (cacheLoaded) return;
-  const rows = await prisma.newsArticle.findMany({ select: { externalId: true } });
+  const rows = await prisma.newsArticle.findMany({
+    select: { externalId: true },
+    orderBy: { id: 'desc' },
+    take: MAX_KNOWN_IDS,
+  });
   for (const r of rows) knownIds.add(r.externalId);
   cacheLoaded = true;
   console.log(`[Scraper] Loaded ${knownIds.size} known article IDs into cache`);

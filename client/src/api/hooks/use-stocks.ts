@@ -14,6 +14,12 @@ export interface StockQuote {
   dayLow: number | null;
   previousClose: number | null;
   updatedAt: string;
+  pe?: number | null;
+  eps?: number | null;
+  fiftyTwoWeekHigh?: number | null;
+  fiftyTwoWeekLow?: number | null;
+  avgVolume?: number | null;
+  dividendYield?: number | null;
 }
 
 interface HistoryPoint {

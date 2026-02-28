@@ -3,8 +3,11 @@ import { getQuotes } from './yahoo-finance.js';
 import { broadcastQuotes } from '../websocket/ws-server.js';
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let isRefreshing = false;
 
 async function refreshQuotes() {
+  if (isRefreshing) return;
+  isRefreshing = true;
   try {
     const tracked = await prisma.trackedStock.findMany();
     if (tracked.length === 0) return;
@@ -46,6 +49,8 @@ async function refreshQuotes() {
     console.log(`[StockTracker] Refreshed ${quotes.length} quotes`);
   } catch (err) {
     console.error('[StockTracker] Error refreshing quotes:', err);
+  } finally {
+    isRefreshing = false;
   }
 }
 
