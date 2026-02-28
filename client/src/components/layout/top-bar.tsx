@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
-import { Activity, Search, Bell, Settings, LayoutGrid } from 'lucide-react';
+import { Activity, Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2 } from 'lucide-react';
 import { NotificationPanel } from '../common/notification-panel';
 import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
@@ -22,6 +22,13 @@ export function TopBar() {
 
   const [panelMenuOpen, setPanelMenuOpen] = useState(false);
   const panelMenuRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setLocalTime(getLocalTime()), 1000);
@@ -46,8 +53,8 @@ export function TopBar() {
           onClick={() => setCommandPaletteOpen(true)}
           className="flex items-center gap-2 bg-black border border-border px-2 py-1 text-[11px] font-mono text-neutral hover:border-accent hover:text-accent transition-none w-72"
         >
-          <Search className="w-3.5 h-3.5" />
-          <span className="flex-1 text-left uppercase tracking-wider">{t('search')}</span>
+          <Search className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1 text-left uppercase tracking-wider truncate">{t('search')}</span>
           <kbd className="hidden sm:inline-flex px-1 bg-border text-neutral text-[9px] font-bold">ALT+K</kbd>
         </button>
 
@@ -65,6 +72,21 @@ export function TopBar() {
             </button>
             <PanelToggleMenu open={panelMenuOpen} onClose={() => setPanelMenuOpen(false)} containerRef={panelMenuRef} />
           </div>
+
+          {/* Fullscreen */}
+          <button
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                document.documentElement.requestFullscreen();
+              }
+            }}
+            className="text-neutral hover:text-accent transition-none p-1.5 border border-transparent hover:border-border bg-black"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
 
           {/* Bell / Notifications */}
           <div className="relative">

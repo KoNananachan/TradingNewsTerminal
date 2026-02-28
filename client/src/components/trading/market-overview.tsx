@@ -11,8 +11,10 @@ interface MarketItem {
   type: 'crypto' | 'stock';
 }
 
+export type MarketType = 'crypto' | 'stock';
+
 interface MarketOverviewProps {
-  onSelectCoin: (coin: string) => void;
+  onSelectCoin: (coin: string, type: MarketType) => void;
   selectedCoin: string;
 }
 
@@ -26,7 +28,14 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
   const items = useMemo(() => {
     const result: MarketItem[] = [];
 
-    // All Hyperliquid perpetual contracts
+    // Stocks from backend (added first so they sort to top)
+    if (stocks) {
+      for (const s of stocks) {
+        result.push({ symbol: s.symbol, price: s.price, changePercent: s.changePercent, type: 'stock' });
+      }
+    }
+
+    // All Hyperliquid perpetual contracts (after stocks)
     if (mids && meta) {
       for (const asset of meta.universe) {
         const price = mids[asset.name];
@@ -36,12 +45,21 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
       }
     }
 
-    // Stocks from backend
-    if (stocks) {
-      for (const s of stocks) {
-        result.push({ symbol: s.symbol, price: s.price, changePercent: s.changePercent, type: 'stock' });
+    // Sort: priority stocks first, then remaining stocks, then crypto
+    const PRIORITY_STOCKS = ['AAPL', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'MSFT', 'META', 'AMD', 'NFLX', 'COIN', 'MSTR', 'JPM', 'V', 'BA', 'DIS', 'INTC', 'PYPL', 'UBER', 'SQ', 'PLTR'];
+    result.sort((a, b) => {
+      // Stocks before crypto
+      if (a.type !== b.type) return a.type === 'stock' ? -1 : 1;
+      // Within stocks: priority list first
+      if (a.type === 'stock') {
+        const ai = PRIORITY_STOCKS.indexOf(a.symbol);
+        const bi = PRIORITY_STOCKS.indexOf(b.symbol);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
       }
-    }
+      return a.symbol.localeCompare(b.symbol);
+    });
 
     if (!filter) return result;
     const q = filter.toUpperCase();
@@ -67,7 +85,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
         {items.map((m) => (
           <button
             key={m.symbol}
-            onClick={() => onSelectCoin(m.symbol)}
+            onClick={() => onSelectCoin(m.symbol, m.type)}
             className={`w-full flex items-center justify-between px-3 py-1.5 border-b border-border/5 text-[10px] font-mono hover:bg-accent/[0.03] ${
               selectedCoin === m.symbol ? 'bg-accent/[0.06] border-l-2 border-l-accent' : ''
             }`}

@@ -27,6 +27,8 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 }
 
 const STORAGE_KEY = 'terminal-layout';
+const LAYOUT_VERSION_KEY = 'terminal-layout-version';
+const LAYOUT_VERSION = 2; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -163,6 +165,16 @@ function loadModel(): Model {
   if (localStorage.getItem(RESET_FLAG)) {
     localStorage.removeItem(RESET_FLAG);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION));
+    const hiddenPanels = useAppStore.getState().hiddenPanels;
+    return Model.fromJson(buildLayout(hiddenPanels));
+  }
+
+  // Force reset when layout version changes (e.g. new panels added)
+  const savedVersion = parseInt(localStorage.getItem(LAYOUT_VERSION_KEY) || '0', 10);
+  if (savedVersion < LAYOUT_VERSION) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION));
     const hiddenPanels = useAppStore.getState().hiddenPanels;
     return Model.fromJson(buildLayout(hiddenPanels));
   }

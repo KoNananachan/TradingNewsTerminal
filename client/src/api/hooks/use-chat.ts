@@ -33,6 +33,9 @@ export function useChat() {
       setStreamedText('');
       setError(null);
 
+      // Client-side 90s timeout
+      const timeout = setTimeout(() => controller.abort(), 90_000);
+
       let accumulated = '';
 
       try {
@@ -55,8 +58,9 @@ export function useChat() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let streamDone = false;
 
-        while (true) {
+        while (!streamDone) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -68,7 +72,10 @@ export function useChat() {
             const trimmed = line.trim();
             if (!trimmed || !trimmed.startsWith('data: ')) continue;
             const payload = trimmed.slice(6);
-            if (payload === '[DONE]') break;
+            if (payload === '[DONE]') {
+              streamDone = true;
+              break;
+            }
 
             try {
               const parsed = JSON.parse(payload);
@@ -91,6 +98,7 @@ export function useChat() {
         setError(err.message || 'Request failed');
         throw err;
       } finally {
+        clearTimeout(timeout);
         setIsStreaming(false);
         abortRef.current = null;
       }

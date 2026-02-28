@@ -1,19 +1,26 @@
 import { useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
-import { useAllMids, useUserState } from '../../hooks/use-hyperliquid';
+import { useAllMids, useUserState, useSpotBalances } from '../../hooks/use-hyperliquid';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 import { api } from '../../api/client';
 import { Wallet } from 'lucide-react';
 
+import type { MarketType } from './market-overview';
+
 interface TradeFormProps {
   coin: string;
+  coinType?: MarketType;
 }
 
-export function TradeForm({ coin }: TradeFormProps) {
+export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
   const { isConnected, address } = useAccount();
   const { data: mids } = useAllMids();
   const { data: userState } = useUserState();
+  const { data: spotState } = useSpotBalances();
+
+  const isStock = coinType === 'stock';
+  const quoteCurrency = isStock ? 'USDH' : 'USDC';
   const addLogEntry = useAppStore((s) => s.addLogEntry);
   const addNotification = useAppStore((s) => s.addNotification);
   const tradingSourceArticleId = useAppStore((s) => s.tradingSourceArticleId);
@@ -28,10 +35,17 @@ export function TradeForm({ coin }: TradeFormProps) {
   const midPrice = mids?.[coin] ? parseFloat(mids[coin]) : null;
 
   // Available balance from Hyperliquid account
+  // Stocks use USDH (spot balance), crypto uses USDC (perp withdrawable)
   const availableUsd = useMemo(() => {
+    if (isStock) {
+      if (!spotState?.balances) return null;
+      const usdh = spotState.balances.find((b) => b.coin === 'USDH');
+      if (!usdh) return null;
+      return parseFloat(usdh.total) - parseFloat(usdh.hold);
+    }
     if (!userState) return null;
     return parseFloat(userState.withdrawable);
-  }, [userState]);
+  }, [userState, spotState, isStock]);
 
   // Max size user can open at current price & leverage
   const maxSize = useMemo(() => {
@@ -166,7 +180,7 @@ export function TradeForm({ coin }: TradeFormProps) {
           </div>
           <span className="text-[11px] font-mono font-bold text-white">
             {availableUsd != null ? `$${fmtUsd(availableUsd)}` : '—'}
-            <span className="text-[8px] text-neutral/40 ml-1">USDC</span>
+            <span className="text-[8px] text-neutral/40 ml-1">{quoteCurrency}</span>
           </span>
         </div>
       )}

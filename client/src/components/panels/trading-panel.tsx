@@ -4,7 +4,7 @@ import { PortfolioView } from '../trading/portfolio-view';
 import { Orderbook } from '../trading/orderbook';
 import { TradeForm } from '../trading/trade-form';
 import { RecentFills } from '../trading/recent-fills';
-import { MarketOverview } from '../trading/market-overview';
+import { MarketOverview, type MarketType } from '../trading/market-overview';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3 } from 'lucide-react';
@@ -15,6 +15,7 @@ export function TradingPanel() {
   const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<TradingTab>('trade');
   const [selectedCoin, setSelectedCoin] = useState('BTC');
+  const [coinType, setCoinType] = useState<MarketType>('crypto');
   const tradingCoin = useAppStore((s) => s.tradingCoin);
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
   const t = useT();
@@ -77,7 +78,7 @@ export function TradingPanel() {
             {/* Market selector - left column */}
             <div className="w-[140px] border-r border-border/20 shrink-0 flex flex-col overflow-hidden">
               <MarketOverview
-                onSelectCoin={setSelectedCoin}
+                onSelectCoin={(coin, type) => { setSelectedCoin(coin); setCoinType(type); }}
                 selectedCoin={selectedCoin}
               />
             </div>
@@ -87,7 +88,7 @@ export function TradingPanel() {
               <div className="px-3 py-1 border-b border-border/20 bg-black/60 shrink-0 flex items-center gap-2">
                 <BookOpen className="w-3 h-3 text-accent" />
                 <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-                  {selectedCoin}-USD Perp
+                  {selectedCoin}{coinType === 'stock' ? '/USDH Spot' : '-USD Perp'}
                 </span>
               </div>
               <Orderbook coin={selectedCoin} />
@@ -95,7 +96,7 @@ export function TradingPanel() {
 
             {/* Trade form - right */}
             <div className="w-[220px] shrink-0 overflow-auto no-scrollbar">
-              <TradeForm coin={selectedCoin} />
+              <TradeForm coin={selectedCoin} coinType={coinType} />
             </div>
           </div>
         )}
