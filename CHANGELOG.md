@@ -2,6 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-01
+
+### Added
+- **Economic Calendar (F1):** Real-time economic event tracking via Forex Factory
+  - 15-minute polling with automatic release detection
+  - WebSocket broadcast on data release (`calendar-release` message type)
+  - Country and impact level filtering (US, EU, JP, GB, CN)
+  - Upcoming events view with countdown
+- **Price/News Alert System (F2):** Configurable alerts with 5 trigger types
+  - Price Cross, Price Change %, Sentiment Shift, News Keyword, Volume Spike
+  - Real-time evaluation after each quote refresh
+  - WebSocket notification on trigger (`alert-triggered` message type)
+  - Full CRUD management panel
+- **Advanced Technical Indicators (F3):** 6 indicators + drawing tools
+  - RSI(14), MACD(12,26,9), Bollinger Bands(20,2), ATR(14), VWAP
+  - Drawing tools: Trend Line, Fibonacci Retracement, Horizontal Line
+  - Separate sub-charts for RSI/MACD with synchronized time axes
+  - Standalone StockChart component with IndicatorToolbar
+- **News Clustering (F4):** Automatic article grouping with impact scoring
+  - Union-Find algorithm with multi-factor similarity (tickers, category, time, keywords)
+  - Impact score 1-10 based on article count, sentiment, tickers, category weight
+  - ARTICLES | CLUSTERS toggle view in news feed
+- **Sentiment Trend (F5):** Historical sentiment visualization
+  - Scope by ticker, category, or market-wide
+  - Time windows: 1D (hourly), 1W (daily), 1M (daily)
+  - Automatic reversal detection (zero-crossing or >0.3 change)
+- **Risk Calculator (F6):** 5-tab professional risk management tool
+  - Position Sizer, Risk/Reward visualizer, ATR Stop suggestion
+  - Kelly Criterion calculator, Max Drawdown analyzer
+- **Sector Rotation (F7):** 11 GICS sector ETF analysis
+  - Performance heatmap with period selection (1D/1W/1M/3M)
+  - Rotation scatter plot (momentum vs acceleration quadrants)
+- **Earnings Calendar (F8):** Upcoming earnings for tracked stocks
+  - EPS estimate vs actual comparison with beat/miss highlighting
+  - Group by date with 7/14/30 day filter
+- **Options Flow (F9):** Unusual options activity detection
+  - Yahoo Finance options chain analysis
+  - Anomaly detection: Volume > 5×OI, Volume > 10K, Premium > $100K
+- **Insider Trading (F10):** SEC EDGAR Form 4 tracking
+  - 30-minute polling for tracked stocks
+  - Cluster Buy detection (2+ executives buying within 7 days)
+- **Cross-Asset Correlation Matrix (F12):** 8×8 Pearson correlation
+  - Assets: S&P 500, NASDAQ, Gold, Oil, Bitcoin, DXY, 10Y Treasury, VIX
+  - Period selection: 1M/3M/6M/1Y with color-coded matrix
+- **Personalized News Feed (F13):** Relevance-based article ranking
+  - Scoring: watchlist ticker match (×10), category preference (×2), freshness (×5), sentiment intensity (×3)
+  - ALL | FOR YOU toggle in news feed header
+- **Data Retention (F14):** Automatic data lifecycle management
+  - 30-day article retention with sentiment archiving
+  - 7-day scrape run cleanup
+  - Daily sentiment aggregate archiving before deletion
+- **AI Chat Context Enhancement (F15):** Rich context attachments
+  - Attach articles, charts, or portfolio holdings to chat
+  - "Ask AI" button on stock chart panel
+  - Server-side context resolution for deeper analysis
+- **Live Streams Panel:** Embedded YouTube livestreams for financial news
+  - 8 channels: Bloomberg, CNBC, Fox Business, Yahoo Finance, CNN, Sky News, Al Jazeera, DW News
+  - One-click channel switching with auto-play
+- 10 new dock panels (hidden by default, accessible via panel menu)
+- 7 new Prisma models (EconomicEvent, Alert, AlertTrigger, NewsCluster, NewsClusterArticle, InsiderTrade, SentimentArchive)
+- ~120 new i18n translation keys across 6 languages
+- 2 new WebSocket message types (calendar-release, alert-triggered)
+
+### Changed
+- Layout version bumped to 5 (triggers layout reset for new panels)
+- Stock tracker now evaluates alerts after each quote refresh
+- AI chat hook accepts optional context parameter
+- News feed supports cluster view mode
+
+### Fixed
+- **AI Chat SSE hang:** `req.on('close')` fired immediately after POST body consumed; changed to `res.on('close')` for correct client disconnect detection
+- **Yahoo Finance v6 API 404:** Migrated all quote endpoints from deprecated v6 to v7 with crumb authentication, restoring full quote data including earningsDate, EPS, and extended fields
+- **Options Flow empty:** Added Yahoo crumb authentication to options chain API (v7 now requires it)
+- **Economic Calendar empty:** Replaced FMP API (free tier returns no calendar data) with Forex Factory JSON feed
+- **Conflict zones empty:** Added database fallback when GDELT API is unreachable; expanded city name matching (Riyadh, Tel Aviv, Ankara, Cairo, Doha, etc.) and widened time window to 7 days
+- **Earnings Calendar empty:** `getQuotes()` batch response now includes earningsDate/eps/epsForward fields
+
 ## [0.6.0] - 2026-02-28
 
 ### Added

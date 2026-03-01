@@ -18,6 +18,7 @@ const envSchema = z.object({
   SCRAPE_INTERVAL_MINUTES: z.coerce.number().default(10),
   GCS_BUCKET: z.string().default(''),
   GCS_BACKUP_INTERVAL_MINUTES: z.coerce.number().default(5),
+  FMP_API_KEY: z.string().default(''),
 });
 
 export const env = envSchema.parse(process.env);

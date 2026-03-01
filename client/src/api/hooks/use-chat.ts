@@ -23,6 +23,7 @@ export function useChat() {
       message: string,
       tickers: string[],
       history: { role: string; content: string }[],
+      context?: Array<{ type: string; id?: number; symbol?: string; label: string }>,
     ): Promise<string> => {
       // Abort any in-flight request
       abortRef.current?.abort();
@@ -42,7 +43,16 @@ export function useChat() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, tickers, history }),
+          body: JSON.stringify({
+            message,
+            tickers,
+            history,
+            context: context?.map(c => ({
+              type: c.type,
+              articleId: c.id,
+              symbol: c.symbol,
+            })),
+          }),
           signal: controller.signal,
         });
 

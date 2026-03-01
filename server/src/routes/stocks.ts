@@ -127,6 +127,59 @@ router.get('/names', async (req, res) => {
   }
 });
 
+// GET /api/stocks/earnings-calendar - upcoming earnings for tracked stocks
+router.get('/earnings-calendar', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days as string) || 14;
+    const tracked = await prisma.trackedStock.findMany();
+    if (tracked.length === 0) return res.json([]);
+
+    const symbols = tracked.map(t => t.symbol);
+    const quotes = await getQuotes(symbols);
+
+    const now = new Date();
+    const cutoff = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const results: Array<{
+      symbol: string;
+      name: string | null;
+      earningsDate: string | null;
+      epsEstimate: number | null;
+      epsActual: number | null;
+      revenueEstimate: number | null;
+    }> = [];
+
+    for (const quote of quotes) {
+      const ext = quote as Record<string, unknown>;
+      const earningsDateStr = ext.earningsDate as string | undefined;
+      if (!earningsDateStr) continue;
+
+      const earningsDate = new Date(earningsDateStr);
+      if (earningsDate >= now && earningsDate <= cutoff) {
+        results.push({
+          symbol: quote.symbol,
+          name: quote.name ?? null,
+          earningsDate: earningsDateStr,
+          epsEstimate: (ext.epsForward as number) ?? null,
+          epsActual: (ext.eps as number) ?? null,
+          revenueEstimate: null,
+        });
+      }
+    }
+
+    results.sort((a, b) => {
+      const da = a.earningsDate ? new Date(a.earningsDate).getTime() : 0;
+      const db = b.earningsDate ? new Date(b.earningsDate).getTime() : 0;
+      return da - db;
+    });
+
+    res.json(results);
+  } catch (err) {
+    console.error('[Stocks] Error fetching earnings calendar:', err);
+    res.json([]);
+  }
+});
+
 // GET /api/stocks/:symbol - detail + history
 router.get('/:symbol', async (req, res) => {
   try {

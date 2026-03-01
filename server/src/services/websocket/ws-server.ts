@@ -73,3 +73,11 @@ export function broadcastQuotes(quotes: unknown[]) {
 export function broadcastRecommendation(rec: unknown) {
   broadcast('recommendation', rec);
 }
+
+export function broadcastCalendarRelease(event: unknown) {
+  broadcast('calendar-release', event);
+}
+
+export function broadcastAlertTriggered(alert: unknown) {
+  broadcast('alert-triggered', alert);
+}

@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNews } from '../../api/hooks/use-news';
+import { useNewsClusters } from '../../api/hooks/use-clusters';
 import { useAppStore } from '../../stores/use-app-store';
 import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { GlassCard } from '../common/glass-card';
@@ -10,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useT } from '../../i18n';
 import { Actions } from 'flexlayout-react';
 import { getModel, PANEL_IDS } from '../layout/dock-layout';
-import { Clock, MapPin, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Clock, MapPin, Zap, TrendingUp, TrendingDown, Minus, Layers } from 'lucide-react';
 
 export function NewsFeed() {
   const selectedCategory = useAppStore((s) => s.selectedCategory);
@@ -18,8 +19,50 @@ export function NewsFeed() {
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const setArticleCount = useAppStore((s) => s.setArticleCount);
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
+  const forYouEnabled = useAppStore((s) => s.forYouEnabled);
+  const setForYouEnabled = useAppStore((s) => s.setForYouEnabled);
+  const categoryClicks = useAppStore((s) => s.categoryClicks);
+  const trackCategoryClick = useAppStore((s) => s.trackCategoryClick);
+  const tabSymbols = useAppStore((s) => s.tabSymbols);
   const hlAssets = useHyperliquidAssets();
   const t = useT();
+  const [viewMode, setViewMode] = useState<'articles' | 'clusters'>('articles');
+  const { data: clustersData } = useNewsClusters(20, 3);
+
+  // Collect all watchlist symbols for personalized scoring
+  const watchlistSymbols = new Set(
+    Object.values(tabSymbols).flat()
+  );
+
+  // Personalized scoring function (F13)
+  const scoreArticle = (article: any): number => {
+    let score = 0;
+    // Watchlist ticker match (×10)
+    const tickers = article.recommendations?.map((r: any) => r.symbol) || [];
+    for (const t of tickers) {
+      if (watchlistSymbols.has(t)) score += 10;
+    }
+    // Category preference (×2)
+    if (article.category?.slug && categoryClicks[article.category.slug]) {
+      score += Math.min(categoryClicks[article.category.slug], 5) * 2;
+    }
+    // Freshness (×5) - newer = higher
+    const ageHours = (Date.now() - new Date(article.scrapedAt).getTime()) / 3600000;
+    score += Math.max(0, 5 - ageHours / 2);
+    // Sentiment intensity (×3)
+    if (article.sentimentScore != null) {
+      score += Math.abs(article.sentimentScore) * 3;
+    }
+    return score;
+  };
+
+  // Track category clicks for personalization
+  const handleArticleClick = (article: any) => {
+    setSelectedArticleId(article.id);
+    if (article.category?.slug) {
+      trackCategoryClick(article.category.slug);
+    }
+  };
 
   const handleTickerClick = (symbol: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Don't open article detail
@@ -47,6 +90,20 @@ export function NewsFeed() {
     <GlassCard
       headerRight={
         <div className="flex items-center gap-2">
+          <div className="flex text-[9px] font-bold font-mono uppercase tracking-tighter">
+            <button
+              onClick={() => setForYouEnabled(false)}
+              className={`px-2 py-0.5 border transition-none ${!forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+            >
+              {t('allNews')}
+            </button>
+            <button
+              onClick={() => setForYouEnabled(true)}
+              className={`px-2 py-0.5 border-t border-b border-r transition-none ${forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+            >
+              {t('forYou')}
+            </button>
+          </div>
           <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent bg-black px-2 py-0.5 border border-accent uppercase tracking-tighter">
             <Zap className="w-3 h-3" /> {t('live')}
           </div>
@@ -60,7 +117,25 @@ export function NewsFeed() {
         </p>
       </div>
       <CategorySidebar />
-      
+
+      {/* View Mode Toggle: ARTICLES | CLUSTERS */}
+      <div className="flex border-b border-border bg-black">
+        <button
+          onClick={() => setViewMode('articles')}
+          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-none ${viewMode === 'articles' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
+        >
+          {t('articles')}
+        </button>
+        <button
+          onClick={() => setViewMode('clusters')}
+          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-none flex items-center justify-center gap-1 ${viewMode === 'clusters' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
+        >
+          <Layers className="w-3 h-3" /> {t('clusters')}
+        </button>
+      </div>
+
+      {viewMode === 'articles' && (
+      <>
       {/* Table Header for Alignment */}
       <div className="grid grid-cols-[60px_1fr_90px] px-2 py-1 border-b border-border bg-black text-[9px] font-bold text-neutral uppercase tracking-widest">
         <span>{t('time')}</span>
@@ -77,12 +152,15 @@ export function NewsFeed() {
         
         <div className="flex flex-col">
           <AnimatePresence initial={false}>
-            {data?.articles.map((article, index) => {
+            {(forYouEnabled
+              ? [...(data?.articles || [])].sort((a, b) => scoreArticle(b) - scoreArticle(a))
+              : data?.articles || []
+            ).map((article, index) => {
               const sentimentColor = getSentimentColor(article.sentiment);
               return (
                 <button
                   key={article.id}
-                  onClick={() => setSelectedArticleId(article.id)}
+                  onClick={() => handleArticleClick(article)}
                   className="w-full text-left grid grid-cols-[60px_1fr_90px] gap-2 px-2 py-1.5 border-b border-border/50 hover:bg-white/5 transition-none cursor-pointer group relative"
                 >
                   {/* Time Column */}
@@ -151,6 +229,60 @@ export function NewsFeed() {
           </AnimatePresence>
         </div>
       </div>
+      </>
+      )}
+
+      {/* Clusters View */}
+      {viewMode === 'clusters' && (
+        <div className="flex-1 overflow-auto no-scrollbar bg-black">
+          {!clustersData || clustersData.length === 0 ? (
+            <div className="flex items-center justify-center h-32">
+              <span className="text-[10px] font-mono text-neutral animate-pulse uppercase">{t('loading')}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {clustersData.map((cluster) => (
+                <div key={cluster.id} className="px-3 py-2 border-b border-border/50 hover:bg-white/5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-accent/20 text-accent border border-accent/30">
+                      {cluster.impactScore.toFixed(1)}
+                    </span>
+                    <span className="text-[9px] font-mono text-neutral">
+                      {cluster.articleCount} {t('articles').toLowerCase()}
+                    </span>
+                    {cluster.category && (
+                      <span className="text-[9px] font-bold uppercase tracking-tighter text-accent">
+                        [{cluster.category}]
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-[11px] font-bold text-white uppercase leading-snug line-clamp-2">
+                    {cluster.title}
+                  </h3>
+                  {cluster.tickers.length > 0 && (
+                    <div className="flex gap-1.5 mt-1 flex-wrap">
+                      {cluster.tickers.slice(0, 8).map(ticker => (
+                        <span key={ticker} className="text-[9px] font-mono font-bold text-accent">{ticker}</span>
+                      ))}
+                      {cluster.tickers.length > 8 && (
+                        <span className="text-[8px] font-mono text-neutral">+{cluster.tickers.length - 8}</span>
+                      )}
+                    </div>
+                  )}
+                  {cluster.avgSentiment != null && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5" style={{ backgroundColor: cluster.avgSentiment > 0 ? '#22c55e' : cluster.avgSentiment < 0 ? '#ef4444' : '#a1a1aa' }} />
+                      <span className="text-[8px] font-mono text-neutral">
+                        {cluster.avgSentiment > 0 ? '+' : ''}{cluster.avgSentiment.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </GlassCard>
   );
 }

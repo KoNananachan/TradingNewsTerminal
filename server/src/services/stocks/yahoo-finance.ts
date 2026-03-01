@@ -69,13 +69,15 @@ export interface StockProfile {
 
 export async function getQuote(symbol: string) {
   try {
-    const url = `${YAHOO_API}/v6/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+    const auth = await ensureCrumb();
+    if (!auth) return await getQuoteViaChart(symbol);
+
+    const url = `${YAHOO_API}/v7/finance/quote?symbols=${encodeURIComponent(symbol)}&crumb=${encodeURIComponent(auth.crumb)}`;
     const resp = await fetch(url, {
-      headers: { 'User-Agent': YAHOO_UA },
+      headers: { 'User-Agent': YAHOO_UA, 'Cookie': auth.cookie },
     });
 
     if (!resp.ok) {
-      // Fallback to v8 chart API for price data
       return await getQuoteViaChart(symbol);
     }
 
@@ -152,11 +154,14 @@ async function getQuoteViaChart(symbol: string) {
 }
 
 export async function getQuotes(symbols: string[]) {
-  // Try batch quote first
+  // Try batch quote with crumb auth (v7)
   try {
-    const url = `${YAHOO_API}/v6/finance/quote?symbols=${symbols.map(encodeURIComponent).join(',')}`;
+    const auth = await ensureCrumb();
+    if (!auth) throw new Error('No crumb');
+
+    const url = `${YAHOO_API}/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(',')}&crumb=${encodeURIComponent(auth.crumb)}`;
     const resp = await fetch(url, {
-      headers: { 'User-Agent': YAHOO_UA },
+      headers: { 'User-Agent': YAHOO_UA, 'Cookie': auth.cookie },
     });
 
     if (resp.ok) {
@@ -174,6 +179,9 @@ export async function getQuotes(symbols: string[]) {
           dayHigh: r.regularMarketDayHigh ?? null,
           dayLow: r.regularMarketDayLow ?? null,
           previousClose: r.regularMarketPreviousClose ?? null,
+          earningsDate: r.earningsTimestamp ? new Date(r.earningsTimestamp * 1000).toISOString() : null,
+          eps: r.epsTrailingTwelveMonths ?? null,
+          epsForward: r.epsForward ?? null,
         }));
       }
     }
@@ -246,7 +254,7 @@ let yahooCookie: string | null = null;
 let crumbExpiry = 0;
 const CRUMB_TTL = 30 * 60_000; // 30 min
 
-async function ensureCrumb(): Promise<{ crumb: string; cookie: string } | null> {
+export async function ensureCrumb(): Promise<{ crumb: string; cookie: string } | null> {
   if (yahooCrumb && yahooCookie && Date.now() < crumbExpiry) {
     return { crumb: yahooCrumb, cookie: yahooCookie };
   }

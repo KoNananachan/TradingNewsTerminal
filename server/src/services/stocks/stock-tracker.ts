@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { getQuotes } from './yahoo-finance.js';
 import { broadcastQuotes } from '../websocket/ws-server.js';
+import { evaluateAlerts } from '../alerts/alert-evaluator.js';
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isRefreshing = false;
@@ -47,6 +48,20 @@ async function refreshQuotes() {
 
     broadcastQuotes(quotes);
     console.log(`[StockTracker] Refreshed ${quotes.length} quotes`);
+
+    // Evaluate price/volume alerts after quote refresh
+    try {
+      await evaluateAlerts(quotes.map(q => ({
+        symbol: q.symbol,
+        price: q.price,
+        change: q.change ?? 0,
+        changePercent: q.changePercent ?? 0,
+        volume: typeof q.volume === 'number' ? q.volume : 0,
+        avgVolume: 0,
+      })));
+    } catch (e) {
+      console.error('[StockTracker] Alert evaluation error:', e);
+    }
   } catch (err) {
     console.error('[StockTracker] Error refreshing quotes:', err);
   } finally {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
 import { useStockDetail, type StockProfile } from '../../api/hooks/use-stocks';
+import { StockChart as ChartWithIndicators } from '../chart/stock-chart';
 import {
   useWatchlist,
   useAddToWatchlist,
@@ -410,159 +410,20 @@ const RANGE_API_MAP: Record<RangeOption, string> = {
   '1D': '1d', '5D': '5d', '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', 'ALL': 'max',
 };
 
-const INTRADAY_RANGES = new Set(['1D', '5D', '1M']);
-
-function computeSMA(data: number[], period: number): (number | null)[] {
-  const result: (number | null)[] = [];
-  for (let i = 0; i < data.length; i++) {
-    if (i < period - 1) { result.push(null); continue; }
-    let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) sum += data[j];
-    result.push(sum / period);
-  }
-  return result;
-}
-
 type DetailTab = 'chart' | 'fundamentals' | 'financials';
 
 function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
   const [range, setRange] = useState<RangeOption>('1Y');
   const [detailTab, setDetailTab] = useState<DetailTab>('chart');
   const { data } = useStockDetail(symbol, { range: RANGE_API_MAP[range] });
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
+  const addChatContext = useAppStore((s) => s.addChatContext);
 
-  useEffect(() => {
-    if (!chartContainerRef.current || !data?.history?.length) return;
-
-    if (chartRef.current) {
-      chartRef.current.remove();
-      chartRef.current = null;
-    }
-
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#a1a1aa',
-        fontSize: 11,
-        fontFamily: 'JetBrains Mono',
-      },
-      grid: {
-        vertLines: { color: 'rgba(63,63,70,0.1)' },
-        horzLines: { color: 'rgba(63,63,70,0.1)' },
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: chartContainerRef.current.clientHeight,
-      crosshair: {
-        horzLine: { color: '#22c55e', labelBackgroundColor: '#22c55e' },
-        vertLine: { color: '#22c55e', labelBackgroundColor: '#22c55e' },
-      },
-      timeScale: { borderColor: 'rgba(63,63,70,0.3)' },
-      rightPriceScale: { borderColor: 'rgba(63,63,70,0.3)' },
-    });
-
-    const validHistory = data.history.filter(
-      (h) => h.open != null && h.high != null && h.low != null && h.close != null,
-    );
-
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      borderUpColor: '#22c55e',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#22c55e88',
-      wickDownColor: '#ef444488',
-    });
-
-    candleSeries.setData(
-      validHistory.map((h) => ({
-        time: h.time as any,
-        open: h.open,
-        high: h.high,
-        low: h.low,
-        close: h.close,
-      })),
-    );
-
-    // Volume histogram (bottom 20%)
-    const volumeSeries = chart.addHistogramSeries({
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
-    });
-
-    chart.priceScale('volume').applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
-
-    volumeSeries.setData(
-      validHistory.map((h) => ({
-        time: h.time as any,
-        value: h.volume ?? 0,
-        color: (h.close ?? 0) >= (h.open ?? 0) ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
-      })),
-    );
-
-    // SMA overlays (only for daily+ intervals)
-    const isIntraday = INTRADAY_RANGES.has(range);
-    if (!isIntraday && validHistory.length >= 20) {
-      const closes = validHistory.map((h) => h.close);
-
-      const sma20Data = computeSMA(closes, 20);
-      const sma20Series = chart.addLineSeries({
-        color: '#3b82f6',
-        lineWidth: 1,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-        title: 'SMA20',
-      });
-      sma20Series.setData(
-        validHistory
-          .map((h, i) => ({ time: h.time as any, value: sma20Data[i]! }))
-          .filter((p) => p.value != null),
-      );
-
-      if (validHistory.length >= 50) {
-        const sma50Data = computeSMA(closes, 50);
-        const sma50Series = chart.addLineSeries({
-          color: '#f97316',
-          lineWidth: 1,
-          priceLineVisible: false,
-          lastValueVisible: false,
-          crosshairMarkerVisible: false,
-          title: 'SMA50',
-        });
-        sma50Series.setData(
-          validHistory
-            .map((h, i) => ({ time: h.time as any, value: sma50Data[i]! }))
-            .filter((p) => p.value != null),
-        );
-      }
-    }
-
-    chart.timeScale().fitContent();
-    chartRef.current = chart;
-
-    const ro = new ResizeObserver(() => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
-    });
-    ro.observe(chartContainerRef.current);
-
-    return () => {
-      ro.disconnect();
-      chart.remove();
-      chartRef.current = null;
-    };
-  }, [data, range, detailTab]);
+  const handleAskAi = () => {
+    addChatContext({ type: 'chart', symbol, label: `${symbol} Chart` });
+  };
 
   const recs = data?.recommendations || [];
-  const isIntraday = INTRADAY_RANGES.has(range);
 
   const q = data?.quote;
   const p = data?.profile;
@@ -588,19 +449,28 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         </div>
       }
       headerRight={
-        (() => {
-          const cp = q?.changePercent;
-          if (cp === null || cp === undefined) return undefined;
-          const isUp = cp >= 0;
-          return (
-            <div className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-mono font-black ${
-              isUp ? 'bg-bullish/10 text-bullish border border-bullish/20' : 'bg-bearish/10 text-bearish border border-bearish/20'
-            }`}>
-              {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {isUp ? '+' : ''}{cp.toFixed(2)}%
-            </div>
-          );
-        })()
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleAskAi}
+            className="text-[9px] font-mono font-bold text-ai/70 hover:text-ai uppercase tracking-tighter px-1.5 py-0.5 border border-ai/20 hover:border-ai/50 transition-none"
+            title="Ask AI about this chart"
+          >
+            Ask AI
+          </button>
+          {(() => {
+            const cp = q?.changePercent;
+            if (cp === null || cp === undefined) return null;
+            const isUp = cp >= 0;
+            return (
+              <div className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-mono font-black ${
+                isUp ? 'bg-bullish/10 text-bullish border border-bullish/20' : 'bg-bearish/10 text-bearish border border-bearish/20'
+              }`}>
+                {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {isUp ? '+' : ''}{cp.toFixed(2)}%
+              </div>
+            );
+          })()}
+        </div>
       }
       className="h-full"
     >
@@ -619,37 +489,12 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
             {tab === 'chart' ? 'Chart' : tab === 'fundamentals' ? 'Profile' : 'Financials'}
           </button>
         ))}
-        {/* Range selector inline for chart tab */}
-        {detailTab === 'chart' && (
-          <div className="ml-auto flex items-center gap-0.5 pr-2">
-            {RANGE_OPTIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-2 py-0.5 text-[9px] font-mono font-black transition-all ${
-                  range === r
-                    ? 'bg-accent/20 text-accent'
-                    : 'text-neutral/50 hover:text-white'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {detailTab === 'chart' && (
-        <>
-          {/* SMA legend */}
-          {!isIntraday && (
-            <div className="shrink-0 flex items-center gap-3 px-3 py-1 bg-black/10 text-[8px] font-mono text-neutral/50">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-blue-500 inline-block" />SMA20</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-orange-500 inline-block" />SMA50</span>
-            </div>
-          )}
-          <div ref={chartContainerRef} className="flex-1 min-h-0 w-full" />
-        </>
+        <div className="flex-1 min-h-0">
+          <ChartWithIndicators symbol={symbol} range={range} onRangeChange={(r) => setRange(r as RangeOption)} />
+        </div>
       )}
 
       {detailTab === 'fundamentals' && (

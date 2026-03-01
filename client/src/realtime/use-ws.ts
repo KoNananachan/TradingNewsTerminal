@@ -136,6 +136,26 @@ export function useWebSocket() {
           addLog({ type: 'alert', message: `New signal — ${sym} ${act}` });
           break;
         }
+        case 'calendar-release': {
+          queryClient.invalidateQueries({ queryKey: ['calendar'] });
+          const eventName = msg.data?.event || 'Economic data';
+          addLog({ type: 'alert', message: `Calendar — ${eventName} released` });
+          break;
+        }
+        case 'alert-triggered': {
+          queryClient.invalidateQueries({ queryKey: ['alerts'] });
+          const alertName = msg.data?.name || 'Alert';
+          const alertMsg = msg.data?.message || '';
+          addLog({ type: 'alert', message: `Alert — ${alertName}: ${alertMsg}` });
+          useAppStore.getState().addNotification({
+            id: Date.now(),
+            title: `${alertName}: ${alertMsg}`,
+            sentiment: null,
+            symbols: msg.data?.symbol ? [msg.data.symbol] : [],
+            time: new Date(),
+          });
+          break;
+        }
       }
     },
     [queryClient],

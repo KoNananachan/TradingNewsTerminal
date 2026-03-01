@@ -5,6 +5,9 @@ import { startScraperScheduler } from './services/scraper/scraper-scheduler.js';
 import { startStockTracker } from './services/stocks/stock-tracker.js';
 import { seedDatabase } from './lib/seed.js';
 import { backupDatabase } from './lib/gcs-backup.js';
+import { startCalendarTracker } from './services/calendar/calendar-tracker.js';
+import { startInsiderTracker } from './services/stocks/insider-tracker.js';
+import { startDataRetention } from './services/data-retention.js';
 
 const app = createApp();
 
@@ -19,6 +22,9 @@ const server = app.listen(env.PORT, async () => {
   startWebSocketServer(server);
   startScraperScheduler();
   startStockTracker();
+  startCalendarTracker();
+  startInsiderTracker();
+  startDataRetention();
 
   // Periodic database backup to GCS
   if (env.GCS_BUCKET) {

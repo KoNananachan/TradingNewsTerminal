@@ -154,3 +154,115 @@ model TradeOrder {
 
   @@index([walletAddress])
 }
+
+// ── Pro Trading Features (v0.7.0) ──
+
+model EconomicEvent {
+  id         Int      @id @default(autoincrement())
+  externalId String   @unique
+  event      String
+  country    String
+  date       DateTime
+  impact     String   // high, medium, low
+  actual     String?
+  previous   String?
+  estimate   String?
+  released   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([date])
+  @@index([country])
+  @@index([impact])
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String   // price_cross, price_change_pct, sentiment_shift, news_keyword, volume_spike
+  symbol    String?
+  condition String   // JSON: { threshold, direction, keyword, etc. }
+  enabled   Boolean  @default(true)
+  triggers  AlertTrigger[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([symbol])
+  @@index([enabled])
+}
+
+model AlertTrigger {
+  id        Int      @id @default(autoincrement())
+  alertId   Int
+  alert     Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  message   String
+  value     String?  // The value that triggered (e.g. price)
+  createdAt DateTime @default(now())
+
+  @@index([alertId])
+}
+
+model NewsCluster {
+  id          Int      @id @default(autoincrement())
+  title       String
+  summary     String?
+  impactScore Float    @default(0) // 1-10
+  category    String?
+  tickers     String?  // comma-separated
+  articleCount Int     @default(0)
+  avgSentiment Float?
+  articles    NewsClusterArticle[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([impactScore])
+  @@index([createdAt])
+}
+
+model NewsClusterArticle {
+  id        Int      @id @default(autoincrement())
+  clusterId Int
+  cluster   NewsCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  articleId Int
+  createdAt DateTime @default(now())
+
+  @@unique([clusterId, articleId])
+  @@index([articleId])
+}
+
+model InsiderTrade {
+  id              Int      @id @default(autoincrement())
+  symbol          String
+  filingDate      DateTime
+  tradeDate       DateTime
+  ownerName       String
+  ownerTitle      String?
+  transactionType String   // P (Purchase), S (Sale)
+  shares          Float
+  pricePerShare   Float?
+  totalValue      Float?
+  sharesOwned     Float?
+  secFilingUrl    String?
+  createdAt       DateTime @default(now())
+
+  @@index([symbol])
+  @@index([filingDate])
+  @@index([transactionType])
+}
+
+model SentimentArchive {
+  id           Int      @id @default(autoincrement())
+  date         DateTime
+  scope        String   // ticker, category, market
+  scopeValue   String   // e.g. "AAPL", "tech", "all"
+  avgScore     Float
+  articleCount Int
+  bullishCount Int      @default(0)
+  bearishCount Int      @default(0)
+  neutralCount Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@unique([date, scope, scopeValue])
+  @@index([scope, scopeValue])
+}

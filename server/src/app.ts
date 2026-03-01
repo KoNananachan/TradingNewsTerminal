@@ -11,6 +11,14 @@ import watchlistRouter from './routes/watchlist.js';
 import auditRouter from './routes/audit.js';
 import chatRouter from './routes/chat.js';
 import conflictsRouter from './routes/conflicts.js';
+import sentimentRouter from './routes/sentiment.js';
+import sectorsRouter from './routes/sectors.js';
+import calendarRouter from './routes/calendar.js';
+import alertsRouter from './routes/alerts.js';
+import clustersRouter from './routes/clusters.js';
+import optionsRouter from './routes/options.js';
+import insidersRouter from './routes/insiders.js';
+import correlationsRouter from './routes/correlations.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +45,14 @@ export function createApp() {
   app.use('/api/audit', auditRouter);
   app.use('/api/chat', chatRouter);
   app.use('/api/conflicts', conflictsRouter);
+  app.use('/api/sentiment', sentimentRouter);
+  app.use('/api/sectors', sectorsRouter);
+  app.use('/api/calendar', calendarRouter);
+  app.use('/api/alerts', alertsRouter);
+  app.use('/api/clusters', clustersRouter);
+  app.use('/api/options', optionsRouter);
+  app.use('/api/insiders', insidersRouter);
+  app.use('/api/correlations', correlationsRouter);
 
   // Manual scrape trigger
   app.post('/api/scrape', async (_req, res) => {

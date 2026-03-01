@@ -81,6 +81,28 @@ interface AppState {
   tradingCoin: string | null;
   tradingSourceArticleId: number | null;
 
+  // Technical indicators (F3)
+  indicatorConfig: Record<string, boolean>;
+  chartDrawings: Array<{ type: string; points: Array<{ time: number; price: number }> }>;
+  activeDrawingTool: string | null;
+  setIndicatorConfig: (config: Record<string, boolean>) => void;
+  toggleIndicator: (name: string) => void;
+  setActiveDrawingTool: (tool: string | null) => void;
+  addChartDrawing: (drawing: { type: string; points: Array<{ time: number; price: number }> }) => void;
+  clearChartDrawings: () => void;
+
+  // Personalized news feed (F13)
+  categoryClicks: Record<string, number>;
+  forYouEnabled: boolean;
+  setForYouEnabled: (enabled: boolean) => void;
+  trackCategoryClick: (category: string) => void;
+
+  // AI Chat context (F15)
+  chatContexts: Array<{ type: string; id?: number; symbol?: string; label: string }>;
+  addChatContext: (ctx: { type: string; id?: number; symbol?: string; label: string }) => void;
+  removeChatContext: (index: number) => void;
+  clearChatContexts: () => void;
+
   // Settings
   settingsPanelOpen: boolean;
   settings: UserSettings;
@@ -184,6 +206,41 @@ export const useAppStore = create<AppState>()(
       // Trading coin
       tradingCoin: null,
       tradingSourceArticleId: null,
+
+      // Technical indicators (F3)
+      indicatorConfig: { sma20: true, sma50: true } as Record<string, boolean>,
+      chartDrawings: [],
+      activeDrawingTool: null,
+      setIndicatorConfig: (config) => set({ indicatorConfig: config }),
+      toggleIndicator: (name) => set((state) => ({
+        indicatorConfig: { ...state.indicatorConfig, [name]: !state.indicatorConfig[name] },
+      })),
+      setActiveDrawingTool: (tool) => set({ activeDrawingTool: tool }),
+      addChartDrawing: (drawing) => set((state) => ({
+        chartDrawings: [...state.chartDrawings, drawing],
+      })),
+      clearChartDrawings: () => set({ chartDrawings: [] }),
+
+      // Personalized news feed (F13)
+      categoryClicks: {} as Record<string, number>,
+      forYouEnabled: false,
+      setForYouEnabled: (enabled) => set({ forYouEnabled: enabled }),
+      trackCategoryClick: (category) => set((state) => ({
+        categoryClicks: {
+          ...state.categoryClicks,
+          [category]: (state.categoryClicks[category] || 0) + 1,
+        },
+      })),
+
+      // AI Chat context (F15)
+      chatContexts: [],
+      addChatContext: (ctx) => set((state) => ({
+        chatContexts: [...state.chatContexts, ctx],
+      })),
+      removeChatContext: (index) => set((state) => ({
+        chatContexts: state.chatContexts.filter((_, i) => i !== index),
+      })),
+      clearChatContexts: () => set({ chatContexts: [] }),
 
       // Settings
       settingsPanelOpen: false,
@@ -332,6 +389,9 @@ export const useAppStore = create<AppState>()(
         compareSymbols: state.compareSymbols,
         hiddenPanels: state.hiddenPanels,
         locale: state.locale,
+        indicatorConfig: state.indicatorConfig,
+        categoryClicks: state.categoryClicks,
+        forYouEnabled: state.forYouEnabled,
       }),
     }
   )

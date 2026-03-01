@@ -3,6 +3,7 @@ import { GlassCard } from '../common/glass-card';
 import { Markdown } from '../common/markdown';
 import { useChat, type ChatMessage } from '../../api/hooks/use-chat';
 import { useTickerSearch, useWatchlist } from '../../api/hooks/use-watchlist';
+import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 import {
   Send,
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
+  Paperclip,
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS_KEYS = [
@@ -37,6 +39,11 @@ export function AiChatPanel() {
 
   const { sendMessage, isStreaming, streamedText, error, clearError, abort } = useChat();
   const { data: watchlistData } = useWatchlist();
+  const chatContexts = useAppStore((s) => s.chatContexts);
+  const removeChatContext = useAppStore((s) => s.removeChatContext);
+  const addChatContext = useAppStore((s) => s.addChatContext);
+  const selectedSymbol = useAppStore((s) => s.selectedSymbol);
+  const selectedArticleId = useAppStore((s) => s.selectedArticleId);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -108,7 +115,7 @@ export function AiChatPanel() {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
       try {
-        const fullResponse = await sendMessage(msg, selectedTickers, history);
+        const fullResponse = await sendMessage(msg, selectedTickers, history, chatContexts);
         if (fullResponse) {
           setMessages((prev) => [
             ...prev,
@@ -272,6 +279,25 @@ export function AiChatPanel() {
             )}
           </div>
         </div>
+
+        {/* Context Attachments Bar (F15) */}
+        {chatContexts.length > 0 && (
+          <div className="flex items-center gap-1 px-2 py-1 border-b border-border bg-[#050505] flex-wrap">
+            <Paperclip className="w-3 h-3 text-neutral/40 shrink-0" />
+            {chatContexts.map((ctx, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 bg-[#111] border border-border/50 px-1.5 py-0.5 text-[9px] font-mono"
+              >
+                <span className="text-ai">{ctx.type === 'article' ? '📄' : ctx.type === 'chart' ? '📊' : '💼'}</span>
+                <span className="text-neutral truncate max-w-[80px]">{ctx.label}</span>
+                <button onClick={() => removeChatContext(i)} className="text-neutral/40 hover:text-bearish">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Error Banner */}
         {error && (

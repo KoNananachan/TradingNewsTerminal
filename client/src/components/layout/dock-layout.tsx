@@ -13,6 +13,16 @@ import { useAppStore } from '../../stores/use-app-store';
 // Lazy load heavy panels
 const WorldMapPanel = lazy(() => import('../panels/world-map-panel').then(m => ({ default: m.WorldMapPanel })));
 const TradingPanel = lazy(() => import('../panels/trading-panel').then(m => ({ default: m.TradingPanel })));
+const EconomicCalendarPanel = lazy(() => import('../panels/economic-calendar-panel').then(m => ({ default: m.EconomicCalendarPanel })));
+const AlertsPanel = lazy(() => import('../panels/alerts-panel').then(m => ({ default: m.AlertsPanel })));
+const SentimentPanel = lazy(() => import('../panels/sentiment-panel').then(m => ({ default: m.SentimentPanel })));
+const RiskCalculator = lazy(() => import('../panels/risk-calculator').then(m => ({ default: m.RiskCalculator })));
+const SectorRotationPanel = lazy(() => import('../panels/sector-rotation-panel').then(m => ({ default: m.SectorRotationPanel })));
+const EarningsCalendarPanel = lazy(() => import('../panels/earnings-calendar-panel').then(m => ({ default: m.EarningsCalendarPanel })));
+const OptionsFlowPanel = lazy(() => import('../panels/options-flow-panel').then(m => ({ default: m.OptionsFlowPanel })));
+const InsiderTradesPanel = lazy(() => import('../panels/insider-trades-panel').then(m => ({ default: m.InsiderTradesPanel })));
+const CorrelationMatrixPanel = lazy(() => import('../panels/correlation-matrix-panel').then(m => ({ default: m.CorrelationMatrixPanel })));
+const LiveStreamsPanel = lazy(() => import('../panels/live-streams-panel').then(m => ({ default: m.LiveStreamsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -28,7 +38,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 2; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 5; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -38,6 +48,16 @@ export const PANEL_IDS = {
   LOG: 'terminal-log',
   TRADING: 'trading',
   AI_CHAT: 'ai-chat',
+  ECON_CALENDAR: 'econ-calendar',
+  ALERTS: 'alerts',
+  SENTIMENT: 'sentiment',
+  RISK: 'risk-calculator',
+  SECTORS: 'sector-rotation',
+  EARNINGS: 'earnings-calendar',
+  OPTIONS: 'options-flow',
+  INSIDERS: 'insider-trades',
+  CORRELATIONS: 'correlation-matrix',
+  LIVE_STREAMS: 'live-streams',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -48,9 +68,26 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.LOG]: 'TERMINAL LOG',
   [PANEL_IDS.TRADING]: 'TRADING',
   [PANEL_IDS.AI_CHAT]: 'AI CHAT',
+  [PANEL_IDS.ECON_CALENDAR]: 'ECONOMIC CALENDAR',
+  [PANEL_IDS.ALERTS]: 'ALERTS',
+  [PANEL_IDS.SENTIMENT]: 'SENTIMENT',
+  [PANEL_IDS.RISK]: 'RISK CALCULATOR',
+  [PANEL_IDS.SECTORS]: 'SECTOR ROTATION',
+  [PANEL_IDS.EARNINGS]: 'EARNINGS CALENDAR',
+  [PANEL_IDS.OPTIONS]: 'OPTIONS FLOW',
+  [PANEL_IDS.INSIDERS]: 'INSIDER TRADES',
+  [PANEL_IDS.CORRELATIONS]: 'CORRELATIONS',
+  [PANEL_IDS.LIVE_STREAMS]: 'LIVE STREAMS',
 };
 
 export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
+
+/** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
+const DEFAULT_PANEL_IDS: Set<string> = new Set([
+  PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.STOCKS,
+  PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.TRADING,
+  PANEL_IDS.AI_CHAT,
+]);
 
 /*
  * Professional layout (root row = horizontal, nested row = vertical):
@@ -175,8 +212,10 @@ function loadModel(): Model {
   if (savedVersion < LAYOUT_VERSION) {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.setItem(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION));
-    const hiddenPanels = useAppStore.getState().hiddenPanels;
-    return Model.fromJson(buildLayout(hiddenPanels));
+    // New panels not in DEFAULT_LAYOUT start hidden
+    const nonDefaultPanels = ALL_PANEL_IDS.filter(id => !DEFAULT_PANEL_IDS.has(id));
+    useAppStore.setState({ hiddenPanels: nonDefaultPanels });
+    return Model.fromJson(buildLayout(nonDefaultPanels));
   }
 
   try {
@@ -201,13 +240,53 @@ export function getModel(): Model | null {
 }
 
 /**
- * Show a hidden panel: rebuild layout from default with current visible panels.
- * This ensures the panel appears in its proper position.
+ * Show a panel: if it exists in the model, select it; otherwise add it dynamically.
+ * For panels in DEFAULT_LAYOUT, falls back to rebuild + reload.
  */
-export function showPanelInLayout(_panelId: string) {
-  // Use the reset flag so beforeunload doesn't overwrite
-  localStorage.setItem(RESET_FLAG, '1');
-  window.location.reload();
+export function showPanelInLayout(panelId: string) {
+  const model = _modelRef;
+  if (!model) {
+    localStorage.setItem(RESET_FLAG, '1');
+    window.location.reload();
+    return;
+  }
+
+  // If panel already exists in model, just select it
+  const existingNode = model.getNodeById(panelId);
+  if (existingNode) {
+    model.doAction(Actions.selectTab(panelId));
+    return;
+  }
+
+  // For default panels that were pruned, rebuild from DEFAULT_LAYOUT
+  if (DEFAULT_PANEL_IDS.has(panelId)) {
+    localStorage.setItem(RESET_FLAG, '1');
+    window.location.reload();
+    return;
+  }
+
+  // Dynamically add the panel as a new tab in the active tabset
+  const activeTabset = model.getActiveTabset();
+  if (activeTabset) {
+    model.doAction(Actions.addNode(
+      { type: 'tab', name: PANEL_NAMES[panelId] || panelId, component: panelId, id: panelId },
+      activeTabset.getId(),
+      DockLocation.CENTER,
+      -1,
+    ));
+  }
+}
+
+/**
+ * Hide a panel: remove its tab from the model.
+ */
+export function hidePanelInLayout(panelId: string) {
+  const model = _modelRef;
+  if (!model) return;
+  const node = model.getNodeById(panelId);
+  if (node) {
+    model.doAction(Actions.deleteTab(panelId));
+  }
 }
 
 // Component registry
@@ -258,6 +337,16 @@ export function DockLayout() {
       case PANEL_IDS.LOG: return <TerminalLog />;
       case PANEL_IDS.TRADING: return <LazyWrap><TradingPanel /></LazyWrap>;
       case PANEL_IDS.AI_CHAT: return <AiChatPanel />;
+      case PANEL_IDS.ECON_CALENDAR: return <LazyWrap><EconomicCalendarPanel /></LazyWrap>;
+      case PANEL_IDS.ALERTS: return <LazyWrap><AlertsPanel /></LazyWrap>;
+      case PANEL_IDS.SENTIMENT: return <LazyWrap><SentimentPanel /></LazyWrap>;
+      case PANEL_IDS.RISK: return <LazyWrap><RiskCalculator /></LazyWrap>;
+      case PANEL_IDS.SECTORS: return <LazyWrap><SectorRotationPanel /></LazyWrap>;
+      case PANEL_IDS.EARNINGS: return <LazyWrap><EarningsCalendarPanel /></LazyWrap>;
+      case PANEL_IDS.OPTIONS: return <LazyWrap><OptionsFlowPanel /></LazyWrap>;
+      case PANEL_IDS.INSIDERS: return <LazyWrap><InsiderTradesPanel /></LazyWrap>;
+      case PANEL_IDS.CORRELATIONS: return <LazyWrap><CorrelationMatrixPanel /></LazyWrap>;
+      case PANEL_IDS.LIVE_STREAMS: return <LazyWrap><LiveStreamsPanel /></LazyWrap>;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return extra(node);
@@ -280,6 +369,7 @@ const RESET_FLAG = 'terminal-layout-reset';
 
 export function resetLayout() {
   localStorage.setItem(RESET_FLAG, '1');
-  useAppStore.setState({ hiddenPanels: [] });
+  const nonDefaultPanels = ALL_PANEL_IDS.filter(id => !DEFAULT_PANEL_IDS.has(id));
+  useAppStore.setState({ hiddenPanels: nonDefaultPanels });
   window.location.reload();
 }

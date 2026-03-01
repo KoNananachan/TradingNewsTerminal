@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
-import { ALL_PANEL_IDS, PANEL_NAMES, showPanelInLayout, resetLayout } from '../layout/dock-layout';
+import { ALL_PANEL_IDS, PANEL_NAMES, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
 import { Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface PanelToggleMenuProps {
@@ -29,14 +29,11 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
   const togglePanel = (panelId: string) => {
     const isHidden = hiddenPanels.includes(panelId);
     if (isHidden) {
-      // Show: update store first, then rebuild layout
       showPanel(panelId);
-      // Small delay to let zustand persist, then rebuild
-      setTimeout(() => showPanelInLayout(panelId), 50);
+      showPanelInLayout(panelId);
     } else {
-      // Hide: update store, then rebuild layout without this panel
       hidePanel(panelId);
-      setTimeout(() => showPanelInLayout(''), 50); // triggers rebuild + reload
+      hidePanelInLayout(panelId);
     }
   };
 
