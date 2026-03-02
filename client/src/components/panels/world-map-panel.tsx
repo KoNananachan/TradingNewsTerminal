@@ -27,7 +27,6 @@ interface IndexQuote {
 
 const EXCHANGE_CITIES = [
   { city: 'New York', exchange: 'NYSE', lng: -74.01, lat: 40.71, primary: 'S&P 500', indices: ['S&P 500', 'DOW', 'NASDAQ', 'Russell 2K'] },
-  { city: 'Chicago', exchange: 'CBOE', lng: -87.63, lat: 41.88, primary: 'VIX', indices: ['VIX'] },
   { city: 'Toronto', exchange: 'TSX', lng: -79.38, lat: 43.65, primary: 'TSX', indices: ['TSX'] },
   { city: 'London', exchange: 'LSE', lng: -0.09, lat: 51.51, primary: 'FTSE 100', indices: ['FTSE 100'] },
   { city: 'Paris', exchange: 'Euronext', lng: 2.35, lat: 48.86, primary: 'CAC 40', indices: ['CAC 40'] },
