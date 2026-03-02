@@ -266,3 +266,44 @@ model SentimentArchive {
   @@unique([date, scope, scopeValue])
   @@index([scope, scopeValue])
 }
+
+// ── Auth & Billing (v0.9.0) ──
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  email                String        @unique
+  name                 String?
+  avatarUrl            String?
+  googleId             String?       @unique
+  plan                 String        @default("free") // "free" | "pro"
+  stripeCustomerId     String?       @unique
+  stripeSubscriptionId String?
+  planExpiresAt        DateTime?
+  // Alpaca trading
+  alpacaApiKey         String?
+  alpacaSecretKey      String?
+  alpacaPaper          Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  sessions             AuthSession[]
+}
+
+model AuthSession {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([token])
+}
+
+model VerificationCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([email, code])
+}

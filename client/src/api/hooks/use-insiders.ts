@@ -16,10 +16,22 @@ export interface InsiderTrade {
   clusterBuy?: boolean;
 }
 
+interface InsiderTradesResponse {
+  trades: InsiderTrade[];
+  clusterBuys: Array<{ symbol: string; count: number }>;
+}
+
 export function useInsiderTrades(symbols: string[], days: number = 30) {
   return useQuery<InsiderTrade[]>({
     queryKey: ['insiders', symbols.join(','), days],
-    queryFn: () => api.get(`/insiders?symbols=${symbols.join(',')}&days=${days}`),
+    queryFn: async () => {
+      const resp = await api.get<InsiderTradesResponse>(`/insiders?symbols=${symbols.join(',')}&days=${days}`);
+      const clusterSymbols = new Set((resp.clusterBuys || []).map(cb => cb.symbol));
+      return (resp.trades || []).map(t => ({
+        ...t,
+        clusterBuy: clusterSymbols.has(t.symbol),
+      }));
+    },
     enabled: symbols.length > 0,
     refetchInterval: 300_000,
   });

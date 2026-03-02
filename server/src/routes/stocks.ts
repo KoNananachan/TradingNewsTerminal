@@ -11,6 +11,13 @@ const INDICES = [
   '^FTSE',   // FTSE 100
   '^N225',   // Nikkei 225
   '^HSI',    // Hang Seng
+  '^GDAXI',  // DAX (Germany)
+  '^FCHI',   // CAC 40 (France)
+  '000001.SS', // Shanghai Composite
+  '^BSESN',  // Sensex (India)
+  '^AXJO',   // ASX 200 (Australia)
+  '^KS11',   // KOSPI (South Korea)
+  '^GSPTSE', // TSX (Canada)
   'GC=F',    // Gold
   'CL=F',    // Crude Oil
   'BTC-USD', // Bitcoin
@@ -20,6 +27,8 @@ const INDICES = [
 const DISPLAY_NAMES: Record<string, string> = {
   '^GSPC': 'S&P 500', '^DJI': 'DOW', '^IXIC': 'NASDAQ', '^RUT': 'Russell 2K',
   '^VIX': 'VIX', '^FTSE': 'FTSE 100', '^N225': 'Nikkei', '^HSI': 'Hang Seng',
+  '^GDAXI': 'DAX', '^FCHI': 'CAC 40', '000001.SS': 'Shanghai', '^BSESN': 'Sensex',
+  '^AXJO': 'ASX 200', '^KS11': 'KOSPI', '^GSPTSE': 'TSX',
   'GC=F': 'Gold', 'CL=F': 'Crude Oil', 'BTC-USD': 'BTC', 'DX-Y.NYB': 'DXY',
 };
 

@@ -24,13 +24,11 @@ router.get('/', async (req, res) => {
       take: limit,
     });
 
-    // Fetch article details for each cluster
-    const result = await Promise.all(
-      clusters.map(async (cluster) => {
-        const articleIds = cluster.articles.map(a => a.articleId);
-
-        const articleDetails = await prisma.newsArticle.findMany({
-          where: { id: { in: articleIds } },
+    // Batch fetch all article details in a single query (avoid N+1)
+    const allArticleIds = clusters.flatMap(c => c.articles.map(a => a.articleId));
+    const allArticleDetails = allArticleIds.length > 0
+      ? await prisma.newsArticle.findMany({
+          where: { id: { in: allArticleIds } },
           select: {
             id: true,
             title: true,
@@ -43,23 +41,26 @@ router.get('/', async (req, res) => {
               select: { symbol: true, action: true },
             },
           },
-        });
+        })
+      : [];
+    const articleMap = new Map(allArticleDetails.map(a => [a.id, a]));
 
-        return {
-          id: cluster.id,
-          title: cluster.title,
-          summary: cluster.summary,
-          impactScore: cluster.impactScore,
-          category: cluster.category,
-          tickers: cluster.tickers ? cluster.tickers.split(',') : [],
-          articleCount: cluster.articleCount,
-          avgSentiment: cluster.avgSentiment,
-          createdAt: cluster.createdAt,
-          updatedAt: cluster.updatedAt,
-          articles: articleDetails,
-        };
-      })
-    );
+    const result = clusters.map((cluster) => {
+      const articleIds = cluster.articles.map(a => a.articleId);
+      return {
+        id: cluster.id,
+        title: cluster.title,
+        summary: cluster.summary,
+        impactScore: cluster.impactScore,
+        category: cluster.category,
+        tickers: cluster.tickers ? cluster.tickers.split(',') : [],
+        articleCount: cluster.articleCount,
+        avgSentiment: cluster.avgSentiment,
+        createdAt: cluster.createdAt,
+        updatedAt: cluster.updatedAt,
+        articles: articleIds.map(id => articleMap.get(id)).filter(Boolean),
+      };
+    });
 
     res.json(result);
   } catch (err) {

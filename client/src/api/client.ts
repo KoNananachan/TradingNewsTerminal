@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/use-auth-store';
+
 const BASE_URL = '/api';
 
 export class ApiError extends Error {
@@ -10,6 +12,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...init?.headers,
@@ -17,6 +20,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      useAuthStore.getState().setLoginModalOpen(true);
+    }
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new ApiError(res.status, body.error || res.statusText);
   }

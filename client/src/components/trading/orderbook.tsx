@@ -1,4 +1,4 @@
-import { useL2Book, useAllMids } from '../../hooks/use-hyperliquid';
+import { useL2Book, useCombinedMids } from '../../hooks/use-hyperliquid';
 
 interface OrderbookProps {
   coin: string;
@@ -6,7 +6,7 @@ interface OrderbookProps {
 
 export function Orderbook({ coin }: OrderbookProps) {
   const { data: book } = useL2Book(coin);
-  const { data: mids } = useAllMids();
+  const { data: mids } = useCombinedMids();
 
   const midPrice = mids?.[coin] ? parseFloat(mids[coin]) : null;
   const bids = book?.levels?.[0]?.slice(0, 12) ?? [];

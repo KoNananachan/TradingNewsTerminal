@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNews } from '../../api/hooks/use-news';
 import { useNewsClusters } from '../../api/hooks/use-clusters';
+import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { GlassCard } from '../common/glass-card';
-import { Badge } from '../common/badge';
 import { CategorySidebar } from './category-sidebar';
 import { cleanTitle } from '../../utils/clean-title';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useT } from '../../i18n';
 import { Actions } from 'flexlayout-react';
 import { getModel, PANEL_IDS } from '../layout/dock-layout';
-import { Clock, MapPin, Zap, TrendingUp, TrendingDown, Minus, Layers } from 'lucide-react';
+import { MapPin, Zap, Layers, Lock, Search, X } from 'lucide-react';
 
 export function NewsFeed() {
   const selectedCategory = useAppStore((s) => s.selectedCategory);
@@ -24,15 +24,29 @@ export function NewsFeed() {
   const categoryClicks = useAppStore((s) => s.categoryClicks);
   const trackCategoryClick = useAppStore((s) => s.trackCategoryClick);
   const tabSymbols = useAppStore((s) => s.tabSymbols);
+  const { data: serverWatchlist } = useWatchlist();
   const hlAssets = useHyperliquidAssets();
+  const user = useAuthStore((s) => s.user);
+  const isPro = useAuthStore((s) => s.isPro);
+  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
+  const setUpgradeModalOpen = useAuthStore((s) => s.setUpgradeModalOpen);
+  const setSearchQuery = useAppStore((s) => s.setSearchQuery);
   const t = useT();
   const [viewMode, setViewMode] = useState<'articles' | 'clusters'>('articles');
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(localSearch), 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, setSearchQuery]);
   const { data: clustersData } = useNewsClusters(20, 3);
 
-  // Collect all watchlist symbols for personalized scoring
-  const watchlistSymbols = new Set(
-    Object.values(tabSymbols).flat()
-  );
+  // Collect all watchlist symbols for personalized scoring (both localStorage tabs + server)
+  const watchlistSymbols = new Set([
+    ...Object.values(tabSymbols).flat(),
+    ...(serverWatchlist?.map(w => w.symbol) || []),
+  ]);
 
   // Personalized scoring function (F13)
   const scoreArticle = (article: any): number => {
@@ -118,6 +132,23 @@ export function NewsFeed() {
       </div>
       <CategorySidebar />
 
+      {/* Search Bar */}
+      <div className="flex items-center gap-2 px-2 py-1 border-b border-border bg-black/60">
+        <Search className="w-3 h-3 text-neutral/50 shrink-0" />
+        <input
+          type="text"
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          placeholder={t('searchNews')}
+          className="flex-1 bg-transparent text-[10px] font-mono text-white placeholder:text-neutral/40 outline-none"
+        />
+        {localSearch && (
+          <button onClick={() => { setLocalSearch(''); setSearchQuery(''); }} className="text-neutral hover:text-accent">
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
       {/* View Mode Toggle: ARTICLES | CLUSTERS */}
       <div className="flex border-b border-border bg-black">
         <button
@@ -149,10 +180,15 @@ export function NewsFeed() {
             <span className="text-[10px] font-mono text-accent animate-pulse uppercase">{t('synchronizing')}</span>
           </div>
         )}
-        
+
+        {!isLoading && data?.articles?.length === 0 && (
+          <div className="flex items-center justify-center h-32">
+            <span className="text-[10px] font-mono text-neutral uppercase">{t('noResults')}</span>
+          </div>
+        )}
+
         <div className="flex flex-col">
-          <AnimatePresence initial={false}>
-            {(forYouEnabled
+          {(forYouEnabled
               ? [...(data?.articles || [])].sort((a, b) => scoreArticle(b) - scoreArticle(a))
               : data?.articles || []
             ).map((article, index) => {
@@ -201,21 +237,53 @@ export function NewsFeed() {
                   {/* Signal Column */}
                   <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/30 pl-2">
                     {article.recommendations.length > 0 ? (
-                      article.recommendations.slice(0, 2).map((rec) => {
-                        const tradeable = hlAssets.has(rec.symbol);
-                        return (
-                          <div
-                            key={rec.id}
-                            onClick={(e) => handleTickerClick(rec.symbol, e)}
-                            className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
-                            style={{ color: getActionColor(rec.action) }}
-                            title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
-                          >
-                            <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
-                            {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
-                          </div>
-                        );
-                      })
+                      <>
+                        {/* First ticker always visible */}
+                        {article.recommendations.slice(0, 1).map((rec) => {
+                          const tradeable = hlAssets.has(rec.symbol);
+                          return (
+                            <div
+                              key={rec.id}
+                              onClick={(e) => handleTickerClick(rec.symbol, e)}
+                              className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
+                              style={{ color: getActionColor(rec.action) }}
+                              title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
+                            >
+                              <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
+                              {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
+                            </div>
+                          );
+                        })}
+                        {/* Additional tickers: blurred for non-Pro */}
+                        {article.recommendations.length > 1 && (
+                          isPro() ? (
+                            article.recommendations.slice(1, 2).map((rec) => {
+                              const tradeable = hlAssets.has(rec.symbol);
+                              return (
+                                <div
+                                  key={rec.id}
+                                  onClick={(e) => handleTickerClick(rec.symbol, e)}
+                                  className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
+                                  style={{ color: getActionColor(rec.action) }}
+                                  title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
+                                >
+                                  <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
+                                  {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div
+                              onClick={(e) => { e.stopPropagation(); user ? setUpgradeModalOpen(true) : setLoginModalOpen(true); }}
+                              className="flex items-center gap-1 font-mono text-[9px] font-bold text-neutral/30 cursor-pointer hover:text-accent/50"
+                              title="Upgrade to Pro"
+                            >
+                              <Lock className="w-2.5 h-2.5" />
+                              <span className="blur-[3px] select-none">XXXX</span>
+                            </div>
+                          )
+                        )}
+                      </>
                     ) : (
                       <span className="text-[8px] font-mono text-neutral/20 uppercase tracking-tighter">---</span>
                     )}
@@ -226,7 +294,6 @@ export function NewsFeed() {
                 </button>
               );
             })}
-          </AnimatePresence>
         </div>
       </div>
       </>
@@ -283,6 +350,7 @@ export function NewsFeed() {
           )}
         </div>
       )}
+
     </GlassCard>
   );
 }

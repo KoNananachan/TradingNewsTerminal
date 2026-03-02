@@ -19,6 +19,13 @@ const envSchema = z.object({
   GCS_BUCKET: z.string().default(''),
   GCS_BACKUP_INTERVAL_MINUTES: z.coerce.number().default(5),
   FMP_API_KEY: z.string().default(''),
+  // Auth & Billing
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  RESEND_API_KEY: z.string().default(''),
+  RESEND_FROM_EMAIL: z.string().default('noreply@resend.dev'),
+  STRIPE_SECRET_KEY: z.string().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().default(''),
+  STRIPE_PRICE_ID: z.string().default(''),
 });
 
 export const env = envSchema.parse(process.env);

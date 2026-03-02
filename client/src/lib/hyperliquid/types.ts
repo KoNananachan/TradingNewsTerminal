@@ -108,6 +108,15 @@ export interface SpotUserState {
   balances: SpotBalance[];
 }
 
+export interface AssetCtx {
+  markPx: string;
+  funding: string;
+  openInterest: string;
+  dayNtlVlm: string;
+  prevDayPx: string;
+  impactPxs: [string, string];
+}
+
 export interface FundingRate {
   coin: string;
   fundingRate: string;

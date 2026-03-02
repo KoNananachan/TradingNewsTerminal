@@ -4,15 +4,20 @@ import { NewsDetail } from './components/panels/news-detail';
 import { CommandPalette } from './components/common/command-palette';
 import { BreakingNewsFlash } from './components/common/breaking-news';
 import { KeyboardHUD, ShortcutsModal } from './components/common/keyboard-hud';
+import { LoginModal } from './components/auth/login-modal';
+import { ProUpgradeModal } from './components/auth/pro-upgrade-modal';
 import { useWebSocket } from './realtime/use-ws';
 import { useKeyboard } from './hooks/use-keyboard';
 import { useSessionTracker } from './hooks/use-session-tracker';
+import { useAuth, useBillingSync } from './api/hooks/use-auth';
 import { useAppStore } from './stores/use-app-store';
 
 export default function App() {
   useWebSocket();
   useKeyboard();
   useSessionTracker();
+  useAuth();
+  useBillingSync();
   const theme = useAppStore((s) => s.settings.theme);
 
   useEffect(() => {
@@ -22,6 +27,8 @@ export default function App() {
   return (
     <>
       <AppShell />
+      <LoginModal />
+      <ProUpgradeModal />
       <NewsDetail />
       <CommandPalette />
       <BreakingNewsFlash />

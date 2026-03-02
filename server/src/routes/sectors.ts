@@ -3,6 +3,15 @@ import { getHistory, getQuotes } from '../services/stocks/yahoo-finance.js';
 
 const router = Router();
 
+// In-memory cache (5 min TTL)
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 5 * 60_000;
+function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
+  return fn().then(data => { cache.set(key, { data, ts: Date.now() }); return data; });
+}
+
 const SECTOR_ETFS = ['XLK', 'XLV', 'XLF', 'XLE', 'XLI', 'XLC', 'XLY', 'XLP', 'XLRE', 'XLB', 'XLU'];
 
 const SECTOR_NAMES: Record<string, string> = {
@@ -41,10 +50,10 @@ router.get('/performance', async (req, res) => {
     const period = (req.query.period as string) || '1M';
     const range = PERIOD_RANGE_MAP[period] || '1mo';
 
-    const [quotes, ...histories] = await Promise.all([
+    const [quotes, ...histories] = await cached(`perf:${range}`, () => Promise.all([
       getQuotes(SECTOR_ETFS),
       ...SECTOR_ETFS.map(symbol => getHistory(symbol, { range })),
-    ]);
+    ]));
 
     const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
 
@@ -70,11 +79,11 @@ router.get('/performance', async (req, res) => {
 // GET /api/sectors/rotation
 router.get('/rotation', async (req, res) => {
   try {
-    // Fetch 1M and 3M histories for all ETFs
-    const [histories1M, histories3M] = await Promise.all([
+    // Fetch 1M and 3M histories for all ETFs (cached)
+    const [histories1M, histories3M] = await cached('rotation', () => Promise.all([
       Promise.all(SECTOR_ETFS.map(symbol => getHistory(symbol, { range: '1mo' }))),
       Promise.all(SECTOR_ETFS.map(symbol => getHistory(symbol, { range: '3mo' }))),
-    ]);
+    ]));
 
     const sectors = SECTOR_ETFS.map((symbol, i) => {
       const momentum = calculateReturn(histories1M[i]); // 1M return

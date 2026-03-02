@@ -8,6 +8,8 @@ import { backupDatabase } from './lib/gcs-backup.js';
 import { startCalendarTracker } from './services/calendar/calendar-tracker.js';
 import { startInsiderTracker } from './services/stocks/insider-tracker.js';
 import { startDataRetention } from './services/data-retention.js';
+import { fetchConflicts } from './services/acled/acled-client.js';
+import { prisma } from './lib/prisma.js';
 
 const app = createApp();
 
@@ -25,6 +27,25 @@ const server = app.listen(env.PORT, async () => {
   startCalendarTracker();
   startInsiderTracker();
   startDataRetention();
+
+  // Pre-warm conflicts cache so first client request is instant
+  fetchConflicts().catch(() => {});
+
+  // Clean up expired sessions and verification codes every hour
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const [sessions, codes] = await Promise.all([
+        prisma.authSession.deleteMany({ where: { expiresAt: { lt: now } } }),
+        prisma.verificationCode.deleteMany({ where: { expiresAt: { lt: now } } }),
+      ]);
+      if (sessions.count || codes.count) {
+        console.log(`[Auth] Cleaned ${sessions.count} expired sessions, ${codes.count} expired codes`);
+      }
+    } catch (err) {
+      console.error('[Auth] Cleanup error:', err);
+    }
+  }, 60 * 60 * 1000);
 
   // Periodic database backup to GCS
   if (env.GCS_BUCKET) {

@@ -1,8 +1,6 @@
 import { useRecommendations } from '../../api/hooks/use-recommendations';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
-// lucide-react icons removed (title moved to flexlayout tab)
-import { motion, AnimatePresence } from 'framer-motion';
 
 const ACTION_COLORS: Record<string, string> = {
   BUY: '#10b981',
@@ -21,8 +19,7 @@ export function AiInsights() {
     >
       <div className="flex-1 overflow-auto no-scrollbar bg-black flex flex-col">
         <div className="p-1 space-y-1">
-          <AnimatePresence>
-            {recommendations?.map((rec, index) => {
+          {recommendations?.map((rec, index) => {
               const color = ACTION_COLORS[rec.action] ?? '#cccccc';
               return (
                 <div
@@ -65,7 +62,6 @@ export function AiInsights() {
                 </div>
               );
             })}
-          </AnimatePresence>
         </div>
         
         {(!recommendations || recommendations.length === 0) && (

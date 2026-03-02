@@ -1,115 +1,14 @@
 import { prisma } from '../../lib/prisma.js';
+import { getInsiderTransactions } from './yahoo-finance.js';
 
 const POLL_INTERVAL = 30 * 60_000; // 30 minutes
-const SEC_UA = 'TradingNewsWeb/1.0 (contact@tradingnews.app)';
 let intervalId: ReturnType<typeof setInterval> | null = null;
-
-function toDateString(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-interface SecFiling {
-  accessionNo: string;
-  filedAt: string;
-  formType: string;
-  description: string;
-  primaryDocument: string;
-  fileUrl: string;
-}
-
-interface ParsedInsiderTrade {
-  symbol: string;
-  filingDate: Date;
-  tradeDate: Date;
-  ownerName: string;
-  ownerTitle: string | null;
-  transactionType: string; // P or S
-  shares: number;
-  pricePerShare: number | null;
-  totalValue: number | null;
-  secFilingUrl: string | null;
-}
-
-async function fetchCIK(symbol: string): Promise<string | null> {
-  try {
-    const url = `https://efts.sec.gov/LATEST/search-index?q=%22${encodeURIComponent(symbol)}%22&forms=4&dateRange=custom&startdt=${toDateString(new Date(Date.now() - 30 * 24 * 60 * 60_000))}&enddt=${toDateString(new Date())}`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': SEC_UA, Accept: 'application/json' },
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json() as any;
-    // Extract CIK from first result if available
-    const hits = data?.hits?.hits;
-    if (Array.isArray(hits) && hits.length > 0) {
-      const cik = hits[0]?._source?.entity_id || hits[0]?._source?.ciks?.[0];
-      return cik ? String(cik) : null;
-    }
-    return null;
-  } catch (err) {
-    console.error(`[InsiderTracker] Error fetching CIK for ${symbol}:`, err instanceof Error ? err.message : err);
-    return null;
-  }
-}
-
-async function fetchRecentFilings(symbol: string): Promise<ParsedInsiderTrade[]> {
-  const trades: ParsedInsiderTrade[] = [];
-
-  try {
-    const today = new Date();
-    const startDate = toDateString(new Date(today.getTime() - 30 * 24 * 60 * 60_000));
-    const endDate = toDateString(today);
-
-    // Use the SEC full-text search for Form 4 filings related to this ticker
-    const url = `https://efts.sec.gov/LATEST/search-index?q=%22${encodeURIComponent(symbol)}%22&forms=4&dateRange=custom&startdt=${startDate}&enddt=${endDate}`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': SEC_UA, Accept: 'application/json' },
-    });
-
-    if (!resp.ok) {
-      console.error(`[InsiderTracker] SEC API error for ${symbol}: ${resp.status}`);
-      return trades;
-    }
-
-    const data = await resp.json() as any;
-    const hits = data?.hits?.hits;
-
-    if (!Array.isArray(hits)) return trades;
-
-    for (const hit of hits.slice(0, 10)) { // Process max 10 filings per symbol
-      const source = hit._source;
-      if (!source) continue;
-
-      const filingDate = source.file_date ? new Date(source.file_date) : new Date();
-      const ownerName = source.display_names?.[0] || 'Unknown';
-
-      // Parse basic info from the filing metadata
-      // Note: Full XML parsing of Form 4 is complex; we extract what we can from metadata
-      trades.push({
-        symbol: symbol.toUpperCase(),
-        filingDate,
-        tradeDate: filingDate, // Best approximation from metadata
-        ownerName,
-        ownerTitle: null,
-        transactionType: 'P', // Default; would need XML parsing for accuracy
-        shares: 0,
-        pricePerShare: null,
-        totalValue: null,
-        secFilingUrl: source.file_url || null,
-      });
-    }
-  } catch (err) {
-    console.error(`[InsiderTracker] Error fetching filings for ${symbol}:`, err instanceof Error ? err.message : err);
-  }
-
-  return trades;
-}
 
 async function pollInsiderTrades() {
   try {
-    // Get tracked symbols from the database
     const trackedStocks = await prisma.trackedStock.findMany({
       select: { symbol: true },
-      take: 20, // Limit to avoid rate limiting
+      take: 20,
     });
 
     if (trackedStocks.length === 0) return;
@@ -117,40 +16,46 @@ async function pollInsiderTrades() {
     console.log(`[InsiderTracker] Checking insider trades for ${trackedStocks.length} symbols`);
 
     for (const stock of trackedStocks) {
-      const trades = await fetchRecentFilings(stock.symbol);
+      const txns = await getInsiderTransactions(stock.symbol);
 
-      for (const trade of trades) {
-        // Generate a unique key for deduplication
-        const uniqueKey = `${trade.symbol}-${trade.ownerName}-${toDateString(trade.filingDate)}`;
+      for (const t of txns) {
+        const tradeDate = new Date(t.transactionDate);
+        const filingDate = t.filingDate ? new Date(t.filingDate) : tradeDate;
 
-        // Check if this trade already exists
+        // Skip trades older than 90 days
+        if (Date.now() - tradeDate.getTime() > 90 * 24 * 60 * 60_000) continue;
+
+        // Dedup by symbol + owner + date + shares + type
         const existing = await prisma.insiderTrade.findFirst({
           where: {
-            symbol: trade.symbol,
-            ownerName: trade.ownerName,
-            filingDate: trade.filingDate,
+            symbol: stock.symbol,
+            ownerName: t.ownerName,
+            tradeDate,
+            shares: t.shares,
+            transactionType: t.transactionType,
           },
         });
-
         if (existing) continue;
+
+        const pricePerShare = t.value && t.shares ? Math.round((t.value / t.shares) * 100) / 100 : null;
 
         await prisma.insiderTrade.create({
           data: {
-            symbol: trade.symbol,
-            filingDate: trade.filingDate,
-            tradeDate: trade.tradeDate,
-            ownerName: trade.ownerName,
-            ownerTitle: trade.ownerTitle,
-            transactionType: trade.transactionType,
-            shares: trade.shares,
-            pricePerShare: trade.pricePerShare,
-            totalValue: trade.totalValue,
-            secFilingUrl: trade.secFilingUrl,
+            symbol: stock.symbol,
+            filingDate,
+            tradeDate,
+            ownerName: t.ownerName,
+            ownerTitle: t.ownerTitle,
+            transactionType: t.transactionType,
+            shares: t.shares,
+            pricePerShare,
+            totalValue: t.value,
+            secFilingUrl: null,
           },
         });
       }
 
-      // Small delay between symbols to respect SEC rate limits
+      // Small delay between symbols to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
@@ -162,7 +67,7 @@ async function pollInsiderTrades() {
 
 export function startInsiderTracker() {
   console.log('[InsiderTracker] Starting insider tracker (30min interval)');
-  pollInsiderTrades(); // immediate first run
+  pollInsiderTrades();
   intervalId = setInterval(pollInsiderTrades, POLL_INTERVAL);
 }
 

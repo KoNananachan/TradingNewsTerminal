@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
-import { ALL_PANEL_IDS, PANEL_NAMES, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
+import { ALL_PANEL_IDS, getLocalizedPanelName, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
 import { Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface PanelToggleMenuProps {
@@ -14,6 +14,7 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
   const hiddenPanels = useAppStore((s) => s.hiddenPanels);
   const hidePanel = useAppStore((s) => s.hidePanel);
   const showPanel = useAppStore((s) => s.showPanel);
+  useAppStore((s) => s.locale); // subscribe to locale changes for i18n panel names
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +72,7 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
                   <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
                     isHidden ? 'text-neutral/50' : 'text-white'
                   }`}>
-                    {PANEL_NAMES[panelId] || panelId}
+                    {getLocalizedPanelName(panelId)}
                   </span>
                 </button>
               );

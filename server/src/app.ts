@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import newsRouter from './routes/news.js';
@@ -19,6 +20,10 @@ import clustersRouter from './routes/clusters.js';
 import optionsRouter from './routes/options.js';
 import insidersRouter from './routes/insiders.js';
 import correlationsRouter from './routes/correlations.js';
+import authRouter from './routes/auth.js';
+import billingRouter, { billingWebhookHandler } from './routes/billing.js';
+import alpacaRouter from './routes/alpaca.js';
+import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,10 +37,18 @@ export function createApp() {
     typeof value === 'bigint' ? Number(value) : value,
   );
 
-  app.use(cors());
+  // Stripe webhook must come BEFORE express.json() — needs raw body
+  app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), billingWebhookHandler);
+
+  app.use(cors({ origin: true, credentials: true }));
+  app.use(cookieParser());
   app.use(express.json());
+  app.use(attachUser);
 
   // Routes
+  app.use('/api/auth', authRouter);
+  app.use('/api/billing', billingRouter);
+  app.use('/api/alpaca', alpacaRouter);
   app.use('/api/news', newsRouter);
   app.use('/api/stocks', stocksRouter);
   app.use('/api/recommendations', recommendationsRouter);

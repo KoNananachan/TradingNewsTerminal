@@ -5,7 +5,8 @@ import { Activity, Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2 } fr
 import { NotificationPanel } from '../common/notification-panel';
 import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { OnboardingTooltip } from '../common/onboarding-tooltip';
+import { UserMenu } from '../auth/user-menu';
 
 export function TopBar() {
   const [localTime, setLocalTime] = useState(getLocalTime());
@@ -71,6 +72,7 @@ export function TopBar() {
               <LayoutGrid className="w-4 h-4" />
             </button>
             <PanelToggleMenu open={panelMenuOpen} onClose={() => setPanelMenuOpen(false)} containerRef={panelMenuRef} />
+            <OnboardingTooltip />
           </div>
 
           {/* Fullscreen */}
@@ -124,35 +126,7 @@ export function TopBar() {
 
         <div className="h-5 w-px bg-border mx-1" />
 
-        <ConnectButton.Custom>
-          {({ account, chain, openAccountModal, openConnectModal, mounted }) => {
-            const connected = mounted && account && chain;
-            return (
-              <div
-                {...(!mounted && {
-                  'aria-hidden': true,
-                  style: { opacity: 0, pointerEvents: 'none' as const, userSelect: 'none' as const },
-                })}
-              >
-                {!connected ? (
-                  <button
-                    onClick={openConnectModal}
-                    className="flex items-center gap-1.5 px-2 py-1 border border-accent bg-black text-accent text-[10px] font-bold font-mono uppercase tracking-widest hover:bg-accent hover:text-black transition-colors"
-                  >
-                    {t('connect')}
-                  </button>
-                ) : (
-                  <button
-                    onClick={openAccountModal}
-                    className="flex items-center gap-1.5 px-2 py-1 border border-border bg-black text-[10px] font-mono text-accent hover:border-accent"
-                  >
-                    {account.displayName}
-                  </button>
-                )}
-              </div>
-            );
-          }}
-        </ConnectButton.Custom>
+        <UserMenu />
 
         <div className="h-5 w-px bg-border mx-1" />
 

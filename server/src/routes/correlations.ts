@@ -3,6 +3,10 @@ import { getCorrelationMatrix } from '../services/stocks/correlation.js';
 
 const router = Router();
 
+// In-memory cache (10 min TTL — correlations change slowly)
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 10 * 60_000;
+
 const CORRELATION_ASSETS = ['^GSPC', '^IXIC', 'GC=F', 'CL=F', 'BTC-USD', 'DX-Y.NYB', '^TNX', '^VIX'];
 const DISPLAY_NAMES = ['S&P 500', 'NASDAQ', 'Gold', 'Oil', 'Bitcoin', 'DXY', '10Y Treasury', 'VIX'];
 
@@ -15,13 +19,22 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    const result = await getCorrelationMatrix(CORRELATION_ASSETS, period);
+    const cacheKey = `corr:${period}`;
+    const entry = cache.get(cacheKey);
+    if (entry && Date.now() - entry.ts < CACHE_TTL) {
+      res.json(entry.data);
+      return;
+    }
 
-    res.json({
+    const result = await getCorrelationMatrix(CORRELATION_ASSETS, period);
+    const payload = {
       symbols: result.symbols,
       names: DISPLAY_NAMES,
       matrix: result.matrix,
-    });
+    };
+    cache.set(cacheKey, { data: payload, ts: Date.now() });
+
+    res.json(payload);
   } catch (err) {
     console.error('[Correlations] Error computing correlation matrix:', err);
     res.status(500).json({ error: 'Failed to compute correlations' });

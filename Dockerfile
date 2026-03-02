@@ -8,9 +8,12 @@ COPY client/package.json client/
 
 RUN npm ci
 
+ARG VITE_GOOGLE_CLIENT_ID=""
+
 COPY server/ server/
 COPY client/ client/
 
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build -w client
 RUN npx prisma generate --schema=server/prisma/schema.prisma
 RUN npm run build -w server

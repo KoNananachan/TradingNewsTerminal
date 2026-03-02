@@ -70,22 +70,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// DELETE /api/watchlist/:symbol - remove ticker
-router.delete('/:symbol', async (req, res) => {
-  try {
-    const sym = req.params.symbol.toUpperCase();
-
-    await prisma.trackedStock.deleteMany({ where: { symbol: sym } });
-    await prisma.stockQuote.deleteMany({ where: { symbol: sym } });
-
-    res.json({ symbol: sym, removed: true });
-  } catch (err) {
-    console.error('[Watchlist] Error removing:', err);
-    res.status(500).json({ error: 'Failed to remove symbol' });
-  }
-});
-
 // GET /api/watchlist/search?q=... - search Yahoo Finance for ticker suggestions
+// NOTE: Must be defined BEFORE /:symbol to prevent Express from matching "search" as a symbol
 router.get('/search', async (req, res) => {
   try {
     const q = (req.query.q as string || '').trim();
@@ -111,6 +97,21 @@ router.get('/search', async (req, res) => {
   } catch (err) {
     console.error('[Watchlist] Search error:', err);
     res.json([]);
+  }
+});
+
+// DELETE /api/watchlist/:symbol - remove ticker
+router.delete('/:symbol', async (req, res) => {
+  try {
+    const sym = req.params.symbol.toUpperCase();
+
+    await prisma.trackedStock.deleteMany({ where: { symbol: sym } });
+    await prisma.stockQuote.deleteMany({ where: { symbol: sym } });
+
+    res.json({ symbol: sym, removed: true });
+  } catch (err) {
+    console.error('[Watchlist] Error removing:', err);
+    res.status(500).json({ error: 'Failed to remove symbol' });
   }
 });
 

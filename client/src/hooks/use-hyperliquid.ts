@@ -10,7 +10,9 @@ import {
   getSpotBalances,
   getMeta,
   getSpotMeta,
+  getStockPerpMetaAndCtxs,
 } from '../lib/hyperliquid/api';
+import type { AllMids } from '../lib/hyperliquid/types';
 
 // Refresh intervals
 const FAST = 3_000;   // prices, orderbook
@@ -48,6 +50,36 @@ export function useSpotMeta() {
     queryFn: getSpotMeta,
     refetchInterval: SLOW,
   });
+}
+
+export function useStockPerps() {
+  return useQuery({
+    queryKey: ['hl', 'stockPerps'],
+    queryFn: getStockPerpMetaAndCtxs,
+    refetchInterval: FAST,
+  });
+}
+
+/** Combined mid prices: regular allMids + stock perp markPx */
+export function useCombinedMids(): { data: AllMids | undefined } {
+  const { data: mids } = useAllMids();
+  const { data: stockPerps } = useStockPerps();
+
+  const data = useMemo(() => {
+    if (!mids && !stockPerps) return undefined;
+    const combined: AllMids = {};
+    if (mids) Object.assign(combined, mids);
+    if (stockPerps) {
+      const [meta, ctxs] = stockPerps;
+      for (let i = 0; i < meta.universe.length; i++) {
+        const markPx = ctxs[i]?.markPx;
+        if (markPx) combined[meta.universe[i].name] = markPx;
+      }
+    }
+    return combined;
+  }, [mids, stockPerps]);
+
+  return { data };
 }
 
 export function useHyperliquidAssets(): Set<string> {

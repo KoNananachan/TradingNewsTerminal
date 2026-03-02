@@ -265,19 +265,11 @@ function UpcomingView() {
   );
 }
 
-export function EconomicCalendarPanel() {
+export function EconomicCalendarContent() {
   const [view, setView] = useState<ViewMode>('calendar');
 
   return (
-    <GlassCard
-      title={
-        <span className="flex items-center gap-1.5">
-          <CalendarDays className="w-3 h-3" />
-          ECONOMIC CALENDAR
-        </span>
-      }
-      className="h-full"
-    >
+    <>
       {/* View toggle */}
       <div className="shrink-0 flex items-center border-b border-border/30 bg-black/20">
         {(['calendar', 'upcoming'] as ViewMode[]).map((v) => (
@@ -296,6 +288,22 @@ export function EconomicCalendarPanel() {
       </div>
 
       {view === 'calendar' ? <CalendarView /> : <UpcomingView />}
+    </>
+  );
+}
+
+export function EconomicCalendarPanel() {
+  return (
+    <GlassCard
+      title={
+        <span className="flex items-center gap-1.5">
+          <CalendarDays className="w-3 h-3" />
+          ECONOMIC CALENDAR
+        </span>
+      }
+      className="h-full"
+    >
+      <EconomicCalendarContent />
     </GlassCard>
   );
 }

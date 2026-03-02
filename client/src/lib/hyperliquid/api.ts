@@ -1,6 +1,7 @@
 // Hyperliquid REST API client
 import type {
   AllMids,
+  AssetCtx,
   L2Book,
   UserState,
   UserFill,
@@ -39,6 +40,10 @@ export function getMeta(): Promise<Universe> {
 
 export function getSpotMeta(): Promise<SpotMeta> {
   return postInfo({ type: 'spotMeta' });
+}
+
+export function getStockPerpMetaAndCtxs(): Promise<[Universe, AssetCtx[]]> {
+  return postInfo({ type: 'metaAndAssetCtxs', dex: 'xyz' });
 }
 
 export function getFundingRates(coin: string, startTime: number, endTime?: number): Promise<FundingRate[]> {

@@ -1,6 +1,5 @@
 import { useCategories } from '../../api/hooks/use-categories';
 import { useAppStore } from '../../stores/use-app-store';
-import { motion } from 'framer-motion';
 
 export function CategorySidebar() {
   const { data: categories } = useCategories();

@@ -175,6 +175,7 @@ export async function getQuotes(symbols: string[]) {
           change: r.regularMarketChange ?? null,
           changePercent: r.regularMarketChangePercent ?? null,
           volume: r.regularMarketVolume ?? null,
+          avgVolume: r.averageDailyVolume3Month ?? null,
           marketCap: r.marketCap ?? null,
           dayHigh: r.regularMarketDayHigh ?? null,
           dayLow: r.regularMarketDayLow ?? null,
@@ -363,4 +364,108 @@ function parseProfileResponse(data: any): StockProfile | null {
     debtToEquity: fd.debtToEquity?.raw ?? null,
     currentRatio: fd.currentRatio?.raw ?? null,
   };
+}
+
+// ── Insider Transactions via quoteSummary ──
+
+export interface YahooInsiderTx {
+  ownerName: string;
+  ownerTitle: string | null;
+  transactionType: string; // 'P' purchase, 'S' sale
+  shares: number;
+  value: number | null;
+  transactionDate: string; // ISO date
+  filingDate: string | null;
+}
+
+export async function getInsiderTransactions(symbol: string): Promise<YahooInsiderTx[]> {
+  try {
+    const auth = await ensureCrumb();
+    if (!auth) return [];
+
+    const url = `${YAHOO_API}/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=insiderTransactions&crumb=${encodeURIComponent(auth.crumb)}`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_UA, 'Cookie': auth.cookie },
+    });
+
+    if (resp.status === 401) {
+      yahooCrumb = null;
+      const retry = await ensureCrumb();
+      if (!retry) return [];
+      const retryUrl = `${YAHOO_API}/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=insiderTransactions&crumb=${encodeURIComponent(retry.crumb)}`;
+      const retryResp = await fetch(retryUrl, {
+        headers: { 'User-Agent': YAHOO_UA, 'Cookie': retry.cookie },
+      });
+      if (!retryResp.ok) return [];
+      return parseInsiderResponse(await retryResp.json());
+    }
+
+    if (!resp.ok) return [];
+    return parseInsiderResponse(await resp.json());
+  } catch (err) {
+    console.error(`[Yahoo] Error fetching insider tx for ${symbol}:`, err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
+function parseInsiderResponse(data: any): YahooInsiderTx[] {
+  const txns = data?.quoteSummary?.result?.[0]?.insiderTransactions?.transactions;
+  if (!Array.isArray(txns)) return [];
+
+  const results = txns
+    .filter((t: any) => t.shares?.raw && t.startDate?.raw)
+    .map((t: any) => {
+      const shares = Math.abs(t.shares.raw);
+      const txDate = new Date(t.startDate.raw * 1000).toISOString().slice(0, 10);
+      const text = (t.transactionText || '').toLowerCase();
+
+      // Parse transaction type and price from transactionText
+      let txType = 'A'; // Default to Award if unknown
+      let price: number | null = null;
+
+      if (text.includes('sale')) {
+        txType = 'S';
+      } else if (text.includes('purchase')) {
+        txType = 'P';
+      } else if (text.includes('award') || text.includes('grant')) {
+        txType = 'A';
+      } else if (text.includes('gift')) {
+        txType = 'G';
+      } else if (text.includes('exercise')) {
+        txType = 'X';
+      } else if (t.shares.raw < 0) {
+        txType = 'S';
+      } else if (t.value?.raw > 0) {
+        // Has real value → likely a purchase
+        txType = 'P';
+      }
+
+      // Extract price from "at price X.XX per share"
+      const priceMatch = text.match(/price\s+([\d.]+)\s+per/);
+      if (priceMatch) {
+        const parsed = parseFloat(priceMatch[1]);
+        if (parsed > 0) price = parsed;
+      }
+
+      const value = t.value?.raw && t.value.raw > 0 ? t.value.raw : (price && shares ? Math.round(price * shares) : null);
+
+      return {
+        ownerName: t.filerName || 'Unknown',
+        ownerTitle: t.filerRelation || null,
+        transactionType: txType,
+        shares,
+        value,
+        transactionDate: txDate,
+        filingDate: txDate,
+      };
+    });
+
+  // Deduplicate (Yahoo sometimes returns the same transaction multiple times)
+  const seen = new Set<string>();
+  return results.filter(r => {
+    const key = `${r.ownerName}|${r.transactionDate}|${r.shares}|${r.transactionType}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

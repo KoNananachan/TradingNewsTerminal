@@ -1,10 +1,17 @@
 import { useState, useMemo } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useInsiderTrades, type InsiderTrade } from '../../api/hooks/use-insiders';
+import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
 import { Users } from 'lucide-react';
 
 const DAYS_OPTIONS = [7, 14, 30, 90] as const;
+const TYPE_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'PS', label: 'Buy/Sell' },
+  { value: 'P', label: 'Buy' },
+  { value: 'S', label: 'Sell' },
+] as const;
 
 function formatCompact(n: number | null | undefined): string {
   if (n == null) return '--';
@@ -19,58 +26,78 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function InsiderTradesPanel() {
+export function InsiderTradesContent() {
   const [days, setDays] = useState<number>(30);
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   const watchlistTabs = useAppStore((s) => s.tabSymbols);
+  const { data: serverWatchlist } = useWatchlist();
   const symbols = useMemo(() => {
     const allSymbols = new Set<string>();
+    // From tab assignments (localStorage)
     for (const syms of Object.values(watchlistTabs)) {
       for (const s of syms) allSymbols.add(s);
     }
+    // From server-side watchlist
+    if (serverWatchlist) {
+      for (const item of serverWatchlist) allSymbols.add(item.symbol);
+    }
     return Array.from(allSymbols);
-  }, [watchlistTabs]);
+  }, [watchlistTabs, serverWatchlist]);
 
   const { data, isLoading, error } = useInsiderTrades(symbols, days);
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol);
 
   const trades = useMemo(() => {
     if (!data?.length) return [];
-    return [...data].sort((a, b) => new Date(b.tradeDate).getTime() - new Date(a.tradeDate).getTime());
-  }, [data]);
+    let filtered = data;
+    if (typeFilter === 'PS') {
+      filtered = data.filter(t => t.transactionType === 'P' || t.transactionType === 'S');
+    } else if (typeFilter !== 'ALL') {
+      filtered = data.filter(t => t.transactionType === typeFilter);
+    }
+    return [...filtered].sort((a, b) => new Date(b.tradeDate).getTime() - new Date(a.tradeDate).getTime());
+  }, [data, typeFilter]);
 
   return (
-    <GlassCard
-      title={
-        <span className="flex items-center gap-1.5">
-          <Users className="w-3 h-3" />
-          INSIDER TRADES
-        </span>
-      }
-      headerRight={
-        <span className="text-[8px] font-mono text-neutral/50">
-          {trades.length} trades
-        </span>
-      }
-      className="h-full"
-    >
-      {/* Days selector */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-black/20">
-        <span className="text-[8px] font-mono text-neutral/50 uppercase">Range:</span>
-        <div className="flex items-center gap-0.5">
-          {DAYS_OPTIONS.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`px-2 py-0.5 text-[9px] font-mono font-black transition-all ${
-                days === d
-                  ? 'bg-accent/20 text-accent'
-                  : 'text-neutral/50 hover:text-white'
-              }`}
-            >
-              {d}D
-            </button>
-          ))}
+    <>
+      {/* Filters */}
+      <div className="shrink-0 flex items-center gap-3 px-3 py-1.5 border-b border-border/30 bg-black/20">
+        <div className="flex items-center gap-1">
+          <span className="text-[8px] font-mono text-neutral/50 uppercase">Range:</span>
+          <div className="flex items-center gap-0.5">
+            {DAYS_OPTIONS.map((d) => (
+              <button
+                key={d}
+                onClick={() => setDays(d)}
+                className={`px-2 py-0.5 text-[9px] font-mono font-black transition-all ${
+                  days === d
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-neutral/50 hover:text-white'
+                }`}
+              >
+                {d}D
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[8px] font-mono text-neutral/50 uppercase">Type:</span>
+          <div className="flex items-center gap-0.5">
+            {TYPE_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setTypeFilter(f.value)}
+                className={`px-2 py-0.5 text-[9px] font-mono font-black transition-all ${
+                  typeFilter === f.value
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-neutral/50 hover:text-white'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -110,7 +137,15 @@ export function InsiderTradesPanel() {
         )}
 
         {trades.map((trade) => {
-          const isPurchase = trade.transactionType === 'P' || trade.transactionType.toLowerCase().includes('purchase');
+          const typeColor = trade.transactionType === 'P' ? 'text-bullish'
+            : trade.transactionType === 'S' ? 'text-bearish'
+            : 'text-neutral/50';
+          const typeLabel = trade.transactionType === 'P' ? 'P'
+            : trade.transactionType === 'S' ? 'S'
+            : trade.transactionType === 'A' ? 'A'
+            : trade.transactionType === 'G' ? 'G'
+            : trade.transactionType === 'X' ? 'X'
+            : trade.transactionType;
 
           return (
             <button
@@ -126,10 +161,8 @@ export function InsiderTradesPanel() {
               <span className="font-bold text-accent">{trade.symbol}</span>
               <span className="text-gray-300 truncate pr-2">{trade.ownerName}</span>
               <span className="text-neutral/40 truncate">{trade.ownerTitle ?? '--'}</span>
-              <span
-                className={`font-bold text-center ${isPurchase ? 'text-bullish' : 'text-bearish'}`}
-              >
-                {isPurchase ? 'P' : 'S'}
+              <span className={`font-bold text-center ${typeColor}`}>
+                {typeLabel}
               </span>
               <span className="text-right text-gray-300">{formatCompact(trade.shares)}</span>
               <span className="text-right text-gray-400">
@@ -142,6 +175,22 @@ export function InsiderTradesPanel() {
           );
         })}
       </div>
+    </>
+  );
+}
+
+export function InsiderTradesPanel() {
+  return (
+    <GlassCard
+      title={
+        <span className="flex items-center gap-1.5">
+          <Users className="w-3 h-3" />
+          INSIDER TRADES
+        </span>
+      }
+      className="h-full"
+    >
+      <InsiderTradesContent />
     </GlassCard>
   );
 }

@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-03-02
+
+### Added
+- **User Authentication:** Google OAuth + email verification code login
+  - Session-based auth with httpOnly cookies (30-day expiry)
+  - Login modal with terminal-style UI
+  - User menu with plan info and logout
+- **Stripe Billing:** $20/month Pro subscription
+  - Checkout Session + Customer Portal integration
+  - Webhook handling for subscription lifecycle events
+  - Pro lock overlay on AI Chat and AI Insights panels
+- **Hyperliquid Stock Perps:** Full support for xyz dex stock perpetual contracts
+  - New `getStockPerpMetaAndCtxs()` API for xyz builder-deployed markets
+  - Combined mid prices (allMids + stock perp markPx) for orderbook and trade form
+  - 49 stock perps (AAPL, TSLA, NVDA, AMZN, GOOGL, MSFT, META, etc.) with S-PERP badge
+- **Global Stock Exchange Markers on World Map:** Toggle-able HTML badge markers
+  - 12 major exchanges (NYSE, NASDAQ, LSE, TSE, SSE, HKEX, etc.) with live index data
+  - Click popup showing all indices for each exchange city
+- **News Keyword Search:** Debounced search bar in news feed with i18n support
+- **7 Additional Global Indices:** DAX, CAC 40, Shanghai Composite, Sensex, ASX 200, KOSPI, TSX
+- **Alpaca Trading Channel:** Paper/live stock trading via Alpaca API
+- **i18n System:** 6 languages (EN, 中文, 日本語, 한국어, Español, Français)
+- **New User Onboarding Tooltip:** Panel discovery prompt on first visit
+- **Live Streams as Default Panel:** Placed in left-bottom tabset
+
+### Changed
+- Economic Calendar and Insider Trades now appear as independent draggable tabs alongside News Feed and World Map (layout version 7)
+- Conflicts data: lowered MIN_COUNT from 200 to 15, extended timespan from 3d to 7d, increased maxpoints to 1000
+- API client sends credentials for cookie-based auth
+- CORS configured with `credentials: true`
+
+### Fixed
+- Conflicts panel showing very few data points due to overly restrictive GDELT filters
+- Conflicts cache pre-warming on server startup for instant first load
+
 ## [0.7.0] - 2026-03-01
 
 ### Added

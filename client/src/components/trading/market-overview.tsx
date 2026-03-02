@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useAllMids, useMeta } from '../../hooks/use-hyperliquid';
+import { useAllMids, useMeta, useStockPerps } from '../../hooks/use-hyperliquid';
 import { useStockQuotes } from '../../api/hooks/use-stocks';
 import { useT } from '../../i18n';
 import { Search } from 'lucide-react';
@@ -9,10 +9,10 @@ interface MarketItem {
   displayName?: string;
   price: number;
   changePercent: number | null;
-  type: 'crypto' | 'stock' | 'commodity';
+  type: MarketType;
 }
 
-export type MarketType = 'crypto' | 'stock' | 'commodity';
+export type MarketType = 'crypto' | 'stock' | 'stock-perp' | 'commodity';
 
 // Hyperliquid perps that are actually commodity/index proxies
 const COMMODITY_PERPS: Record<string, string> = {
@@ -27,6 +27,7 @@ interface MarketOverviewProps {
 export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewProps) {
   const { data: mids } = useAllMids();
   const { data: meta } = useMeta();
+  const { data: stockPerps } = useStockPerps();
   const { data: stocks } = useStockQuotes();
   const t = useT();
   const [filter, setFilter] = useState('');
@@ -38,6 +39,25 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
     if (stocks) {
       for (const s of stocks) {
         result.push({ symbol: s.symbol, price: s.price, changePercent: s.changePercent, type: 'stock' });
+      }
+    }
+
+    // Hyperliquid stock perps (xyz dex)
+    if (stockPerps) {
+      const [spMeta, spCtxs] = stockPerps;
+      for (let i = 0; i < spMeta.universe.length; i++) {
+        const asset = spMeta.universe[i];
+        const ctx = spCtxs[i];
+        if (ctx?.markPx) {
+          const displayName = asset.name.startsWith('xyz:') ? asset.name.slice(4) : asset.name;
+          result.push({
+            symbol: asset.name,
+            displayName,
+            price: parseFloat(ctx.markPx),
+            changePercent: null,
+            type: 'stock-perp',
+          });
+        }
       }
     }
 
@@ -58,17 +78,18 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
       }
     }
 
-    // Sort: stocks → commodities → crypto
+    // Sort: stocks → stock-perps → commodities → crypto
     const PRIORITY_STOCKS = ['AAPL', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'MSFT', 'META', 'AMD', 'NFLX', 'COIN', 'MSTR', 'JPM', 'V', 'BA', 'DIS', 'INTC', 'PYPL', 'UBER', 'SQ', 'PLTR'];
-    const TYPE_ORDER = { stock: 0, commodity: 1, crypto: 2 };
+    const TYPE_ORDER: Record<string, number> = { stock: 0, 'stock-perp': 1, commodity: 2, crypto: 3 };
     result.sort((a, b) => {
-      // Type ordering: stock → commodity → crypto
-      const typeOrd = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+      const typeOrd = (TYPE_ORDER[a.type] ?? 9) - (TYPE_ORDER[b.type] ?? 9);
       if (typeOrd !== 0) return typeOrd;
-      // Within stocks: priority list first
-      if (a.type === 'stock') {
-        const ai = PRIORITY_STOCKS.indexOf(a.symbol);
-        const bi = PRIORITY_STOCKS.indexOf(b.symbol);
+      // Within stocks / stock-perps: priority list first
+      if (a.type === 'stock' || a.type === 'stock-perp') {
+        const aName = a.displayName ?? a.symbol;
+        const bName = b.displayName ?? b.symbol;
+        const ai = PRIORITY_STOCKS.indexOf(aName);
+        const bi = PRIORITY_STOCKS.indexOf(bName);
         if (ai !== -1 && bi !== -1) return ai - bi;
         if (ai !== -1) return -1;
         if (bi !== -1) return 1;
@@ -79,7 +100,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
     if (!filter) return result;
     const q = filter.toUpperCase();
     return result.filter((m) => m.symbol.includes(q));
-  }, [mids, meta, stocks, filter]);
+  }, [mids, meta, stockPerps, stocks, filter]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -112,11 +133,13 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
               <span className={`text-[7px] px-1 border uppercase tracking-wider font-black ${
                 m.type === 'commodity'
                   ? 'text-amber-400/70 border-amber-400/20'
-                  : m.type === 'crypto'
-                    ? 'text-yellow-400/70 border-yellow-400/20'
-                    : 'text-blue-400/70 border-blue-400/20'
+                  : m.type === 'stock-perp'
+                    ? 'text-violet-400/70 border-violet-400/20'
+                    : m.type === 'crypto'
+                      ? 'text-yellow-400/70 border-yellow-400/20'
+                      : 'text-blue-400/70 border-blue-400/20'
               }`}>
-                {m.type === 'commodity' ? 'CMDTY' : m.type === 'crypto' ? 'PERP' : 'STK'}
+                {m.type === 'commodity' ? 'CMDTY' : m.type === 'stock-perp' ? 'S-PERP' : m.type === 'crypto' ? 'PERP' : 'STK'}
               </span>
             </div>
             <div className="text-right">
@@ -131,7 +154,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
         ))}
         {items.length === 0 && (
           <div className="text-center py-6 text-neutral/40 text-[9px] font-mono uppercase">
-            {mids || stocks ? t('noMarkets') : t('loadingMarkets')}
+            {mids || stocks || stockPerps ? t('noMarkets') : t('loadingMarkets')}
           </div>
         )}
       </div>

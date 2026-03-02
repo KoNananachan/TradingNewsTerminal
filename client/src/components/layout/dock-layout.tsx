@@ -8,7 +8,9 @@ import { StockPanel } from '../panels/stock-panel';
 import { AiInsights } from '../panels/ai-insights';
 import { AiChatPanel } from '../panels/ai-chat-panel';
 import { TerminalLog } from '../layout/terminal-log';
+import { ProLockOverlay } from '../auth/pro-lock-overlay';
 import { useAppStore } from '../../stores/use-app-store';
+import { translations, type TranslationKey } from '../../i18n/translations';
 
 // Lazy load heavy panels
 const WorldMapPanel = lazy(() => import('../panels/world-map-panel').then(m => ({ default: m.WorldMapPanel })));
@@ -38,7 +40,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 5; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 7; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -80,13 +82,45 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.LIVE_STREAMS]: 'LIVE STREAMS',
 };
 
+/** Maps panel IDs to i18n translation keys */
+export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
+  [PANEL_IDS.NEWS]: 'panelNewsFeed',
+  [PANEL_IDS.MAP]: 'panelWorldMap',
+  [PANEL_IDS.STOCKS]: 'panelMarketWatch',
+  [PANEL_IDS.AI]: 'panelAiInsights',
+  [PANEL_IDS.LOG]: 'panelTerminalLog',
+  [PANEL_IDS.TRADING]: 'panelTrading',
+  [PANEL_IDS.AI_CHAT]: 'panelAiChat',
+  [PANEL_IDS.ECON_CALENDAR]: 'panelEconCalendar',
+  [PANEL_IDS.ALERTS]: 'panelAlerts',
+  [PANEL_IDS.SENTIMENT]: 'panelSentiment',
+  [PANEL_IDS.RISK]: 'panelRiskCalc',
+  [PANEL_IDS.SECTORS]: 'panelSectorRotation',
+  [PANEL_IDS.EARNINGS]: 'panelEarningsCalendar',
+  [PANEL_IDS.OPTIONS]: 'panelOptionsFlow',
+  [PANEL_IDS.INSIDERS]: 'panelInsiderTrades',
+  [PANEL_IDS.CORRELATIONS]: 'panelCorrelations',
+  [PANEL_IDS.LIVE_STREAMS]: 'panelLiveStreams',
+};
+
+/** Get localized panel name (non-hook, reads locale from store directly) */
+export function getLocalizedPanelName(panelId: string): string {
+  const locale = useAppStore.getState().locale;
+  const key = PANEL_NAME_KEYS[panelId];
+  if (key) {
+    return translations[locale]?.[key] ?? translations.en[key];
+  }
+  return PANEL_NAMES[panelId] || panelId;
+}
+
 export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 
 /** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
   PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.STOCKS,
   PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.TRADING,
-  PANEL_IDS.AI_CHAT,
+  PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
+  PANEL_IDS.ECON_CALENDAR, PANEL_IDS.INSIDERS,
 ]);
 
 /*
@@ -94,12 +128,13 @@ const DEFAULT_PANEL_IDS: Set<string> = new Set([
  *
  * +--- 20% ---+---------- 50% ----------+------- 30% -------+
  * |           |                          | MARKET WATCH (tab) |
- * |           |                          | AI INSIGHTS  (tab) |
- * | NEWS FEED |        WORLD MAP         | (55%)              |
- * |           |         (70%)            +--------------------+
- * |           |                          | TRADING            |
- * |           +--------------------------+ (45%)              |
- * |           |     TERMINAL LOG (30%)   |                    |
+ * | NEWS FEED |                          | AI INSIGHTS  (tab) |
+ * | (65%)     |        WORLD MAP         | AI CHAT      (tab) |
+ * |           |         (70%)            | (55%)              |
+ * +-----------+                          +--------------------+
+ * | LIVE      +--------------------------+ TRADING            |
+ * | STREAMS   |     TERMINAL LOG (30%)   | (45%)              |
+ * | (35%)     |                          |                    |
  * +-----------+--------------------------+--------------------+
  */
 const DEFAULT_LAYOUT: IJsonModel = {
@@ -118,12 +153,26 @@ const DEFAULT_LAYOUT: IJsonModel = {
     type: 'row', // L0 horizontal: children are side-by-side
     weight: 100,
     children: [
-      // Left column: News Feed (full height)
+      // Left column: News Feed on top, Live Streams on bottom (L1 vertical)
       {
-        type: 'tabset',
+        type: 'row',
         weight: 20,
         children: [
-          { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
+          {
+            type: 'tabset',
+            weight: 65,
+            children: [
+              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
+              { type: 'tab', name: 'ECONOMIC CALENDAR', component: PANEL_IDS.ECON_CALENDAR, id: PANEL_IDS.ECON_CALENDAR },
+            ],
+          },
+          {
+            type: 'tabset',
+            weight: 35,
+            children: [
+              { type: 'tab', name: 'LIVE STREAMS', component: PANEL_IDS.LIVE_STREAMS, id: PANEL_IDS.LIVE_STREAMS },
+            ],
+          },
         ],
       },
       // Center column: Map on top, Log on bottom (L1 vertical)
@@ -136,6 +185,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             weight: 70,
             children: [
               { type: 'tab', name: 'WORLD MAP', component: PANEL_IDS.MAP, id: PANEL_IDS.MAP },
+              { type: 'tab', name: 'INSIDER TRADES', component: PANEL_IDS.INSIDERS, id: PANEL_IDS.INSIDERS },
             ],
           },
           {
@@ -269,7 +319,7 @@ export function showPanelInLayout(panelId: string) {
   const activeTabset = model.getActiveTabset();
   if (activeTabset) {
     model.doAction(Actions.addNode(
-      { type: 'tab', name: PANEL_NAMES[panelId] || panelId, component: panelId, id: panelId },
+      { type: 'tab', name: getLocalizedPanelName(panelId), component: panelId, id: panelId },
       activeTabset.getId(),
       DockLocation.CENTER,
       -1,
@@ -333,10 +383,10 @@ export function DockLayout() {
       case PANEL_IDS.NEWS: return <NewsFeed />;
       case PANEL_IDS.MAP: return <LazyWrap><WorldMapPanel /></LazyWrap>;
       case PANEL_IDS.STOCKS: return <StockPanel />;
-      case PANEL_IDS.AI: return <AiInsights />;
+      case PANEL_IDS.AI: return <ProLockOverlay><AiInsights /></ProLockOverlay>;
       case PANEL_IDS.LOG: return <TerminalLog />;
       case PANEL_IDS.TRADING: return <LazyWrap><TradingPanel /></LazyWrap>;
-      case PANEL_IDS.AI_CHAT: return <AiChatPanel />;
+      case PANEL_IDS.AI_CHAT: return <ProLockOverlay><AiChatPanel /></ProLockOverlay>;
       case PANEL_IDS.ECON_CALENDAR: return <LazyWrap><EconomicCalendarPanel /></LazyWrap>;
       case PANEL_IDS.ALERTS: return <LazyWrap><AlertsPanel /></LazyWrap>;
       case PANEL_IDS.SENTIMENT: return <LazyWrap><SentimentPanel /></LazyWrap>;

@@ -111,8 +111,8 @@ async function runRetention() {
 
     const now = new Date();
 
-    // Article retention: 30 days
-    const articleCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    // Article retention: 7 days
+    const articleCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
 
     // Archive sentiment before deleting
     await archiveSentimentAggregates(articleCutoff);
@@ -139,7 +139,7 @@ async function runRetention() {
       const deleted = await prisma.newsArticle.deleteMany({
         where: { scrapedAt: { lt: articleCutoff } },
       });
-      console.log(`[DataRetention] Deleted ${deleted.count} articles older than 30 days`);
+      console.log(`[DataRetention] Deleted ${deleted.count} articles older than 7 days`);
     }
 
     // Clean up empty clusters

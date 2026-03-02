@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useOptionsFlow, type OptionsFlow } from '../../api/hooks/use-options';
+import { useWatchlist as useWatchlistData } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
 import { Zap } from 'lucide-react';
 
@@ -23,14 +24,17 @@ function formatDate(dateStr: string): string {
 
 export function OptionsFlowPanel() {
   const watchlistTabs = useAppStore((s) => s.tabSymbols);
-  const activeTab = useAppStore((s) => s.activeWatchlistTab);
+  const { data: serverWatchlist } = useWatchlistData();
   const watchlistSymbols = useMemo(() => {
     const allSymbols = new Set<string>();
     for (const syms of Object.values(watchlistTabs)) {
       for (const s of syms) allSymbols.add(s);
     }
+    if (serverWatchlist) {
+      for (const item of serverWatchlist) allSymbols.add(item.symbol);
+    }
     return Array.from(allSymbols);
-  }, [watchlistTabs]);
+  }, [watchlistTabs, serverWatchlist]);
 
   const [manualInput, setManualInput] = useState('');
   const [useWatchlist, setUseWatchlist] = useState(true);

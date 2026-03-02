@@ -57,7 +57,7 @@ async function refreshQuotes() {
         change: q.change ?? 0,
         changePercent: q.changePercent ?? 0,
         volume: typeof q.volume === 'number' ? q.volume : 0,
-        avgVolume: 0,
+        avgVolume: typeof (q as any).avgVolume === 'number' ? (q as any).avgVolume : 0,
       })));
     } catch (e) {
       console.error('[StockTracker] Alert evaluation error:', e);

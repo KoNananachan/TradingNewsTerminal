@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useQuery } from '@tanstack/react-query';
 import { useMapEvents, type MapEvent } from '../../api/hooks/use-map-events';
 import { useConflicts, type ConflictEvent } from '../../api/hooks/use-conflicts';
+import { api } from '../../api/client';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { cleanTitle } from '../../utils/clean-title';
-import { Crosshair, Zap, Maximize2, Minimize2, Flame } from 'lucide-react';
+import { Crosshair, Zap, Maximize2, Minimize2, Flame, TrendingUp } from 'lucide-react';
 
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const SOURCE_ID = 'news-events';
@@ -16,6 +18,33 @@ const FLASH_LAYER = 'flash-ring';
 const CONFLICT_SOURCE = 'conflict-zones';
 const CONFLICT_HEAT_LAYER = 'conflict-heat';
 const CONFLICT_POINTS_LAYER = 'conflict-points';
+interface IndexQuote {
+  symbol: string;
+  price: number;
+  change: number | null;
+  changePercent: number | null;
+}
+
+const EXCHANGE_CITIES = [
+  { city: 'New York', exchange: 'NYSE', lng: -74.01, lat: 40.71, primary: 'S&P 500', indices: ['S&P 500', 'DOW', 'NASDAQ', 'Russell 2K'] },
+  { city: 'Chicago', exchange: 'CBOE', lng: -87.63, lat: 41.88, primary: 'VIX', indices: ['VIX'] },
+  { city: 'Toronto', exchange: 'TSX', lng: -79.38, lat: 43.65, primary: 'TSX', indices: ['TSX'] },
+  { city: 'London', exchange: 'LSE', lng: -0.09, lat: 51.51, primary: 'FTSE 100', indices: ['FTSE 100'] },
+  { city: 'Paris', exchange: 'Euronext', lng: 2.35, lat: 48.86, primary: 'CAC 40', indices: ['CAC 40'] },
+  { city: 'Frankfurt', exchange: 'XETRA', lng: 8.68, lat: 50.11, primary: 'DAX', indices: ['DAX'] },
+  { city: 'Mumbai', exchange: 'BSE', lng: 72.88, lat: 19.08, primary: 'Sensex', indices: ['Sensex'] },
+  { city: 'Shanghai', exchange: 'SSE', lng: 121.47, lat: 31.23, primary: 'Shanghai', indices: ['Shanghai'] },
+  { city: 'Hong Kong', exchange: 'HKEX', lng: 114.16, lat: 22.28, primary: 'Hang Seng', indices: ['Hang Seng'] },
+  { city: 'Seoul', exchange: 'KRX', lng: 126.98, lat: 37.57, primary: 'KOSPI', indices: ['KOSPI'] },
+  { city: 'Tokyo', exchange: 'TSE', lng: 139.77, lat: 35.68, primary: 'Nikkei', indices: ['Nikkei'] },
+  { city: 'Sydney', exchange: 'ASX', lng: 151.21, lat: -33.87, primary: 'ASX 200', indices: ['ASX 200'] },
+];
+
+function formatMapPrice(price: number): string {
+  if (price >= 10000) return price.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (price >= 100) return price.toFixed(1);
+  return price.toFixed(2);
+}
 
 function getSentimentColor(sentiment: string | null): string {
   if (sentiment === 'BULLISH') return '#22c55e';
@@ -98,7 +127,14 @@ export function WorldMapPanel() {
 
   const { data: conflicts } = useConflicts();
   const [showConflicts, setShowConflicts] = useState(true);
+  const [showExchanges, setShowExchanges] = useState(true);
+  const { data: indexQuotes } = useQuery({
+    queryKey: ['indices'],
+    queryFn: () => api.get<IndexQuote[]>('/stocks/indices'),
+    refetchInterval: 60_000,
+  });
 
+  const exchangeMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -350,6 +386,8 @@ export function WorldMapPanel() {
       destroyed = true;
       setIsMapReady(false);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      exchangeMarkersRef.current.forEach(m => m.remove());
+      exchangeMarkersRef.current = [];
       observer.disconnect();
       mapRef.current = null;
       map.remove();
@@ -446,11 +484,102 @@ export function WorldMapPanel() {
     }
   }, [isMapReady, conflicts, showConflicts]);
 
+  // Update exchange HTML markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old markers
+    exchangeMarkersRef.current.forEach(m => m.remove());
+    exchangeMarkersRef.current = [];
+
+    if (!showExchanges || !indexQuotes || !isMapReady) return;
+
+    const quoteMap = new Map(indexQuotes.map(q => [q.symbol, q]));
+
+    for (const city of EXCHANGE_CITIES) {
+      const pq = quoteMap.get(city.primary);
+      if (!pq) continue;
+
+      const pct = pq.changePercent ?? 0;
+      const up = pct >= 0;
+      const rgb = up ? '34,197,94' : '239,68,68';
+      const hex = up ? '#22c55e' : '#ef4444';
+      const arrow = up ? '▲' : '▼';
+
+      const el = document.createElement('div');
+      el.style.cssText = `
+        display:flex;flex-direction:column;align-items:center;
+        padding:2px 5px;border-radius:3px;cursor:pointer;
+        font-family:'JetBrains Mono',monospace;
+        background:rgba(${rgb},0.2);
+        border:1px solid rgba(${rgb},0.6);
+        box-shadow:0 0 10px rgba(${rgb},0.25);
+        pointer-events:auto;
+      `;
+      el.innerHTML = `
+        <span style="font-size:7px;font-weight:900;color:rgba(255,255,255,0.7);letter-spacing:0.08em;line-height:1;">${city.exchange}</span>
+        <span style="font-size:9px;font-weight:900;color:${hex};line-height:1.3;">${arrow}${Math.abs(pct).toFixed(2)}%</span>
+      `;
+
+      el.addEventListener('click', (evt) => {
+        evt.stopPropagation();
+        const indices = city.indices.map(sym => quoteMap.get(sym)).filter(Boolean) as IndexQuote[];
+        const hc = up ? '#22c55e' : '#ef4444';
+        const rows = indices.map(q => {
+          const qUp = (q.changePercent ?? 0) >= 0;
+          const clr = qUp ? '#22c55e' : '#ef4444';
+          const ar = qUp ? '▲' : '▼';
+          const p = q.changePercent != null ? `${ar} ${Math.abs(q.changePercent).toFixed(2)}%` : '';
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <span style="font-size:11px;color:#f4f4f5;font-weight:700;">${q.symbol}</span>
+              <div style="text-align:right;">
+                <span style="font-size:11px;color:#f4f4f5;font-weight:700;">${formatMapPrice(q.price)}</span>
+                <span style="font-size:10px;color:${clr};font-weight:700;margin-left:8px;">${p}</span>
+              </div>
+            </div>`;
+        }).join('');
+        const html = `
+          <div class="terminal-popup single">
+            <div class="popup-header" style="background:${hc}15;border-color:${hc}33;color:${hc};">
+              <span class="pulse-dot" style="background:${hc};box-shadow:0 0 10px ${hc};"></span>
+              ${city.exchange} — ${city.city}
+            </div>
+            <div style="padding:8px 16px;font-family:'JetBrains Mono',monospace;">
+              ${rows}
+            </div>
+          </div>`;
+        if (popupRef.current) popupRef.current.remove();
+        popupRef.current = new maplibregl.Popup({ maxWidth: '320px', offset: 15, className: 'custom-terminal-popup', closeButton: false })
+          .setLngLat([city.lng, city.lat])
+          .setHTML(html)
+          .addTo(map);
+      });
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([city.lng, city.lat])
+        .addTo(map);
+      exchangeMarkersRef.current.push(marker);
+    }
+  }, [isMapReady, indexQuotes, showExchanges]);
+
   return (
     <div ref={wrapperRef} className="h-full">
     <GlassCard
       headerRight={
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowExchanges(v => !v)}
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-none ${
+              showExchanges
+                ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                : 'text-neutral bg-black/40 border-border/30 opacity-50'
+            }`}
+            title={showExchanges ? 'Hide Markets' : 'Show Markets'}
+          >
+            <TrendingUp className="w-3 h-3" /> MARKETS
+          </button>
           <button
             onClick={() => setShowConflicts(v => !v)}
             className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-none ${

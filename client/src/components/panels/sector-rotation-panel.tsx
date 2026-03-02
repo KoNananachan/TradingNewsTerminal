@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
-import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
+import { useState, useRef } from 'react';
 import { GlassCard } from '../common/glass-card';
 import {
   useSectorPerformance,

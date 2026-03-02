@@ -99,11 +99,20 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const trades = await prisma.insiderTrade.findMany({
+    const rawTrades = await prisma.insiderTrade.findMany({
       where,
       orderBy: { filingDate: 'desc' },
-      take: 100,
+      take: 200,
     });
+
+    // Deduplicate by symbol + owner + date + shares + type
+    const seen = new Set<string>();
+    const trades = rawTrades.filter(t => {
+      const key = `${t.symbol}|${t.ownerName}|${t.tradeDate.toISOString().slice(0, 10)}|${t.shares}|${t.transactionType}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 100);
 
     // Detect cluster buys
     const clusterBuys = detectClusterBuys(trades);

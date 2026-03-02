@@ -12,10 +12,10 @@ interface LiveStream {
 }
 
 const STREAMS: LiveStream[] = [
+  { id: 'yahoo', name: 'Yahoo Finance', channel: 'Yahoo Finance', channelId: 'UCEAZeUIeJs0IjQiqTCdVSIg' },
   { id: 'bloomberg', name: 'Bloomberg TV', channel: 'Bloomberg', channelId: 'UCIALMKvObZNtJ6AmdCLP7Lg' },
   { id: 'cnbc', name: 'CNBC', channel: 'CNBC', channelId: 'UCvJJ_dzjViJCoLf5uKUTwoA' },
   { id: 'foxbusiness', name: 'Fox Business', channel: 'Fox Business', channelId: 'UCCMCBEMLAgmcjMGKnZRMoJg' },
-  { id: 'yahoo', name: 'Yahoo Finance', channel: 'Yahoo Finance', channelId: 'UCEAZeUIeJs0IjQiqTCdVSIg' },
   { id: 'cnn', name: 'CNN', channel: 'CNN', channelId: 'UCupvZG-5ko_eiXAupbDfxWw' },
   { id: 'sky', name: 'Sky News', channel: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
   { id: 'aljazeera', name: 'Al Jazeera', channel: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },

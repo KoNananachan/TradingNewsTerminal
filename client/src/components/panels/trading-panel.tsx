@@ -5,14 +5,17 @@ import { Orderbook } from '../trading/orderbook';
 import { TradeForm } from '../trading/trade-form';
 import { RecentFills } from '../trading/recent-fills';
 import { MarketOverview, type MarketType } from '../trading/market-overview';
+import { AlpacaTrading } from '../trading/alpaca-trading';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3 } from 'lucide-react';
 
 type TradingTab = 'portfolio' | 'trade' | 'fills';
+type Channel = 'hyperliquid' | 'alpaca';
 
 export function TradingPanel() {
   const { isConnected } = useAccount();
+  const [channel, setChannel] = useState<Channel>('hyperliquid');
   const [activeTab, setActiveTab] = useState<TradingTab>('trade');
   const [selectedCoin, setSelectedCoin] = useState('BTC');
   const [coinType, setCoinType] = useState<MarketType>('crypto');
@@ -37,88 +40,113 @@ export function TradingPanel() {
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
-      {/* Header */}
+      {/* Header with channel switcher */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-accent" />
-          <span className="text-[11px] font-black uppercase tracking-widest text-accent">
-            Hyperliquid
-          </span>
+          <div className="flex text-[9px] font-black font-mono uppercase tracking-tighter">
+            <button
+              onClick={() => setChannel('hyperliquid')}
+              className={`px-2 py-0.5 border transition-none ${channel === 'hyperliquid' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+            >
+              Hyperliquid
+            </button>
+            <button
+              onClick={() => setChannel('alpaca')}
+              className={`px-2 py-0.5 border-t border-b border-r transition-none ${channel === 'alpaca' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+            >
+              Alpaca
+            </button>
+          </div>
         </div>
-        {isConnected && (
+        {channel === 'hyperliquid' && isConnected && (
           <span className="text-[9px] font-mono text-bullish flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-bullish inline-block" />
-            CONNECTED
+            {t('connected')}
           </span>
         )}
       </div>
 
-      {/* Tab bar */}
-      <div className="flex border-b border-border/30 bg-black/40 shrink-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 text-[9px] font-black uppercase tracking-widest border-b-2 ${
-              activeTab === tab.id
-                ? 'border-accent text-accent bg-accent/5'
-                : 'border-transparent text-neutral/50 hover:text-neutral hover:bg-white/[0.02]'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Alpaca channel */}
+      {channel === 'alpaca' && (
+        <div className="flex-1 overflow-hidden min-h-0">
+          <AlpacaTrading />
+        </div>
+      )}
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden min-h-0">
-        {activeTab === 'trade' && (
-          <div className="h-full flex">
-            {/* Market selector - left column */}
-            <div className="w-[140px] border-r border-border/20 shrink-0 flex flex-col overflow-hidden">
-              <MarketOverview
-                onSelectCoin={(coin, type) => { setSelectedCoin(coin); setCoinType(type); }}
-                selectedCoin={selectedCoin}
-              />
-            </div>
+      {/* Hyperliquid channel */}
+      {channel === 'hyperliquid' && (
+        <>
+          {/* Tab bar */}
+          <div className="flex border-b border-border/30 bg-black/40 shrink-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-[9px] font-black uppercase tracking-widest border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-accent text-accent bg-accent/5'
+                    : 'border-transparent text-neutral/50 hover:text-neutral hover:bg-white/[0.02]'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            {/* Orderbook - center */}
-            <div className="flex-1 border-r border-border/20 flex flex-col overflow-hidden">
-              <div className="px-3 py-1 border-b border-border/20 bg-black/60 shrink-0 flex items-center gap-2">
-                <BookOpen className="w-3 h-3 text-accent" />
-                <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-                  {selectedCoin}{coinType === 'stock' ? '/USDH Spot' : '-USD Perp'}
-                  {coinType === 'commodity' && <span className="ml-1 text-amber-400/60">(Commodity)</span>}
-                </span>
+          {/* Content */}
+          <div className="flex-1 overflow-hidden min-h-0">
+            {activeTab === 'trade' && (
+              <div className="h-full flex">
+                {/* Market selector - left column */}
+                <div className="w-[140px] border-r border-border/20 shrink-0 flex flex-col overflow-hidden">
+                  <MarketOverview
+                    onSelectCoin={(coin, type) => { setSelectedCoin(coin); setCoinType(type); }}
+                    selectedCoin={selectedCoin}
+                  />
+                </div>
+
+                {/* Orderbook - center */}
+                <div className="flex-1 border-r border-border/20 flex flex-col overflow-hidden">
+                  <div className="px-3 py-1 border-b border-border/20 bg-black/60 shrink-0 flex items-center gap-2">
+                    <BookOpen className="w-3 h-3 text-accent" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
+                      {selectedCoin.startsWith('xyz:') ? selectedCoin.slice(4) : selectedCoin}
+                      {coinType === 'stock' ? '/USDH Spot' : '-USD Perp'}
+                      {coinType === 'commodity' && <span className="ml-1 text-amber-400/60">(Commodity)</span>}
+                      {coinType === 'stock-perp' && <span className="ml-1 text-violet-400/60">(Stock)</span>}
+                    </span>
+                  </div>
+                  <Orderbook coin={selectedCoin} />
+                </div>
+
+                {/* Trade form - right */}
+                <div className="w-[220px] shrink-0 overflow-auto no-scrollbar">
+                  <TradeForm coin={selectedCoin} coinType={coinType} />
+                </div>
               </div>
-              <Orderbook coin={selectedCoin} />
-            </div>
+            )}
 
-            {/* Trade form - right */}
-            <div className="w-[220px] shrink-0 overflow-auto no-scrollbar">
-              <TradeForm coin={selectedCoin} coinType={coinType} />
-            </div>
-          </div>
-        )}
+            {activeTab === 'portfolio' && (
+              <div className="h-full overflow-auto no-scrollbar">
+                <PortfolioView />
+              </div>
+            )}
 
-        {activeTab === 'portfolio' && (
-          <div className="h-full overflow-auto no-scrollbar">
-            <PortfolioView />
+            {activeTab === 'fills' && (
+              <div className="h-full overflow-hidden flex flex-col">
+                <div className="px-3 py-1.5 border-b border-border/20 bg-black/60 shrink-0">
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
+                    {t('recentFills')}
+                  </span>
+                </div>
+                <RecentFills />
+              </div>
+            )}
           </div>
-        )}
-
-        {activeTab === 'fills' && (
-          <div className="h-full overflow-hidden flex flex-col">
-            <div className="px-3 py-1.5 border-b border-border/20 bg-black/60 shrink-0">
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-                {t('recentFills')}
-              </span>
-            </div>
-            <RecentFills />
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

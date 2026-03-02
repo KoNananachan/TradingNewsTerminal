@@ -88,7 +88,7 @@ function extractFirstLink(html: string): { url: string; title: string } {
   return { url: '', title: '' };
 }
 
-const MIN_COUNT = 200;
+const MIN_COUNT = 15;
 
 async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
   const query =
@@ -98,7 +98,7 @@ async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
   const url =
     'https://api.gdeltproject.org/api/v2/geo/geo' +
     '?query=' + encodeURIComponent(query) +
-    '&mode=pointdata&format=geojson&timespan=3d&maxpoints=500';
+    '&mode=pointdata&format=geojson&timespan=7d&maxpoints=1000';
 
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) return null;

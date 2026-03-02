@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
-import { useAllMids, useUserState, useSpotBalances } from '../../hooks/use-hyperliquid';
+import { useCombinedMids, useUserState, useSpotBalances } from '../../hooks/use-hyperliquid';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 import { api } from '../../api/client';
@@ -15,7 +15,7 @@ interface TradeFormProps {
 
 export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
   const { isConnected, address } = useAccount();
-  const { data: mids } = useAllMids();
+  const { data: mids } = useCombinedMids();
   const { data: userState } = useUserState();
   const { data: spotState } = useSpotBalances();
 
@@ -189,7 +189,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50">
-            {t('size')} ({coin})
+            {t('size')} ({displayCoin(coin)})
           </label>
           {maxSize != null && midPrice && (
             <span className="text-[8px] font-mono text-neutral/40">
@@ -275,10 +275,14 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
       >
         {!isConnected
           ? t('connectWallet')
-          : `${side === 'buy' ? t('long') : t('short')} ${coin}`}
+          : `${side === 'buy' ? t('long') : t('short')} ${displayCoin(coin)}`}
       </button>
     </form>
   );
+}
+
+function displayCoin(coin: string): string {
+  return coin.startsWith('xyz:') ? coin.slice(4) : coin;
 }
 
 function fmtUsd(n: number): string {
