@@ -38,7 +38,8 @@ const isProd = process.env.NODE_ENV === 'production';
 const ALLOWED_ORIGINS = isProd
   ? [
       'https://tradingnewsweb-985277157092.us-central1.run.app',
-      // Add your custom domain here when ready
+      'https://tradingnewsweb-cgksdk55dq-uc.a.run.app',
+      'https://terminal.tradingnews.press',
     ]
   : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
 
