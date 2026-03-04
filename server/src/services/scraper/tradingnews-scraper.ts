@@ -1,7 +1,24 @@
-import { prisma } from '../../lib/prisma.js';
+/**
+ * News scraper — fetches articles from the configured news API and stores them.
+ *
+ * The news API URL is configured via the NEWS_API_URL env var.
+ * If not set, scraping is skipped (the app works fine without a news source —
+ * it just won't receive new articles).
+ *
+ * The default implementation expects the TradingNews API response format.
+ * To use a different news source, either:
+ *   1. Set up an adapter proxy that converts your source to this format, or
+ *   2. Implement the NewsSource interface (see news-source.ts) and register it
+ *      in scraper-scheduler.ts.
+ */
 
-const API_URL = 'https://tradingnews.press/api/v1/analysis/snapshot';
+import { prisma } from '../../lib/prisma.js';
+import { env } from '../../config/env.js';
+import type { NewsSource, NewsItem, NewsItemAsset } from './news-source.js';
+
 const FETCH_LIMIT = 100;
+
+// ── TradingNews API response types ──
 
 interface ApiAsset {
   type: string;
@@ -29,24 +46,9 @@ interface ApiItem {
   raw_news: ApiRawNews;
 }
 
-// In-memory cache of known external IDs (capped to prevent unbounded growth)
-const MAX_KNOWN_IDS = 50_000;
-let knownIds = new Set<string>();
-let cacheLoaded = false;
+// ── TradingNews API adapter (implements NewsSource) ──
 
-async function loadKnownIds() {
-  if (cacheLoaded) return;
-  const rows = await prisma.newsArticle.findMany({
-    select: { externalId: true },
-    orderBy: { id: 'desc' },
-    take: MAX_KNOWN_IDS,
-  });
-  for (const r of rows) knownIds.add(r.externalId);
-  cacheLoaded = true;
-  console.log(`[Scraper] Loaded ${knownIds.size} known article IDs into cache`);
-}
-
-function longShortToAction(ls: string): string {
+function longShortToAction(ls: string): 'BUY' | 'SELL' | 'HOLD' {
   switch (ls) {
     case 'long': return 'BUY';
     case 'short': return 'SELL';
@@ -63,8 +65,94 @@ function longShortToConfidence(ls: string, impact: string): number {
   }
 }
 
-export async function scrapeArticles(): Promise<number> {
-  console.log('[Scraper] Fetching from API...');
+export class TradingNewsSource implements NewsSource {
+  name = 'tradingnews';
+  private apiUrl: string;
+
+  constructor(apiUrl: string) {
+    this.apiUrl = apiUrl;
+  }
+
+  async fetchArticles(limit: number): Promise<NewsItem[]> {
+    const resp = await fetch(`${this.apiUrl}?limit=${limit}`, {
+      headers: { 'User-Agent': 'TradingNewsWeb/1.0' },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`News API returned ${resp.status}`);
+    }
+
+    const items: ApiItem[] = await resp.json() as ApiItem[];
+    return items.map((item) => this.normalize(item));
+  }
+
+  private normalize(item: ApiItem): NewsItem {
+    const news = item.raw_news;
+    const content = item.assets
+      .map((a) => `[${a.long_short.toUpperCase()}] ${a.code} (${a.name}): ${a.reason}`)
+      .join('\n\n');
+
+    const publishedAt = news.data_time
+      ? new Date(news.data_time * 1000)
+      : new Date(item.analyzed_at);
+
+    const assets: NewsItemAsset[] = item.assets
+      .filter((a) => !!a.code)
+      .map((a) => ({
+        symbol: a.code,
+        action: longShortToAction(a.long_short),
+        confidence: longShortToConfidence(a.long_short, a.impact),
+        reason: a.reason,
+      }));
+
+    return {
+      externalId: item.id,
+      title: news.title,
+      content: content || null,
+      url: news.origin_url || null,
+      publishedAt,
+      isBreaking: item.is_breaking,
+      assets,
+    };
+  }
+}
+
+// ── Scraper engine (source-agnostic) ──
+
+const MAX_KNOWN_IDS = 50_000;
+let knownIds = new Set<string>();
+let cacheLoaded = false;
+
+async function loadKnownIds() {
+  if (cacheLoaded) return;
+  const rows = await prisma.newsArticle.findMany({
+    select: { externalId: true },
+    orderBy: { id: 'desc' },
+    take: MAX_KNOWN_IDS,
+  });
+  for (const r of rows) knownIds.add(r.externalId);
+  cacheLoaded = true;
+  console.log(`[Scraper] Loaded ${knownIds.size} known article IDs into cache`);
+}
+
+/** Create the configured news source, or null if not configured */
+export function createNewsSource(): NewsSource | null {
+  const url = env.NEWS_API_URL;
+  if (!url) {
+    console.warn('[Scraper] NEWS_API_URL not configured — scraping disabled');
+    return null;
+  }
+  return new TradingNewsSource(url);
+}
+
+export async function scrapeArticles(source?: NewsSource | null): Promise<number> {
+  if (!source) {
+    source = createNewsSource();
+    if (!source) return 0;
+  }
+
+  console.log(`[Scraper] Fetching from ${source.name}...`);
   await loadKnownIds();
 
   const startTime = Date.now();
@@ -75,26 +163,12 @@ export async function scrapeArticles(): Promise<number> {
   let itemsFailed = 0;
 
   try {
-    const resp = await fetch(`${API_URL}?limit=${FETCH_LIMIT}`, {
-      headers: { 'User-Agent': 'TradingNewsWeb/1.0' },
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!resp.ok) {
-      console.error(`[Scraper] API returned ${resp.status}`);
-      await prisma.scrapeRun.update({
-        where: { id: run.id },
-        data: { status: 'error', errorMessage: `API returned ${resp.status}`, finishedAt: new Date(), durationMs: Date.now() - startTime },
-      });
-      return 0;
-    }
-
-    const items: ApiItem[] = await resp.json() as ApiItem[];
+    const items = await source.fetchArticles(FETCH_LIMIT);
     itemsFetched = items.length;
-    console.log(`[Scraper] Got ${items.length} items from API`);
+    console.log(`[Scraper] Got ${items.length} items from ${source.name}`);
 
     // Filter new items
-    const newItems = items.filter((item) => !knownIds.has(item.id));
+    const newItems = items.filter((item) => !knownIds.has(item.externalId));
     itemsSkipped = items.length - newItems.length;
 
     if (newItems.length === 0) {
@@ -108,38 +182,26 @@ export async function scrapeArticles(): Promise<number> {
 
     for (const item of newItems) {
       try {
-        const news = item.raw_news;
-
-        // Build content from all asset analyses
-        const content = item.assets
-          .map((a) => `[${a.long_short.toUpperCase()}] ${a.code} (${a.name}): ${a.reason}`)
-          .join('\n\n');
-
-        const publishedAt = news.data_time
-          ? new Date(news.data_time * 1000)
-          : new Date(item.analyzed_at);
-
         const created = await prisma.newsArticle.create({
           data: {
-            externalId: item.id,
-            title: news.title,
-            content: content || null,
-            url: news.origin_url || `https://tradingnews.press`,
+            externalId: item.externalId,
+            title: item.title,
+            content: item.content,
+            url: item.url || '',
             imageUrl: null,
-            publishedAt,
+            publishedAt: item.publishedAt,
           },
         });
 
         // Create stock recommendations from assets
         for (const asset of item.assets) {
-          if (!asset.code) continue;
           try {
             await prisma.stockRecommendation.create({
               data: {
                 articleId: created.id,
-                symbol: asset.code,
-                action: longShortToAction(asset.long_short),
-                confidence: longShortToConfidence(asset.long_short, asset.impact),
+                symbol: asset.symbol,
+                action: asset.action,
+                confidence: asset.confidence,
                 reason: asset.reason,
               },
             });
@@ -148,17 +210,17 @@ export async function scrapeArticles(): Promise<number> {
           }
         }
 
-        knownIds.add(item.id);
+        knownIds.add(item.externalId);
         itemsNew++;
-        const flag = item.is_breaking ? ' [BREAKING]' : '';
-        console.log(`[Scraper] New${flag}: "${news.title.slice(0, 60)}" (${item.assets.length} assets)`);
+        const flag = item.isBreaking ? ' [BREAKING]' : '';
+        console.log(`[Scraper] New${flag}: "${item.title.slice(0, 60)}" (${item.assets.length} assets)`);
       } catch (err: any) {
         if (err?.code === 'P2002') {
-          knownIds.add(item.id);
+          knownIds.add(item.externalId);
           itemsSkipped++;
         } else {
           itemsFailed++;
-          console.error(`[Scraper] Error inserting: ${item.raw_news.title.slice(0, 50)}`, err);
+          console.error(`[Scraper] Error inserting: ${item.title.slice(0, 50)}`, err);
         }
       }
     }

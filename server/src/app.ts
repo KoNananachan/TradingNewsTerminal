@@ -34,13 +34,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isProd = process.env.NODE_ENV === 'production';
 
-// ── CORS allowlist ──
-const ALLOWED_ORIGINS = isProd
-  ? [
-      'https://tradingnewsweb-985277157092.us-central1.run.app',
-      'https://tradingnewsweb-cgksdk55dq-uc.a.run.app',
-      'https://terminal.tradingnews.press',
-    ]
+// ── CORS allowlist (configure via ALLOWED_ORIGINS env var in production) ──
+const ALLOWED_ORIGINS: (string | RegExp)[] = isProd
+  ? (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
   : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
 
 // ── Rate limiters ──

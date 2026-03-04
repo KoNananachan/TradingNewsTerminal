@@ -1,6 +1,15 @@
 node_modules/
 dist/
+
+# Database files
 *.db
 *.db-journal
+
+# Environment / secrets — NEVER commit these
 .env
-.env.local
+.env.*
+!.env.example
+
+# Deployment configs with project-specific secrets
+cloudbuild.yaml
+DEPLOY.md

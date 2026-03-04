@@ -16,9 +16,7 @@ COPY client/ client/
 # Write VITE_ env vars to .env so Vite can find them during build
 # (envDir: '..' in vite.config.ts points to /app, the workspace root)
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
-RUN echo "VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID" > .env && \
-    echo "DEBUG: .env contents:" && cat .env && \
-    echo "DEBUG: env var=$VITE_GOOGLE_CLIENT_ID"
+RUN echo "VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID" > .env
 RUN npm run build -w client
 RUN npx prisma generate --schema=server/prisma/schema.prisma
 RUN npm run build -w server

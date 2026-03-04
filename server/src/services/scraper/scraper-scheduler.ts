@@ -1,13 +1,20 @@
-import { scrapeArticles } from './tradingnews-scraper.js';
+import { scrapeArticles, createNewsSource } from './tradingnews-scraper.js';
 import { analyzeUnprocessedArticles } from '../ai/news-analyzer.js';
 import { clusterRecentNews } from '../ai/news-clusterer.js';
+import type { NewsSource } from './news-source.js';
 
 const POLL_INTERVAL_MS = 30_000; // 30 seconds
 const CLUSTER_INTERVAL_MS = 10 * 60_000; // 10 minutes
 let lastClusterTime = 0;
+let newsSource: NewsSource | null = null;
 
 export function startScraperScheduler() {
-  console.log(`[Scheduler] Polling API every ${POLL_INTERVAL_MS / 1000}s`);
+  newsSource = createNewsSource();
+  if (!newsSource) {
+    console.log('[Scheduler] No news source configured — only AI analysis will run');
+  } else {
+    console.log(`[Scheduler] Polling ${newsSource.name} every ${POLL_INTERVAL_MS / 1000}s`);
+  }
 
   // Run immediately on start
   runScrapeAndAnalyze();
@@ -20,7 +27,7 @@ export function startScraperScheduler() {
 
 async function runScrapeAndAnalyze() {
   try {
-    const newCount = await scrapeArticles();
+    const newCount = await scrapeArticles(newsSource);
     if (newCount > 0) {
       await analyzeUnprocessedArticles();
     }
