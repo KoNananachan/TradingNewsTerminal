@@ -6,14 +6,28 @@ import { ErrorBoundary } from './components/common/error-boundary';
 import App from './App';
 import './index.css';
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+function AppWithProviders() {
+  const core = (
+    <Web3Provider>
+      <App />
+    </Web3Provider>
+  );
+
+  return googleClientId ? (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      {core}
+    </GoogleOAuthProvider>
+  ) : (
+    core
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
-        <Web3Provider>
-          <App />
-        </Web3Provider>
-      </GoogleOAuthProvider>
+      <AppWithProviders />
     </ErrorBoundary>
   </StrictMode>,
 );

@@ -7,13 +7,15 @@ import { X, Mail, Shield } from 'lucide-react';
 
 type Step = 'choose' | 'email-input' | 'email-verify';
 
+const hasGoogleOAuth = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 export function LoginModal() {
   const t = useT();
   const open = useAuthStore((s) => s.loginModalOpen);
   const setOpen = useAuthStore((s) => s.setLoginModalOpen);
   const { loginWithGoogle, sendEmailCode, verifyEmailCode } = useAuthActions();
 
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<Step>(hasGoogleOAuth ? 'choose' : 'email-input');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -23,7 +25,7 @@ export function LoginModal() {
 
   const close = () => {
     setOpen(false);
-    setStep('choose');
+    setStep(hasGoogleOAuth ? 'choose' : 'email-input');
     setEmail('');
     setCode('');
     setError('');
@@ -87,29 +89,33 @@ export function LoginModal() {
         {/* Google Login */}
         {step === 'choose' && (
           <>
-            <div className="mb-4 flex justify-center">
-              <GoogleLogin
-                onSuccess={(resp) => {
-                  if (resp.credential) {
-                    loginWithGoogle(resp.credential).catch((err) =>
-                      setError(err.message || t('googleLoginFailed')),
-                    );
-                  }
-                }}
-                onError={() => setError(t('googleLoginFailed'))}
-                theme="filled_black"
-                shape="rectangular"
-                size="large"
-                width="320"
-              />
-            </div>
+            {hasGoogleOAuth && (
+              <>
+                <div className="mb-4 flex justify-center">
+                  <GoogleLogin
+                    onSuccess={(resp) => {
+                      if (resp.credential) {
+                        loginWithGoogle(resp.credential).catch((err) =>
+                          setError(err.message || t('googleLoginFailed')),
+                        );
+                      }
+                    }}
+                    onError={() => setError(t('googleLoginFailed'))}
+                    theme="filled_black"
+                    shape="rectangular"
+                    size="large"
+                    width="320"
+                  />
+                </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral">{t('or')}</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
+                {/* Divider */}
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral">{t('or')}</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              </>
+            )}
 
             {/* Email */}
             <button
@@ -144,12 +150,14 @@ export function LoginModal() {
             >
               {loading ? t('sending') : t('sendCode')}
             </button>
-            <button
-              onClick={() => { setStep('choose'); setError(''); }}
-              className="w-full mt-2 py-1.5 text-[10px] text-neutral hover:text-white uppercase tracking-widest"
-            >
-              {t('back')}
-            </button>
+            {hasGoogleOAuth && (
+              <button
+                onClick={() => { setStep('choose'); setError(''); }}
+                className="w-full mt-2 py-1.5 text-[10px] text-neutral hover:text-white uppercase tracking-widest"
+              >
+                {t('back')}
+              </button>
+            )}
           </>
         )}
 

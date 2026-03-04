@@ -26,6 +26,7 @@ import correlationsRouter from './routes/correlations.js';
 import authRouter from './routes/auth.js';
 import billingRouter, { billingWebhookHandler } from './routes/billing.js';
 import alpacaRouter from './routes/alpaca.js';
+import streamsRouter from './routes/streams.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -89,8 +90,20 @@ export function createApp() {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "wss:", "ws:", "https://api.hyperliquid.xyz", "https://api.alpaca.markets", "https://accounts.google.com"],
-        frameSrc: ["'self'", "https://accounts.google.com"],
+        connectSrc: [
+          "'self'", "wss:", "ws:",
+          "https://api.hyperliquid.xyz",
+          "https://api.alpaca.markets",
+          "https://accounts.google.com",
+          // MapLibre tile sources
+          "https://basemaps.cartocdn.com",
+          "https://*.basemaps.cartocdn.com",
+          "https://cartodb-basemaps-a.global.ssl.fastly.net",
+          "https://cartodb-basemaps-b.global.ssl.fastly.net",
+          "https://cartodb-basemaps-c.global.ssl.fastly.net",
+          "https://cartodb-basemaps-d.global.ssl.fastly.net",
+        ],
+        frameSrc: ["'self'", "https://accounts.google.com", "https://www.youtube.com", "https://youtube.com"],
         workerSrc: ["'self'", "blob:"],
       },
     } : false,
@@ -118,6 +131,7 @@ export function createApp() {
   app.use('/api/auth', authLimiter, authRouter);
   app.use('/api/billing', billingRouter);
   app.use('/api/alpaca', alpacaRouter);
+  app.use('/api/streams', streamsRouter);
   app.use('/api/news', newsRouter);
   app.use('/api/stocks', stocksRouter);
   app.use('/api/recommendations', recommendationsRouter);

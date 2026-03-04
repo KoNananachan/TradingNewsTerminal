@@ -1,33 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GlassCard } from '../common/glass-card';
-import { Radio } from 'lucide-react';
+import { Radio, ExternalLink } from 'lucide-react';
 import { useT } from '../../i18n';
+import { api } from '../../api/client';
 
 interface LiveStream {
   id: string;
   name: string;
-  channel: string;
-  /** YouTube channel ID for live embed */
-  channelId: string;
+  handle: string;
 }
 
 const STREAMS: LiveStream[] = [
-  { id: 'yahoo', name: 'Yahoo Finance', channel: 'Yahoo Finance', channelId: 'UCEAZeUIeJs0IjQiqTCdVSIg' },
-  { id: 'bloomberg', name: 'Bloomberg TV', channel: 'Bloomberg', channelId: 'UCIALMKvObZNtJ6AmdCLP7Lg' },
-  { id: 'cnbc', name: 'CNBC', channel: 'CNBC', channelId: 'UCvJJ_dzjViJCoLf5uKUTwoA' },
-  { id: 'foxbusiness', name: 'Fox Business', channel: 'Fox Business', channelId: 'UCCMCBEMLAgmcjMGKnZRMoJg' },
-  { id: 'cnn', name: 'CNN', channel: 'CNN', channelId: 'UCupvZG-5ko_eiXAupbDfxWw' },
-  { id: 'sky', name: 'Sky News', channel: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
-  { id: 'aljazeera', name: 'Al Jazeera', channel: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
-  { id: 'dw', name: 'DW News', channel: 'DW News', channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
+  { id: 'yahoo', name: 'Yahoo Finance', handle: '@YahooFinance' },
+  { id: 'bloomberg', name: 'Bloomberg TV', handle: '@business' },
+  { id: 'cnbc', name: 'CNBC', handle: '@CNBC' },
+  { id: 'foxbusiness', name: 'Fox Business', handle: '@FoxBusiness' },
+  { id: 'cnn', name: 'CNN', handle: '@CNN' },
+  { id: 'sky', name: 'Sky News', handle: '@SkyNews' },
+  { id: 'aljazeera', name: 'Al Jazeera', handle: '@AlJazeeraEnglish' },
+  { id: 'dw', name: 'DW News', handle: '@DWNews' },
 ];
 
 export function LiveStreamsPanel() {
   const t = useT();
   const [activeStream, setActiveStream] = useState<LiveStream>(STREAMS[0]);
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // YouTube live embed URL using channel ID
-  const embedUrl = `https://www.youtube.com/embed/live_stream?channel=${activeStream.channelId}&autoplay=1&mute=1`;
+  // Fetch live video ID from server
+  useEffect(() => {
+    let cancelled = false;
+    setVideoId(null);
+    setLoading(true);
+
+    api.get<{ videoId: string | null }>(`/streams/live-id?handle=${encodeURIComponent(activeStream.handle)}`)
+      .then((res) => {
+        if (!cancelled) setVideoId(res.videoId || null);
+      })
+      .catch(() => {
+        if (!cancelled) setVideoId(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [activeStream.handle]);
+
+  const embedUrl = videoId
+    ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
+    : null;
+
+  const youtubeLink = `https://www.youtube.com/${activeStream.handle}/live`;
 
   return (
     <GlassCard
@@ -56,16 +80,42 @@ export function LiveStreamsPanel() {
         ))}
       </div>
 
-      {/* Video embed */}
+      {/* Video embed or fallback */}
       <div className="flex-1 relative bg-black min-h-0">
-        <iframe
-          key={activeStream.channelId}
-          src={embedUrl}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={activeStream.name}
-        />
+        {loading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading stream...</span>
+          </div>
+        ) : embedUrl ? (
+          <iframe
+            key={videoId}
+            src={embedUrl}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={activeStream.name}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <Radio size={24} className="text-accent/40" />
+            <span className="text-[11px] font-mono text-neutral/60 uppercase tracking-widest text-center px-4">
+              {activeStream.name}
+            </span>
+            <span className="text-[9px] font-mono text-neutral/30 uppercase tracking-widest">
+              No live stream detected
+            </span>
+            <a
+              href={youtubeLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono text-accent border border-accent/40 hover:bg-accent/10 transition-colors uppercase tracking-wider"
+            >
+              <ExternalLink size={11} />
+              Watch on YouTube
+            </a>
+          </div>
+        )}
       </div>
     </GlassCard>
   );
