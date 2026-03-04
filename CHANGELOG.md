@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-03-04
+
+### Added
+- **Complete French (fr) translations:** 76 missing stock panel, fundamentals, and financials keys
+- **Loading spinners & RETRY buttons:** Sentiment, Options Flow, Insider Trades, Earnings Calendar, Correlation Matrix panels
+- **Backend input validation:**
+  - Days parameter clamping (1–365) on stock history endpoints
+  - Max 100 symbols limit on batch name lookups
+  - Symbol format validation on watchlist DELETE
+  - Date format validation (YYYY-MM-DD) on calendar endpoint
+  - Condition size limit (2000 chars) on alerts
+- **Rate limiting:** `/api/scrape` endpoint limited to 1 request/minute
+- **Yahoo Finance search timeout:** 10-second fetch timeout to prevent hanging requests
+
+### Changed
+- All `transition-none` → `transition-colors` across 13 frontend files for smooth hover effects
+- AI chat send button shows `cursor-not-allowed` when disabled
+- AI chat error messages now differentiate by status code (429 rate limit, 500+ service unavailable)
+- Alpaca credential errors sanitized (no internal error leakage)
+- Auth middleware logs categorized error codes/messages
+- Added `.gcloudignore` to exclude `node_modules` and build artifacts from Cloud Build uploads
+
+### Fixed
+- Missing micro-interactions on interactive elements (buttons, tabs, filters)
+- Silent cache upsert failures now logged for debugging
+- Timeout errors properly detected and reported to users
+
 ## [0.8.0] - 2026-03-02
 
 ### Added
