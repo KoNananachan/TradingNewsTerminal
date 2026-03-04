@@ -12,7 +12,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
+          'vendor': ['react', 'react-dom'],
           'query': ['@tanstack/react-query'],
           'maplibre': ['maplibre-gl'],
           'web3': ['wagmi', 'viem', '@rainbow-me/rainbowkit'],
