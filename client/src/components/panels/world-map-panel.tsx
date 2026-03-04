@@ -167,7 +167,9 @@ export function WorldMapPanel() {
     mapRef.current = map;
     let destroyed = false;
 
-    map.on('load', () => {
+    // Use 'style.load' instead of 'load' — 'load' waits for ALL tiles
+    // which may never complete if some tile fetches fail, blocking layer init.
+    const onStyleLoad = () => {
       if (destroyed) return;
 
       // Conflict data source + layers (rendered below news dots)
@@ -270,7 +272,14 @@ export function WorldMapPanel() {
       });
 
       setIsMapReady(true);
-    });
+    };
+
+    // style.load fires once the style JSON is parsed — no need to wait for tiles
+    if (map.isStyleLoaded()) {
+      onStyleLoad();
+    } else {
+      map.once('style.load', onStyleLoad);
+    }
 
     // Click handler
     map.on('click', CIRCLE_LAYER, (e) => {
@@ -459,9 +468,9 @@ export function WorldMapPanel() {
     if (isMapReady) {
       update();
     } else {
-      const onLoad = () => update();
-      map.on('load', onLoad);
-      return () => { map.off('load', onLoad); };
+      const onReady = () => update();
+      map.once('style.load', onReady);
+      return () => { map.off('style.load', onReady); };
     }
   }, [isMapReady, events, visitedMapNodes]);
 
