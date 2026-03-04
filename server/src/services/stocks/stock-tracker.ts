@@ -16,52 +16,51 @@ async function refreshQuotes() {
     const symbols = tracked.map((t) => t.symbol);
     const quotes = await getQuotes(symbols);
 
-    for (const quote of quotes) {
-      const vol = quote.volume != null ? BigInt(Math.round(quote.volume)) : null;
-      await prisma.stockQuote.upsert({
-        where: { symbol: quote.symbol },
-        update: {
-          name: quote.name,
-          price: quote.price,
-          change: quote.change,
-          changePercent: quote.changePercent,
-          volume: vol,
-          marketCap: quote.marketCap,
-          dayHigh: quote.dayHigh,
-          dayLow: quote.dayLow,
-          previousClose: quote.previousClose,
-        },
-        create: {
-          symbol: quote.symbol,
-          name: quote.name,
-          price: quote.price,
-          change: quote.change,
-          changePercent: quote.changePercent,
-          volume: vol,
-          marketCap: quote.marketCap,
-          dayHigh: quote.dayHigh,
-          dayLow: quote.dayLow,
-          previousClose: quote.previousClose,
-        },
-      });
-    }
+    // Batch upsert all quotes in a single transaction (much faster than sequential)
+    await prisma.$transaction(
+      quotes.map((quote) => {
+        const vol = quote.volume != null ? BigInt(Math.round(quote.volume)) : null;
+        return prisma.stockQuote.upsert({
+          where: { symbol: quote.symbol },
+          update: {
+            name: quote.name,
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            volume: vol,
+            marketCap: quote.marketCap,
+            dayHigh: quote.dayHigh,
+            dayLow: quote.dayLow,
+            previousClose: quote.previousClose,
+          },
+          create: {
+            symbol: quote.symbol,
+            name: quote.name,
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            volume: vol,
+            marketCap: quote.marketCap,
+            dayHigh: quote.dayHigh,
+            dayLow: quote.dayLow,
+            previousClose: quote.previousClose,
+          },
+        });
+      })
+    );
 
     broadcastQuotes(quotes);
     console.log(`[StockTracker] Refreshed ${quotes.length} quotes`);
 
-    // Evaluate price/volume alerts after quote refresh
-    try {
-      await evaluateAlerts(quotes.map(q => ({
-        symbol: q.symbol,
-        price: q.price,
-        change: q.change ?? 0,
-        changePercent: q.changePercent ?? 0,
-        volume: typeof q.volume === 'number' ? q.volume : 0,
-        avgVolume: typeof (q as any).avgVolume === 'number' ? (q as any).avgVolume : 0,
-      })));
-    } catch (e) {
-      console.error('[StockTracker] Alert evaluation error:', e);
-    }
+    // Evaluate price/volume alerts after quote refresh (fire-and-forget)
+    evaluateAlerts(quotes.map(q => ({
+      symbol: q.symbol,
+      price: q.price,
+      change: q.change ?? 0,
+      changePercent: q.changePercent ?? 0,
+      volume: typeof q.volume === 'number' ? q.volume : 0,
+      avgVolume: typeof (q as any).avgVolume === 'number' ? (q as any).avgVolume : 0,
+    }))).catch(e => console.error('[StockTracker] Alert evaluation error:', e));
   } catch (err) {
     console.error('[StockTracker] Error refreshing quotes:', err);
   } finally {

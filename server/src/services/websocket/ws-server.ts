@@ -25,18 +25,14 @@ export function startWebSocketServer(server: Server) {
       console.error('[WS] Server error:', err.message);
     });
 
-    // Heartbeat: ping all clients every 25s, terminate dead ones
+    // Heartbeat: ping all clients, terminate dead ones
     pingInterval = setInterval(() => {
       wss.clients.forEach((ws) => {
         if ((ws as any).isAlive === false) {
           return ws.terminate(); // dead connection, clean up
         }
         (ws as any).isAlive = false;
-        ws.ping();
-        // Also send text heartbeat so browser clients reset their timeout
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
-        }
+        ws.ping(); // Binary ping is sufficient — no redundant text message
       });
     }, PING_INTERVAL);
 

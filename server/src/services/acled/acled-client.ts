@@ -1,6 +1,6 @@
 // Conflict data service
-// Primary: GDELT GEO 2.0 API (free, no auth)
-// Fallback: geopolitics articles from local database
+// Primary: geopolitics articles from local database (always available)
+// Secondary: GDELT GEO 2.0 API (free, no auth — often unreliable/down)
 
 import { prisma } from '../../lib/prisma.js';
 
@@ -23,7 +23,7 @@ let conflictCache: ConflictCache | null = null;
 // Known active conflict countries/regions (2024-2026)
 const CONFLICT_REGIONS = [
   // Eastern Europe
-  'ukraine', 'kyiv', 'kharkiv', 'odesa', 'russia',
+  'ukraine', 'kyiv', 'kharkiv', 'odesa', 'russia', 'moscow', 'crimea',
   // Israel / Palestine
   'israel', 'tel aviv', 'jerusalem', 'gaza', 'palestine', 'west bank',
   // Syria
@@ -59,10 +59,13 @@ const CONFLICT_REGIONS = [
   'myanmar', 'burma', 'yangon',
   'afghanistan', 'kabul', 'kandahar',
   'pakistan', 'islamabad', 'karachi', 'waziristan', 'balochistan',
-  'india', 'new delhi',
+  'india', 'new delhi', 'kashmir',
   // Americas
   'haiti', 'port-au-prince',
   'mexico', 'colombia',
+  // East Asia tensions
+  'taiwan', 'taipei',
+  'north korea', 'pyongyang',
 ];
 
 function isConflictRegion(name: string): boolean {
@@ -70,14 +73,17 @@ function isConflictRegion(name: string): boolean {
   return CONFLICT_REGIONS.some(r => lower.includes(r));
 }
 
-const EXCLUDED_CITIES = new Set([
-  'moscow', 'kremlin', 'saint petersburg',
+// Only exclude very specific false positives
+const EXCLUDED_PATTERNS = [
   'georgia, united states',
-]);
+  'georgia, usa',
+  'paris, texas',
+  'moscow, idaho',
+];
 
 function isExcludedCity(name: string): boolean {
   const lower = name.toLowerCase();
-  return [...EXCLUDED_CITIES].some(ex => lower.includes(ex));
+  return EXCLUDED_PATTERNS.some(ex => lower.includes(ex));
 }
 
 function extractFirstLink(html: string): { url: string; title: string } {
@@ -87,8 +93,6 @@ function extractFirstLink(html: string): { url: string; title: string } {
   if (fallback) return { url: fallback[1], title: fallback[2] };
   return { url: '', title: '' };
 }
-
-const MIN_COUNT = 15;
 
 async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
   const query =
@@ -100,8 +104,11 @@ async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
     '?query=' + encodeURIComponent(query) +
     '&mode=pointdata&format=geojson&timespan=7d&maxpoints=1000';
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) return null;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  if (!res.ok) {
+    console.warn(`[Conflicts] GDELT returned ${res.status}`);
+    return null;
+  }
 
   const geojson = await res.json();
   const features: any[] = geojson.features || [];
@@ -110,7 +117,7 @@ async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
     .filter((f: any) => {
       const coords = f.geometry?.coordinates;
       if (!coords || (coords[0] === 0 && coords[1] === 0)) return false;
-      if ((f.properties?.count || 0) < MIN_COUNT) return false;
+      if ((f.properties?.count || 0) < 5) return false;
       const name = f.properties?.name || '';
       return isConflictRegion(name) && !isExcludedCity(name);
     })
@@ -135,6 +142,7 @@ async function fetchFromDatabase(): Promise<ConflictEvent[]> {
       categorySlug: 'geopolitics',
       latitude: { not: null },
       longitude: { not: null },
+      locationName: { not: null },
       scrapedAt: { gte: sevenDaysAgo },
     },
     select: {
@@ -143,10 +151,13 @@ async function fetchFromDatabase(): Promise<ConflictEvent[]> {
       latitude: true,
       longitude: true,
       locationName: true,
+      sentiment: true,
     },
     orderBy: { scrapedAt: 'desc' },
     take: 500,
   });
+
+  console.log(`[Conflicts] DB query returned ${articles.length} geopolitics articles`);
 
   // Group by location (round to ~10km grid) to get counts
   const grid = new Map<string, { events: typeof articles; lat: number; lng: number; name: string }>();
@@ -154,7 +165,9 @@ async function fetchFromDatabase(): Promise<ConflictEvent[]> {
   for (const a of articles) {
     if (a.latitude == null || a.longitude == null) continue;
     const name = a.locationName || 'Unknown';
-    if (!isConflictRegion(name) || isExcludedCity(name)) continue;
+    // Accept ALL geopolitics articles with valid coordinates for the conflict layer
+    // The region filter was too aggressive and excluded valid conflict zones
+    if (isExcludedCity(name)) continue;
 
     const key = `${(a.latitude * 10) | 0},${(a.longitude * 10) | 0}`;
     if (!grid.has(key)) {
@@ -163,7 +176,7 @@ async function fetchFromDatabase(): Promise<ConflictEvent[]> {
     grid.get(key)!.events.push(a);
   }
 
-  return [...grid.values()].map(g => ({
+  const results = [...grid.values()].map(g => ({
     name: g.name,
     lat: g.lat,
     lng: g.lng,
@@ -171,34 +184,62 @@ async function fetchFromDatabase(): Promise<ConflictEvent[]> {
     url: g.events[0].url,
     title: g.events[0].title,
   }));
+
+  // Sort by count descending so most active conflict zones render on top
+  results.sort((a, b) => b.count - a.count);
+
+  return results;
 }
 
 export async function fetchConflicts(): Promise<ConflictEvent[]> {
+  // Return cached data if still valid
   if (conflictCache && Date.now() < conflictCache.expiresAt) {
     return conflictCache.data;
   }
 
   console.log('[Conflicts] Fetching conflict data...');
 
-  let data: ConflictEvent[];
+  // Always fetch from database first (reliable, fast)
+  const dbData = await fetchFromDatabase();
+  console.log(`[Conflicts] DB: ${dbData.length} conflict zones`);
+
+  // Try GDELT as supplementary data (often down, so don't depend on it)
+  let gdeltData: ConflictEvent[] = [];
   try {
     const gdelt = await fetchFromGDELT();
     if (gdelt && gdelt.length > 0) {
-      data = gdelt;
-      console.log(`[Conflicts] GDELT: ${data.length} events`);
-    } else {
-      data = await fetchFromDatabase();
-      console.log(`[Conflicts] Fallback to DB: ${data.length} events`);
+      gdeltData = gdelt;
+      console.log(`[Conflicts] GDELT: ${gdeltData.length} events`);
     }
-  } catch {
-    data = await fetchFromDatabase();
-    console.log(`[Conflicts] GDELT failed, DB fallback: ${data.length} events`);
+  } catch (err: any) {
+    console.warn(`[Conflicts] GDELT unavailable: ${err?.message || err}`);
   }
 
-  conflictCache = {
-    data,
-    expiresAt: Date.now() + 60 * 60 * 1000,
-  };
+  // Merge: DB data + GDELT data (deduplicate by ~10km grid)
+  const seen = new Set<string>();
+  const merged: ConflictEvent[] = [];
 
-  return data;
+  for (const ev of [...dbData, ...gdeltData]) {
+    const key = `${(ev.lat * 10) | 0},${(ev.lng * 10) | 0}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(ev);
+  }
+
+  // Only cache if we have data; don't cache empty results
+  if (merged.length > 0) {
+    conflictCache = {
+      data: merged,
+      expiresAt: Date.now() + 30 * 60 * 1000, // 30 min cache (was 60 min)
+    };
+  } else {
+    // Short cache for empty results to retry sooner
+    conflictCache = {
+      data: merged,
+      expiresAt: Date.now() + 2 * 60 * 1000, // 2 min
+    };
+  }
+
+  console.log(`[Conflicts] Total: ${merged.length} conflict zones (cached)`);
+  return merged;
 }

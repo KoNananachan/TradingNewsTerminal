@@ -171,6 +171,7 @@ export function WorldMapPanel() {
     // which may never complete if some tile fetches fail, blocking layer init.
     const onStyleLoad = () => {
       if (destroyed) return;
+      console.log('[WorldMap] Style loaded, initializing layers...');
 
       // Conflict data source + layers (rendered below news dots)
       map.addSource(CONFLICT_SOURCE, {
@@ -272,13 +273,25 @@ export function WorldMapPanel() {
       });
 
       setIsMapReady(true);
+      console.log('[WorldMap] All layers initialized, map ready');
     };
 
-    // style.load fires once the style JSON is parsed — no need to wait for tiles
+    // style.load fires once the style JSON is parsed — no need to wait for tiles.
+    // Also listen for 'load' as a fallback in case style.load already fired.
     if (map.isStyleLoaded()) {
       onStyleLoad();
     } else {
       map.once('style.load', onStyleLoad);
+      // Safety fallback: if style.load doesn't fire within 5s, try 'load' event
+      const fallbackTimer = setTimeout(() => {
+        if (!destroyed && !map.getSource(SOURCE_ID)) {
+          console.warn('[WorldMap] style.load timeout, trying load event...');
+          map.once('load', onStyleLoad);
+        }
+      }, 5000);
+      // Clear fallback if onStyleLoad already ran
+      const origOnStyleLoad = onStyleLoad;
+      // No need to reassign — fallback checks if source exists
     }
 
     // Click handler
@@ -409,7 +422,13 @@ export function WorldMapPanel() {
 
     const update = () => {
       const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      if (source) source.setData(toGeoJSON(events, visitedMapNodes));
+      if (source) {
+        const geoData = toGeoJSON(events, visitedMapNodes);
+        source.setData(geoData);
+        console.log(`[WorldMap] Updated ${geoData.features.length} news dots`);
+      } else {
+        console.warn('[WorldMap] Source not found, cannot update dots');
+      }
 
       // Detect new events and trigger flash animation
       const currentIds = new Set(events.map(e => e.id));
@@ -481,7 +500,12 @@ export function WorldMapPanel() {
 
     const source = map.getSource(CONFLICT_SOURCE) as maplibregl.GeoJSONSource | undefined;
     if (source) {
-      source.setData(showConflicts && conflicts ? conflictGeoJSON(conflicts) : { type: 'FeatureCollection', features: [] });
+      const emptyCollection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      const conflictData = showConflicts && conflicts ? conflictGeoJSON(conflicts) : emptyCollection;
+      source.setData(conflictData);
+      if (showConflicts) {
+        console.log(`[WorldMap] Updated ${conflictData.features.length} conflict zones`);
+      }
     }
 
     if (map.getLayer(CONFLICT_HEAT_LAYER)) {

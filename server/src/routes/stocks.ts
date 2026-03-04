@@ -122,17 +122,23 @@ router.get('/names', async (req, res) => {
 
     if (stillMissing.length === 0) return res.json(result);
 
-    // 3. Fetch from Yahoo Finance and cache
+    // 3. Fetch from Yahoo Finance and batch cache
     const yahooQuotes = await getQuotes(stillMissing);
     for (const yq of yahooQuotes) {
       if (yq.name) result[yq.symbol] = yq.name;
-      // Cache in TrackedStock
-      await prisma.trackedStock.upsert({
-        where: { symbol: yq.symbol },
-        create: { symbol: yq.symbol, name: yq.name || null, source: 'name-lookup' },
-        update: { name: yq.name || undefined },
-      }).catch((err: any) => {
-        if (err?.code !== 'P2002') console.error('[Stocks] Cache upsert failed:', err?.message);
+    }
+    // Batch upsert in a single transaction instead of sequential awaits
+    if (yahooQuotes.length > 0) {
+      await prisma.$transaction(
+        yahooQuotes.map(yq =>
+          prisma.trackedStock.upsert({
+            where: { symbol: yq.symbol },
+            create: { symbol: yq.symbol, name: yq.name || null, source: 'name-lookup' },
+            update: { name: yq.name || undefined },
+          })
+        )
+      ).catch((err: any) => {
+        if (err?.code !== 'P2002') console.error('[Stocks] Batch cache upsert failed:', err?.message);
       });
     }
 
