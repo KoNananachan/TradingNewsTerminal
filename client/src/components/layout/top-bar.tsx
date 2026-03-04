@@ -68,6 +68,7 @@ export function TopBar() {
                 panelMenuOpen ? 'text-accent border-border' : ''
               }`}
               title={t('togglePanels')}
+              aria-label={t('togglePanels')}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -86,6 +87,7 @@ export function TopBar() {
             }}
             className="text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black"
             title={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
+            aria-label={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -98,6 +100,7 @@ export function TopBar() {
               className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
                 notifPanelOpen ? 'text-accent border-border' : ''
               }`}
+              aria-label={t('notifications')}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -117,6 +120,7 @@ export function TopBar() {
               className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
                 settingsPanelOpen ? 'text-accent border-border' : ''
               }`}
+              aria-label={t('settings')}
             >
               <Settings className="w-4 h-4" />
             </button>

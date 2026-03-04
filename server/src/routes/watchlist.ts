@@ -95,9 +95,10 @@ router.get('/search', async (req, res) => {
       }));
 
     res.json(quotes);
-  } catch (err) {
-    console.error('[Watchlist] Search error:', err);
-    res.json([]);
+  } catch (err: any) {
+    console.error('[Watchlist] Search error:', err?.message || err);
+    const isTimeout = err?.name === 'AbortError' || err?.name === 'TimeoutError';
+    res.status(isTimeout ? 503 : 500).json({ error: 'Search temporarily unavailable' });
   }
 });
 

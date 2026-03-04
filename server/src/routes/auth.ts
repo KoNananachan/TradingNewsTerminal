@@ -82,7 +82,7 @@ router.post('/email/send', async (req, res) => {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(crypto.randomInt(100000, 999999));
 
     await prisma.verificationCode.create({
       data: {

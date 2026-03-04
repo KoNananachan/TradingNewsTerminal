@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNews } from '../../api/hooks/use-news';
 import { useNewsClusters } from '../../api/hooks/use-clusters';
 import { useWatchlist } from '../../api/hooks/use-watchlist';
@@ -43,13 +43,13 @@ export function NewsFeed() {
   const { data: clustersData } = useNewsClusters(20, 3);
 
   // Collect all watchlist symbols for personalized scoring (both localStorage tabs + server)
-  const watchlistSymbols = new Set([
+  const watchlistSymbols = useMemo(() => new Set([
     ...Object.values(tabSymbols).flat(),
     ...(serverWatchlist?.map(w => w.symbol) || []),
-  ]);
+  ]), [tabSymbols, serverWatchlist]);
 
   // Personalized scoring function (F13)
-  const scoreArticle = (article: any): number => {
+  const scoreArticle = useCallback((article: any): number => {
     let score = 0;
     // Watchlist ticker match (×10)
     const tickers = article.recommendations?.map((r: any) => r.symbol) || [];
@@ -68,7 +68,7 @@ export function NewsFeed() {
       score += Math.abs(article.sentimentScore) * 3;
     }
     return score;
-  };
+  }, [watchlistSymbols, categoryClicks]);
 
   // Track category clicks for personalization
   const handleArticleClick = (article: any) => {

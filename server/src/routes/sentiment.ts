@@ -95,6 +95,7 @@ router.get('/trend', async (req, res) => {
         sentimentScore: true,
       },
       orderBy: { scrapedAt: 'asc' },
+      take: 10000, // Cap to prevent unbounded memory usage
     });
 
     // Group into time buckets

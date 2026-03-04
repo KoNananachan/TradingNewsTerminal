@@ -70,7 +70,7 @@ export function NewsDetail() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedArticleId(null)}
-                  className="p-1 -ml-1 text-neutral hover:text-whitehover:bg-white/5 transition-all"
+                  className="p-1 -ml-1 text-neutral hover:text-white hover:bg-white/5 transition-all"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026-03-04
+
+### Added
+- **Database indices:** 7 new indices on StockRecommendation, TrackedStock, AiAnalysisLog, TradeOrder, EconomicEvent for query performance
+- **Accessibility:** `aria-label` on all top bar interactive buttons (panels, fullscreen, notifications, settings)
+- **Symbol format validation** on batch name lookup endpoint (reject malformed symbols)
+
+### Changed
+- News feed `watchlistSymbols` memoized with `useMemo`; `scoreArticle` wrapped in `useCallback` to reduce re-renders
+- WebSocket broadcast wrapped in try-catch to prevent one failed send from breaking the loop
+- Sentiment trend query capped at 10,000 articles to prevent unbounded memory usage
+- Scraper `knownIds` cache now properly evicts oldest entries when exceeding 50K cap
+- Watchlist search errors return proper HTTP status (503 for timeout) instead of silent empty array
+- Earnings calendar errors return 503 instead of silent empty array
+- Indices fetch errors return 503 when no cache available instead of 200 with empty array
+- 2FA verification code uses `crypto.randomInt()` for cryptographically secure generation
+
+### Fixed
+- CSS class typo in news detail back button: `hover:text-whitehover:` → `hover:text-white hover:`
+
 ## [0.9.0] - 2026-03-04
 
 ### Added

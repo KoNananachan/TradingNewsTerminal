@@ -57,7 +57,11 @@ function broadcast(type: string, data: unknown) {
   const message = JSON.stringify({ type, data });
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+      try {
+        client.send(message);
+      } catch {
+        // Connection may have closed between readyState check and send
+      }
     }
   });
 }

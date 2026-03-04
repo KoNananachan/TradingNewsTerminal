@@ -31,7 +31,7 @@ interface ApiItem {
 
 // In-memory cache of known external IDs (capped to prevent unbounded growth)
 const MAX_KNOWN_IDS = 50_000;
-const knownIds = new Set<string>();
+let knownIds = new Set<string>();
 let cacheLoaded = false;
 
 async function loadKnownIds() {
@@ -161,6 +161,12 @@ export async function scrapeArticles(): Promise<number> {
           console.error(`[Scraper] Error inserting: ${item.raw_news.title.slice(0, 50)}`, err);
         }
       }
+    }
+
+    // Evict oldest entries if cache exceeds max size
+    if (knownIds.size > MAX_KNOWN_IDS) {
+      const arr = Array.from(knownIds);
+      knownIds = new Set(arr.slice(arr.length - MAX_KNOWN_IDS));
     }
 
     console.log(`[Scraper] Done. ${itemsNew} new articles.`);

@@ -55,7 +55,8 @@ router.get('/indices', async (_req, res) => {
     res.json(indicesCache);
   } catch (err) {
     console.error('[Stocks] Error fetching indices:', err);
-    res.json(indicesCache.length > 0 ? indicesCache : []);
+    if (indicesCache.length > 0) return res.json(indicesCache);
+    res.status(503).json({ error: 'Market indices temporarily unavailable' });
   }
 });
 
@@ -79,7 +80,7 @@ router.get('/quotes', async (req, res) => {
 router.get('/names', async (req, res) => {
   try {
     const raw = (req.query.symbols as string) || '';
-    const symbols = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    const symbols = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).filter(s => /^[A-Z0-9.\-^=]{1,20}$/.test(s));
     if (symbols.length === 0) return res.json({});
     if (symbols.length > 100) return res.status(400).json({ error: 'Maximum 100 symbols allowed' });
 
@@ -192,9 +193,9 @@ router.get('/earnings-calendar', async (req, res) => {
     });
 
     res.json(results);
-  } catch (err) {
-    console.error('[Stocks] Error fetching earnings calendar:', err);
-    res.json([]);
+  } catch (err: any) {
+    console.error('[Stocks] Error fetching earnings calendar:', err?.message || err);
+    res.status(503).json({ error: 'Earnings data temporarily unavailable' });
   }
 });
 
