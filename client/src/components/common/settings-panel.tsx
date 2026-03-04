@@ -204,7 +204,7 @@ export function SettingsPanel() {
                 <RadioOption
                   name="dataSource"
                   value="tradingnews"
-                  label="TradingNews Official"
+                  label={t('tradingNewsOfficial')}
                   checked={settings.dataSource === 'tradingnews'}
                   onChange={(v) => set('dataSource', v)}
                 />
@@ -222,7 +222,7 @@ export function SettingsPanel() {
                 <RadioOption
                   name="aiProvider"
                   value="tradingnews"
-                  label="TradingNews Official"
+                  label={t('tradingNewsOfficial')}
                   checked={settings.aiProvider === 'tradingnews'}
                   onChange={(v) => set('aiProvider', v)}
                 />
@@ -240,7 +240,7 @@ export function SettingsPanel() {
                 <RadioOption
                   name="tradingChannel"
                   value="hyperliquid"
-                  label="HyperLiquid"
+                  label={t('hyperLiquid')}
                   checked={settings.tradingChannel === 'hyperliquid'}
                   onChange={(v) => set('tradingChannel', v)}
                 />

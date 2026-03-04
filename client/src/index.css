@@ -258,3 +258,88 @@ td {
 tr:hover td {
   background-color: var(--color-hover);
 }
+
+/* ── Premium Polish ── */
+
+/* Smooth scrolling for panels */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #111 25%,
+    #1a1a1a 50%,
+    #111 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* Subtle glow for active/highlighted elements */
+.glow-accent {
+  box-shadow: 0 0 8px var(--color-accent-glow), 0 0 2px var(--color-accent-glow);
+}
+
+.glow-bullish {
+  box-shadow: 0 0 8px var(--color-bullish-glow), 0 0 2px var(--color-bullish-glow);
+}
+
+.glow-bearish {
+  box-shadow: 0 0 8px var(--color-bearish-glow), 0 0 2px var(--color-bearish-glow);
+}
+
+/* Scanline effect for premium feel (subtle) */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Status indicator pulse */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-live {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Fade-in for content */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Improved focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Better button interactions */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Disabled state */
+button:disabled, input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Allow text selection in article content areas */
+.select-text {
+  user-select: text;
+}

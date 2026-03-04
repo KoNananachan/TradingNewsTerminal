@@ -47,13 +47,13 @@ export function TradingPanel() {
           <div className="flex text-[9px] font-black font-mono uppercase tracking-tighter">
             <button
               onClick={() => setChannel('hyperliquid')}
-              className={`px-2 py-0.5 border transition-none ${channel === 'hyperliquid' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+              className={`px-2 py-0.5 border transition-colors ${channel === 'hyperliquid' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
             >
               Hyperliquid
             </button>
             <button
               onClick={() => setChannel('alpaca')}
-              className={`px-2 py-0.5 border-t border-b border-r transition-none ${channel === 'alpaca' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+              className={`px-2 py-0.5 border-t border-b border-r transition-colors ${channel === 'alpaca' ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
             >
               Alpaca
             </button>

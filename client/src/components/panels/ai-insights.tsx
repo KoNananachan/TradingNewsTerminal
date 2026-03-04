@@ -24,7 +24,7 @@ export function AiInsights() {
               return (
                 <div
                   key={rec.id}
-                  className="p-2 border border-border bg-[#050505] hover:border-ai transition-none group relative"
+                  className="p-2 border border-border bg-[#050505] hover:border-ai transition-colors group relative"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export function AiInsights() {
                   {rec.article && (
                     <button
                       onClick={() => setSelectedArticleId(rec.article.id)}
-                      className="flex items-center gap-1 text-[9px] font-bold text-accent hover:underline transition-none w-full text-left uppercase truncate"
+                      className="flex items-center gap-1 text-[9px] font-bold text-accent hover:underline transition-colors w-full text-left uppercase truncate"
                     >
                       SOURCE: {rec.article.title}
                     </button>

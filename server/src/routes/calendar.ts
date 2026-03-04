@@ -13,6 +13,10 @@ router.get('/', async (req, res) => {
     const now = new Date();
     const from = (req.query.from as string) || toDateString(now);
     const to = (req.query.to as string) || toDateString(new Date(now.getTime() + 14 * 24 * 60 * 60_000));
+
+    if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) return res.status(400).json({ error: 'Invalid date format, use YYYY-MM-DD' });
+    if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) return res.status(400).json({ error: 'Invalid date format, use YYYY-MM-DD' });
+
     const country = req.query.country as string | undefined;
     const impact = req.query.impact as string | undefined;
 

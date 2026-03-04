@@ -9,7 +9,7 @@ function getWsUrl() {
 
 const RECONNECT_BASE_DELAY = 1000;
 const RECONNECT_MAX_DELAY = 30000;
-const HEARTBEAT_TIMEOUT = 35_000; // must be > server's 25s ping interval
+const HEARTBEAT_TIMEOUT = 60_000; // must be > server's 25s ping interval (generous buffer)
 
 export function useWebSocket() {
   const queryClient = useQueryClient();
@@ -32,7 +32,7 @@ export function useWebSocket() {
   }, []);
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     try {
       const ws = new WebSocket(getWsUrl());
@@ -93,6 +93,9 @@ export function useWebSocket() {
       const addLog = useAppStore.getState().addLogEntry;
 
       switch (msg.type) {
+        case 'ping':
+          // Server heartbeat — just reset timer (already done above)
+          break;
         case 'news': {
           queryClient.invalidateQueries({ queryKey: ['news'] });
           queryClient.invalidateQueries({ queryKey: ['map-events'] });

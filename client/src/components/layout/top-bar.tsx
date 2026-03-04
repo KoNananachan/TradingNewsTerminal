@@ -52,7 +52,7 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setCommandPaletteOpen(true)}
-          className="flex items-center gap-2 bg-black border border-border px-2 py-1 text-[11px] font-mono text-neutral hover:border-accent hover:text-accent transition-none w-72"
+          className="flex items-center gap-2 bg-black border border-border px-2 py-1 text-[11px] font-mono text-neutral hover:border-accent hover:text-accent transition-colors w-72"
         >
           <Search className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1 text-left uppercase tracking-wider truncate">{t('search')}</span>
@@ -64,10 +64,10 @@ export function TopBar() {
           <div className="relative" ref={panelMenuRef}>
             <button
               onClick={() => setPanelMenuOpen(!panelMenuOpen)}
-              className={`text-neutral hover:text-accent transition-none p-1.5 border border-transparent hover:border-border bg-black ${
+              className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
                 panelMenuOpen ? 'text-accent border-border' : ''
               }`}
-              title="Toggle Panels"
+              title={t('togglePanels')}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -84,8 +84,8 @@ export function TopBar() {
                 document.documentElement.requestFullscreen();
               }
             }}
-            className="text-neutral hover:text-accent transition-none p-1.5 border border-transparent hover:border-border bg-black"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black"
+            title={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -95,7 +95,7 @@ export function TopBar() {
             <button
               data-bell-btn
               onClick={() => setNotifPanelOpen(!notifPanelOpen)}
-              className={`text-neutral hover:text-accent transition-none p-1.5 border border-transparent hover:border-border bg-black ${
+              className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
                 notifPanelOpen ? 'text-accent border-border' : ''
               }`}
             >
@@ -114,7 +114,7 @@ export function TopBar() {
             <button
               data-settings-btn
               onClick={() => setSettingsPanelOpen(!settingsPanelOpen)}
-              className={`text-neutral hover:text-accent transition-none p-1.5 border border-transparent hover:border-border bg-black ${
+              className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
                 settingsPanelOpen ? 'text-accent border-border' : ''
               }`}
             >

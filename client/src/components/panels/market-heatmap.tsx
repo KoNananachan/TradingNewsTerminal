@@ -107,7 +107,7 @@ export function MarketHeatmap() {
         <button
           key={tile.symbol}
           onClick={() => setSelectedSymbol(tile.symbol)}
-          className="absolute flex flex-col items-center justify-center transition-none border border-black hover:border-white z-0 hover:z-10"
+          className="absolute flex flex-col items-center justify-center transition-colors border border-black hover:border-white z-0 hover:z-10"
           style={{
             left: `${tile.x}%`,
             top: `${tile.y}%`,

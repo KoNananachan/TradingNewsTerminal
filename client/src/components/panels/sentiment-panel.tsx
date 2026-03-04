@@ -183,23 +183,25 @@ export function SentimentPanel() {
       {/* Chart */}
       <div className="flex-1 min-h-0 relative">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest z-10">
-            Loading...
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
+            <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-bearish/60 uppercase tracking-widest z-10">
-            Failed to load sentiment data
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load sentiment data</span>
+            <button onClick={() => { setValue(''); setTimeout(() => setValue(value), 0); }} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
           </div>
         )}
         {!isLoading && !error && !data?.buckets?.length && value && (
           <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest z-10">
-            No sentiment data
+            No sentiment data for "{value}"
           </div>
         )}
         {!value && (
           <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest z-10">
-            Enter a value to track
+            Enter a {scope === 'ticker' ? 'ticker' : scope === 'category' ? 'category' : 'market'} to track
           </div>
         )}
         <div ref={chartContainerRef} className="w-full h-full" />

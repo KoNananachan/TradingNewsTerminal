@@ -68,7 +68,10 @@ router.get('/quotes', async (req, res) => {
     res.json(quotes);
   } catch (err: any) {
     console.error('[Stocks] Error fetching quotes:', err?.message || err);
-    res.status(500).json({ error: 'Failed to fetch quotes' });
+    const msg = err?.message?.includes('timeout') || err?.name === 'AbortError'
+      ? 'Market data temporarily unavailable, please retry'
+      : 'Failed to fetch quotes';
+    res.status(err?.name === 'AbortError' ? 503 : 500).json({ error: msg });
   }
 });
 
@@ -78,6 +81,7 @@ router.get('/names', async (req, res) => {
     const raw = (req.query.symbols as string) || '';
     const symbols = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
     if (symbols.length === 0) return res.json({});
+    if (symbols.length > 100) return res.status(400).json({ error: 'Maximum 100 symbols allowed' });
 
     const result: Record<string, string> = {};
     const missing: string[] = [];
@@ -126,20 +130,25 @@ router.get('/names', async (req, res) => {
         where: { symbol: yq.symbol },
         create: { symbol: yq.symbol, name: yq.name || null, source: 'name-lookup' },
         update: { name: yq.name || undefined },
-      }).catch(() => {}); // ignore cache failures
+      }).catch((err: any) => {
+        if (err?.code !== 'P2002') console.error('[Stocks] Cache upsert failed:', err?.message);
+      });
     }
 
     res.json(result);
-  } catch (err) {
-    console.error('[Stocks] Error fetching names:', err);
-    res.status(500).json({ error: 'Failed to fetch stock names' });
+  } catch (err: any) {
+    console.error('[Stocks] Error fetching names:', err?.message || err);
+    const msg = err?.message?.includes('timeout') || err?.name === 'AbortError'
+      ? 'Market data temporarily unavailable, please retry'
+      : 'Failed to fetch stock names';
+    res.status(err?.name === 'AbortError' ? 503 : 500).json({ error: msg });
   }
 });
 
 // GET /api/stocks/earnings-calendar - upcoming earnings for tracked stocks
 router.get('/earnings-calendar', async (req, res) => {
   try {
-    const days = parseInt(req.query.days as string) || 14;
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days as string) || 14));
     const tracked = await prisma.trackedStock.findMany();
     if (tracked.length === 0) return res.json([]);
 
@@ -255,9 +264,12 @@ router.get('/:symbol', async (req, res) => {
       })),
       recommendations,
     });
-  } catch (err) {
-    console.error('[Stocks] Error fetching stock detail:', err);
-    res.status(500).json({ error: 'Failed to fetch stock detail' });
+  } catch (err: any) {
+    console.error('[Stocks] Error fetching stock detail:', err?.message || err);
+    const msg = err?.message?.includes('timeout') || err?.name === 'AbortError'
+      ? 'Market data temporarily unavailable, please retry'
+      : 'Failed to fetch stock detail';
+    res.status(err?.name === 'AbortError' ? 503 : 500).json({ error: msg });
   }
 });
 

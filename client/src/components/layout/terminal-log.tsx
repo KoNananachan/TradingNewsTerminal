@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore, type LogEntry } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 import { Trash2 } from 'lucide-react';
 
 const TYPE_COLORS: Record<LogEntry['type'], string> = {
@@ -20,6 +21,7 @@ export function TerminalLog() {
   const logEntries = useAppStore((s) => s.logEntries);
   const clearLog = useAppStore((s) => s.clearLog);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -31,12 +33,12 @@ export function TerminalLog() {
     <div className="h-full bg-black flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-4 py-1 border-b border-border/30 bg-black/40 shrink-0">
         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent font-mono">
-          Activity Log
+          {t('activityLog')}
         </span>
         <button
           onClick={clearLog}
           className="text-neutral hover:text-bearish transition-colors p-0.5"
-          title="Clear Log"
+          title={t('clearLog')}
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -44,7 +46,7 @@ export function TerminalLog() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-1 font-mono text-[10px] leading-relaxed no-scrollbar">
         {logEntries.length === 0 ? (
           <div className="text-neutral/30 text-center py-4 uppercase tracking-widest text-[9px]">
-            Awaiting activity...
+            {t('awaitingActivity')}
           </div>
         ) : (
           [...logEntries].reverse().map((entry, i) => (

@@ -59,6 +59,10 @@ router.post('/', async (req, res) => {
       return;
     }
 
+    if (parsed.data.condition && parsed.data.condition.length > 2000) {
+      return res.status(400).json({ error: 'Condition too large' });
+    }
+
     const alert = await prisma.alert.create({
       data: {
         name: parsed.data.name,

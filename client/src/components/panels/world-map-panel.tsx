@@ -570,7 +570,7 @@ export function WorldMapPanel() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowExchanges(v => !v)}
-            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-none ${
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-colors ${
               showExchanges
                 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
@@ -581,7 +581,7 @@ export function WorldMapPanel() {
           </button>
           <button
             onClick={() => setShowConflicts(v => !v)}
-            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-none ${
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-colors ${
               showConflicts
                 ? 'text-red-400 bg-red-500/10 border-red-500/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
@@ -595,7 +595,7 @@ export function WorldMapPanel() {
           </div>
           <button
             onClick={toggleFullscreen}
-            className="p-1 text-neutral hover:text-accent border border-transparent hover:border-border bg-black/40 transition-none"
+            className="p-1 text-neutral hover:text-accent border border-transparent hover:border-border bg-black/40 transition-colors"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}

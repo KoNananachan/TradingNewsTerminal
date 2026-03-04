@@ -4,7 +4,7 @@ import type { Server } from 'http';
 let wss: WebSocketServer;
 let pingInterval: ReturnType<typeof setInterval> | undefined;
 
-const PING_INTERVAL = 25_000; // 25s — keep connection alive through NAT/proxies
+const PING_INTERVAL = 20_000; // 20s — keep connection alive through NAT/proxies
 
 export function startWebSocketServer(server: Server) {
   try {

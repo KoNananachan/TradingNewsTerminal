@@ -9,6 +9,7 @@ import { AiInsights } from '../panels/ai-insights';
 import { AiChatPanel } from '../panels/ai-chat-panel';
 import { TerminalLog } from '../layout/terminal-log';
 import { ProLockOverlay } from '../auth/pro-lock-overlay';
+import { PanelErrorBoundary } from '../common/error-boundary';
 import { useAppStore } from '../../stores/use-app-store';
 import { translations, type TranslationKey } from '../../i18n/translations';
 
@@ -379,30 +380,32 @@ export function DockLayout() {
 
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
+    let content: React.ReactNode;
     switch (component) {
-      case PANEL_IDS.NEWS: return <NewsFeed />;
-      case PANEL_IDS.MAP: return <LazyWrap><WorldMapPanel /></LazyWrap>;
-      case PANEL_IDS.STOCKS: return <StockPanel />;
-      case PANEL_IDS.AI: return <ProLockOverlay><AiInsights /></ProLockOverlay>;
-      case PANEL_IDS.LOG: return <TerminalLog />;
-      case PANEL_IDS.TRADING: return <LazyWrap><TradingPanel /></LazyWrap>;
-      case PANEL_IDS.AI_CHAT: return <ProLockOverlay><AiChatPanel /></ProLockOverlay>;
-      case PANEL_IDS.ECON_CALENDAR: return <LazyWrap><EconomicCalendarPanel /></LazyWrap>;
-      case PANEL_IDS.ALERTS: return <LazyWrap><AlertsPanel /></LazyWrap>;
-      case PANEL_IDS.SENTIMENT: return <LazyWrap><SentimentPanel /></LazyWrap>;
-      case PANEL_IDS.RISK: return <LazyWrap><RiskCalculator /></LazyWrap>;
-      case PANEL_IDS.SECTORS: return <LazyWrap><SectorRotationPanel /></LazyWrap>;
-      case PANEL_IDS.EARNINGS: return <LazyWrap><EarningsCalendarPanel /></LazyWrap>;
-      case PANEL_IDS.OPTIONS: return <LazyWrap><OptionsFlowPanel /></LazyWrap>;
-      case PANEL_IDS.INSIDERS: return <LazyWrap><InsiderTradesPanel /></LazyWrap>;
-      case PANEL_IDS.CORRELATIONS: return <LazyWrap><CorrelationMatrixPanel /></LazyWrap>;
-      case PANEL_IDS.LIVE_STREAMS: return <LazyWrap><LiveStreamsPanel /></LazyWrap>;
+      case PANEL_IDS.NEWS: content = <NewsFeed />; break;
+      case PANEL_IDS.MAP: content = <LazyWrap><WorldMapPanel /></LazyWrap>; break;
+      case PANEL_IDS.STOCKS: content = <StockPanel />; break;
+      case PANEL_IDS.AI: content = <ProLockOverlay><AiInsights /></ProLockOverlay>; break;
+      case PANEL_IDS.LOG: content = <TerminalLog />; break;
+      case PANEL_IDS.TRADING: content = <LazyWrap><TradingPanel /></LazyWrap>; break;
+      case PANEL_IDS.AI_CHAT: content = <ProLockOverlay><AiChatPanel /></ProLockOverlay>; break;
+      case PANEL_IDS.ECON_CALENDAR: content = <LazyWrap><EconomicCalendarPanel /></LazyWrap>; break;
+      case PANEL_IDS.ALERTS: content = <LazyWrap><AlertsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SENTIMENT: content = <LazyWrap><SentimentPanel /></LazyWrap>; break;
+      case PANEL_IDS.RISK: content = <LazyWrap><RiskCalculator /></LazyWrap>; break;
+      case PANEL_IDS.SECTORS: content = <LazyWrap><SectorRotationPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS: content = <LazyWrap><EarningsCalendarPanel /></LazyWrap>; break;
+      case PANEL_IDS.OPTIONS: content = <LazyWrap><OptionsFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.INSIDERS: content = <LazyWrap><InsiderTradesPanel /></LazyWrap>; break;
+      case PANEL_IDS.CORRELATIONS: content = <LazyWrap><CorrelationMatrixPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIVE_STREAMS: content = <LazyWrap><LiveStreamsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
-        if (extra) return extra(node);
+        if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
         return <div className="flex items-center justify-center h-full text-neutral text-xs font-mono uppercase">Unknown panel: {component}</div>;
       }
     }
+    return <PanelErrorBoundary>{content}</PanelErrorBoundary>;
   }, []);
 
   return (

@@ -107,13 +107,13 @@ export function NewsFeed() {
           <div className="flex text-[9px] font-bold font-mono uppercase tracking-tighter">
             <button
               onClick={() => setForYouEnabled(false)}
-              className={`px-2 py-0.5 border transition-none ${!forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+              className={`px-2 py-0.5 border transition-colors ${!forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
             >
               {t('allNews')}
             </button>
             <button
               onClick={() => setForYouEnabled(true)}
-              className={`px-2 py-0.5 border-t border-b border-r transition-none ${forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
+              className={`px-2 py-0.5 border-t border-b border-r transition-colors ${forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
             >
               {t('forYou')}
             </button>
@@ -153,13 +153,13 @@ export function NewsFeed() {
       <div className="flex border-b border-border bg-black">
         <button
           onClick={() => setViewMode('articles')}
-          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-none ${viewMode === 'articles' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
+          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-colors ${viewMode === 'articles' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
         >
           {t('articles')}
         </button>
         <button
           onClick={() => setViewMode('clusters')}
-          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-none flex items-center justify-center gap-1 ${viewMode === 'clusters' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
+          className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-widest transition-colors flex items-center justify-center gap-1 ${viewMode === 'clusters' ? 'text-accent border-b border-accent' : 'text-neutral hover:text-white'}`}
         >
           <Layers className="w-3 h-3" /> {t('clusters')}
         </button>
@@ -197,7 +197,7 @@ export function NewsFeed() {
                 <button
                   key={article.id}
                   onClick={() => handleArticleClick(article)}
-                  className="w-full text-left grid grid-cols-[60px_1fr_90px] gap-2 px-2 py-1.5 border-b border-border/50 hover:bg-white/5 transition-none cursor-pointer group relative"
+                  className="w-full text-left grid grid-cols-[60px_1fr_90px] gap-2 px-2 py-1.5 border-b border-border/50 hover:bg-white/5 transition-colors cursor-pointer group relative"
                 >
                   {/* Time Column */}
                   <div className="flex flex-col pt-0.5 border-r border-border/30">
@@ -229,7 +229,7 @@ export function NewsFeed() {
                       )}
                     </div>
                     
-                    <h3 className="text-[12px] font-bold text-neutral group-hover:text-accent leading-snug transition-none line-clamp-2 uppercase">
+                    <h3 className="text-[12px] font-bold text-neutral group-hover:text-accent leading-snug transition-colors line-clamp-2 uppercase">
                       {cleanTitle(article.title)}
                     </h3>
                   </div>

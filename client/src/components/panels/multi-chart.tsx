@@ -94,7 +94,7 @@ function MiniChart({ symbol, onRemove }: { symbol: string; onRemove: () => void 
         </div>
         <button
           onClick={onRemove}
-          className="text-neutral hover:text-bearish transition-none p-0.5 font-mono text-[10px]"
+          className="text-neutral hover:text-bearish transition-colors p-0.5 font-mono text-[10px]"
         >
           [X]
         </button>

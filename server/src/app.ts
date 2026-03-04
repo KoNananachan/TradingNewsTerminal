@@ -1,5 +1,8 @@
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -28,9 +31,46 @@ import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isProd = process.env.NODE_ENV === 'production';
+
+// ── CORS allowlist ──
+const ALLOWED_ORIGINS = isProd
+  ? [
+      'https://tradingnewsweb-985277157092.us-central1.run.app',
+      // Add your custom domain here when ready
+    ]
+  : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+
+// ── Rate limiters ──
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 120,              // 120 requests per minute
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,                    // 10 auth attempts per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts, please try again later' },
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 10,               // 10 AI chat messages per minute
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Rate limit reached for AI chat, please try again shortly' },
+});
 
 export function createApp() {
   const app = express();
+
+  // ── Trust Cloud Run proxy ──
+  app.set('trust proxy', isProd ? 1 : false);
 
   // Support BigInt serialization in JSON responses
   app.set('json replacer', (_key: string, value: unknown) =>
@@ -40,13 +80,42 @@ export function createApp() {
   // Stripe webhook must come BEFORE express.json() — needs raw body
   app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), billingWebhookHandler);
 
-  app.use(cors({ origin: true, credentials: true }));
-  app.use(cookieParser());
-  app.use(express.json());
-  app.use(attachUser);
+  // ── Security headers ──
+  app.use(helmet({
+    contentSecurityPolicy: isProd ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+        connectSrc: ["'self'", "wss:", "ws:", "https://api.hyperliquid.xyz", "https://api.alpaca.markets", "https://accounts.google.com"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
+        workerSrc: ["'self'", "blob:"],
+      },
+    } : false,
+    crossOriginEmbedderPolicy: false, // Allow loading external fonts/images
+    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true } : false,
+  }));
 
-  // Routes
-  app.use('/api/auth', authRouter);
+  // ── CORS ──
+  app.use(cors({
+    origin: ALLOWED_ORIGINS,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // Cache preflight for 24h
+  }));
+
+  app.use(cookieParser());
+  app.use(express.json({ limit: '1mb' })); // Cap body size
+  app.use(attachUser);
+  app.use(globalLimiter);
+
+  // ── Routes ──
+
+  // Auth routes with stricter rate limiting
+  app.use('/api/auth', authLimiter, authRouter);
   app.use('/api/billing', billingRouter);
   app.use('/api/alpaca', alpacaRouter);
   app.use('/api/news', newsRouter);
@@ -56,7 +125,7 @@ export function createApp() {
   app.use('/api/map-events', mapEventsRouter);
   app.use('/api/watchlist', watchlistRouter);
   app.use('/api/audit', auditRouter);
-  app.use('/api/chat', chatRouter);
+  app.use('/api/chat', chatLimiter, chatRouter);
   app.use('/api/conflicts', conflictsRouter);
   app.use('/api/sentiment', sentimentRouter);
   app.use('/api/sectors', sectorsRouter);
@@ -68,7 +137,8 @@ export function createApp() {
   app.use('/api/correlations', correlationsRouter);
 
   // Manual scrape trigger
-  app.post('/api/scrape', async (_req, res) => {
+  const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
+  app.post('/api/scrape', scrapeLimiter, async (_req, res) => {
     try {
       runScrapeAndAnalyze();
       res.json({ message: 'Scrape triggered' });
@@ -77,14 +147,26 @@ export function createApp() {
     }
   });
 
-  // Health check
+  // Health check (excluded from rate limit above)
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // ── Global error handler ──
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    console.error(`[Error] ${status} — ${err.message || err}`);
+    res.status(status).json({
+      error: isProd ? 'Internal server error' : (err.message || 'Internal server error'),
+    });
+  });
+
   // Static files — serve client build in production
   const clientDist = path.resolve(__dirname, '..', '..', 'client', 'dist');
-  app.use(express.static(clientDist));
+  app.use(express.static(clientDist, {
+    maxAge: isProd ? '1y' : 0,
+    etag: true,
+  }));
 
   // SPA fallback — serve index.html for all non-API routes
   app.get('/{*splat}', (_req, res) => {

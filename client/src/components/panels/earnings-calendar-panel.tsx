@@ -80,13 +80,15 @@ export function EarningsCalendarPanel() {
       {/* Content */}
       <div className="flex-1 overflow-auto no-scrollbar">
         {isLoading && (
-          <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Loading...
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
           </div>
         )}
         {error && (
-          <div className="flex items-center justify-center py-8 text-[10px] font-mono text-bearish/60 uppercase tracking-widest">
-            Failed to load earnings
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load earnings</span>
+            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
           </div>
         )}
         {!isLoading && !error && grouped.length === 0 && (

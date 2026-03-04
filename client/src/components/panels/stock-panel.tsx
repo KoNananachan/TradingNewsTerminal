@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useStockDetail, type StockProfile } from '../../api/hooks/use-stocks';
 import { StockChart as ChartWithIndicators } from '../chart/stock-chart';
 import {
@@ -9,8 +9,10 @@ import {
   type WatchlistItem,
 } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 import { GlassCard } from '../common/glass-card';
 import { Sparkline } from '../common/sparkline';
+import { ConfirmDialog } from '../common/confirm-dialog';
 import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin, Building2, Target, DollarSign, BarChart3, ExternalLink } from 'lucide-react';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,13 +64,14 @@ function HeatmapWrapper() {
 }
 
 function CompareWrapper() {
+  const t = useT();
   const setStockPanelView = useAppStore((s) => s.setStockPanelView);
   const clearCompare = useAppStore((s) => s.clearCompare);
   return (
     <GlassCard
       headerRight={
         <div className="flex items-center gap-1">
-          <button onClick={clearCompare} className="text-neutral hover:text-bearish transition-colors p-1 text-[9px] font-mono">Clear</button>
+          <button onClick={clearCompare} className="text-neutral hover:text-bearish transition-colors p-1 text-[9px] font-mono">{t('clearCompare')}</button>
           <button onClick={() => setStockPanelView('watchlist')} className="text-neutral hover:text-white transition-colors p-1">
             <List className="w-3.5 h-3.5" />
           </button>
@@ -86,6 +89,7 @@ function WatchlistView({
 }: {
   onSelect: (symbol: string) => void;
 }) {
+  const t = useT();
   const { data: allWatchlistItems } = useWatchlist();
   const [input, setInput] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -93,6 +97,7 @@ function WatchlistView({
   const [isAddingTab, setIsAddingTab] = useState(false);
   const [newTabName, setNewTabName] = useState('');
   const [flashMap, setFlashMap] = useState<Record<string, 'up' | 'down'>>({});
+  const [deleteTabTarget, setDeleteTabTarget] = useState<string | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const prevPricesRef = useRef<Record<string, number>>({});
@@ -170,8 +175,13 @@ function WatchlistView({
   const handleDeleteTab = (e: React.MouseEvent, tabName: string) => {
     e.stopPropagation();
     if (tabName === 'WATCHLIST' || tabName === 'HOLDING') return;
-    if (confirm(`Are you sure you want to delete the tab "${tabName}"?`)) {
-      removeTab(tabName);
+    setDeleteTabTarget(tabName);
+  };
+
+  const confirmDeleteTab = () => {
+    if (deleteTabTarget) {
+      removeTab(deleteTabTarget);
+      setDeleteTabTarget(null);
     }
   };
 
@@ -192,18 +202,18 @@ function WatchlistView({
           <button
             onClick={() => setStockPanelView('heatmap')}
             className="p-1 text-neutral hover:text-accent transition-colors"
-            title="Heatmap"
+            title={t('heatmap')}
           >
             <Grid3X3 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setStockPanelView('compare')}
             className="p-1 text-neutral hover:text-accent transition-colors relative"
-            title="Compare"
+            title={t('compare')}
           >
             <Columns className="w-3.5 h-3.5" />
             {compareSymbols.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full text-[7px] font-bold text-black flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent text-[7px] font-bold text-black flex items-center justify-center">
                 {compareSymbols.length}
               </span>
             )}
@@ -239,7 +249,7 @@ function WatchlistView({
         <button 
           onClick={() => setIsAddingTab(true)}
           className="p-2 text-neutral hover:text-accent transition-colors"
-          title="Add New Tab"
+          title={t('addNewTab')}
         >
           <FolderPlus className="w-3.5 h-3.5" />
         </button>
@@ -258,13 +268,13 @@ function WatchlistView({
               value={newTabName}
               onChange={e => setNewTabName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAddTab()}
-              placeholder="Tab Name..."
-              className="flex-1 bg-black/40 border border-border/50 rounded px-2 py-1 text-[10px] font-mono text-white outline-none focus:border-accent"
+              placeholder={t('tabNamePlaceholder')}
+              className="flex-1 bg-black/40 border border-border/50 px-2 py-1 text-[10px] font-mono text-white outline-none focus:border-accent"
             />
-            <button onClick={handleAddTab} className="p-1 text-accent hover:bg-accent/20 rounded">
+            <button onClick={handleAddTab} className="p-1 text-accent hover:bg-accent/20">
               <Plus className="w-4 h-4" />
             </button>
-            <button onClick={() => setIsAddingTab(false)} className="p-1 text-neutral hover:bg-white/10 rounded">
+            <button onClick={() => setIsAddingTab(false)} className="p-1 text-neutral hover:bg-white/10">
               <X className="w-4 h-4" />
             </button>
           </motion.div>
@@ -283,14 +293,14 @@ function WatchlistView({
               setHighlightIdx(-1);
             }}
             onFocus={() => input && setShowDropdown(true)}
-            placeholder={`Add to ${activeTab}...`}
-            className="w-full bg-black/40 border border-border/50 rounded-md pl-9 pr-3 py-1.5 text-xs font-mono text-gray-200 placeholder:text-neutral/50 outline-none focus:border-accent/50 transition-all"
+            placeholder={t('addToTab').replace('{tab}', activeTab)}
+            className="w-full bg-black/40 border border-border/50 pl-9 pr-3 py-1.5 text-xs font-mono text-gray-200 placeholder:text-neutral/50 outline-none focus:border-accent/50 transition-all"
             maxLength={20}
           />
         </div>
 
         {showDropdown && suggestions && suggestions.length > 0 && (
-          <div className="absolute left-4 right-4 top-full mt-1 bg-zinc-900 border border-border/80 rounded-lg shadow-2xl z-50 max-h-[250px] overflow-auto backdrop-blur-xl">
+          <div className="absolute left-4 right-4 top-full mt-1 bg-zinc-900 border border-border/80 shadow-2xl z-50 max-h-[250px] overflow-auto backdrop-blur-xl">
             {suggestions.map((s, i) => (
               <button
                 key={s.symbol}
@@ -310,10 +320,10 @@ function WatchlistView({
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead>
             <tr className="text-[9px] text-neutral/50 uppercase tracking-[0.2em] bg-black/10">
-              <th className="text-left px-4 py-2 font-black border-b border-border/10">Asset</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">Price</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">Change</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">Trend</th>
+              <th className="text-left px-4 py-2 font-black border-b border-border/10">{t('asset')}</th>
+              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('price')}</th>
+              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('change')}</th>
+              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('trend')}</th>
               <th className="text-right px-2 py-2 font-black border-b border-border/10 w-[40px]"></th>
             </tr>
           </thead>
@@ -369,7 +379,7 @@ function WatchlistView({
                             addToCompare(item.symbol);
                           }}
                           className={`p-1.5 transition-all ${compareSymbols.includes(item.symbol) ? 'text-accent' : 'text-neutral hover:text-accent'}`}
-                          title="Pin to Compare"
+                          title={t('pinToCompare')}
                         >
                           <Pin className="w-3 h-3" />
                         </button>
@@ -392,13 +402,24 @@ function WatchlistView({
             {filteredItems.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-neutral/40 text-[10px] font-mono uppercase tracking-[0.2em]">
-                  No data points in {activeTab}
+                  {t('noDataInTab').replace('{tab}', activeTab)}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={deleteTabTarget !== null}
+        title={t('deleteTabTitle')}
+        description={t('deleteTabDesc')}
+        confirmLabel={t('confirm')}
+        cancelLabel={t('cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteTab}
+        onCancel={() => setDeleteTabTarget(null)}
+      />
     </GlassCard>
   );
 }
@@ -413,6 +434,7 @@ const RANGE_API_MAP: Record<RangeOption, string> = {
 type DetailTab = 'chart' | 'fundamentals' | 'financials';
 
 function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) {
+  const t = useT();
   const [range, setRange] = useState<RangeOption>('1Y');
   const [detailTab, setDetailTab] = useState<DetailTab>('chart');
   const { data } = useStockDetail(symbol, { range: RANGE_API_MAP[range] });
@@ -452,10 +474,10 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         <div className="flex items-center gap-2">
           <button
             onClick={handleAskAi}
-            className="text-[9px] font-mono font-bold text-ai/70 hover:text-ai uppercase tracking-tighter px-1.5 py-0.5 border border-ai/20 hover:border-ai/50 transition-none"
-            title="Ask AI about this chart"
+            className="text-[9px] font-mono font-bold text-ai/70 hover:text-ai uppercase tracking-tighter px-1.5 py-0.5 border border-ai/20 hover:border-ai/50 transition-colors"
+            title={t('askAiChartTitle')}
           >
-            Ask AI
+            {t('askAiChart')}
           </button>
           {(() => {
             const cp = q?.changePercent;
@@ -486,7 +508,7 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
                 : 'border-transparent text-neutral hover:text-gray-300'
             }`}
           >
-            {tab === 'chart' ? 'Chart' : tab === 'fundamentals' ? 'Profile' : 'Financials'}
+            {tab === 'chart' ? t('chartTab') : tab === 'fundamentals' ? t('profileTab') : t('financialsTab')}
           </button>
         ))}
       </div>
@@ -513,22 +535,22 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
       {q && (
         <div className="shrink-0 border-t border-border/30 bg-black/20">
           <div className="grid grid-cols-4">
-            <StatCell label="Mkt Cap" value={formatCompact(q.marketCap)} />
-            <StatCell label="P/E" value={q.pe != null ? q.pe.toFixed(2) : '--'} />
-            <StatCell label="EPS" value={q.eps != null ? `$${q.eps.toFixed(2)}` : '--'} />
-            <StatCell label="Beta" value={q.beta != null ? q.beta.toFixed(2) : '--'} />
+            <StatCell label={t('mktCap')} value={formatCompact(q.marketCap)} />
+            <StatCell label={t('peLabel')} value={q.pe != null ? q.pe.toFixed(2) : '--'} />
+            <StatCell label={t('epsLabel')} value={q.eps != null ? `$${q.eps.toFixed(2)}` : '--'} />
+            <StatCell label={t('betaLabel')} value={q.beta != null ? q.beta.toFixed(2) : '--'} />
           </div>
           <div className="grid grid-cols-4 border-t border-border/10">
-            <StatCell label="Volume" value={formatCompact(q.volume)} />
-            <StatCell label="Avg Vol" value={formatCompact(q.avgVolume)} />
+            <StatCell label={t('volume')} value={formatCompact(q.volume)} />
+            <StatCell label={t('avgVol')} value={formatCompact(q.avgVolume)} />
             <StatCell
-              label="52W Range"
+              label={t('fiftyTwoWeekRange')}
               value={q.fiftyTwoWeekLow != null && q.fiftyTwoWeekHigh != null
                 ? `${q.fiftyTwoWeekLow.toFixed(0)}–${q.fiftyTwoWeekHigh.toFixed(0)}`
                 : '--'}
             />
             <StatCell
-              label="Day Range"
+              label={t('dayRange')}
               value={q.dayLow != null && q.dayHigh != null
                 ? `${q.dayLow.toFixed(2)}–${q.dayHigh.toFixed(2)}`
                 : '--'}
@@ -542,7 +564,7 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         <div className="shrink-0 border-t border-border/30 flex flex-col max-h-[35%]">
           <div className="flex items-center gap-2 px-4 py-1.5 bg-black/30 border-b border-border/20 shrink-0">
             <Newspaper className="w-3 h-3 text-accent" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-neutral">Signals</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-neutral">{t('signals')}</span>
             <span className="text-[8px] font-mono text-neutral/50 ml-auto">{recs.length}</span>
           </div>
           <div className="overflow-y-auto no-scrollbar flex-1">
@@ -581,16 +603,17 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
 
 // ── Bloomberg-style Fundamentals View ──
 function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+  const t = useT();
   return (
     <div className="p-3 space-y-3">
       {/* Company Info */}
       {p && (p.sector || p.industry) && (
-        <Section icon={<Building2 className="w-3 h-3" />} title="Company">
+        <Section icon={<Building2 className="w-3 h-3" />} title={t('companySection')}>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            <KV label="Sector" value={p.sector} />
-            <KV label="Industry" value={p.industry} />
-            <KV label="Employees" value={p.employees != null ? formatCompact(p.employees) : null} />
-            <KV label="HQ" value={p.city && p.country ? `${p.city}, ${p.country}` : p.country} />
+            <KV label={t('sector')} value={p.sector} />
+            <KV label={t('industry')} value={p.industry} />
+            <KV label={t('employeesLabel')} value={p.employees != null ? formatCompact(p.employees) : null} />
+            <KV label={t('hqLabel')} value={p.city && p.country ? `${p.city}, ${p.country}` : p.country} />
           </div>
           {p.website && (
             <a href={p.website} target="_blank" rel="noopener noreferrer"
@@ -608,11 +631,11 @@ function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: Stock
 
       {/* Analyst Targets */}
       {p && p.targetMeanPrice != null && (
-        <Section icon={<Target className="w-3 h-3" />} title="Analyst Consensus">
+        <Section icon={<Target className="w-3 h-3" />} title={t('analystConsensus')}>
           <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-            <KV label="Target Low" value={`$${p.targetLowPrice?.toFixed(2)}`} />
-            <KV label="Target Mean" value={`$${p.targetMeanPrice?.toFixed(2)}`} accent />
-            <KV label="Target High" value={`$${p.targetHighPrice?.toFixed(2)}`} />
+            <KV label={t('targetLow')} value={`$${p.targetLowPrice?.toFixed(2)}`} />
+            <KV label={t('targetMean')} value={`$${p.targetMeanPrice?.toFixed(2)}`} accent />
+            <KV label={t('targetHigh')} value={`$${p.targetHighPrice?.toFixed(2)}`} />
           </div>
           {q?.price && p.targetMeanPrice && (
             <div className="mt-2">
@@ -620,38 +643,38 @@ function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: Stock
             </div>
           )}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
-            <KV label="Recommendation" value={p.recommendationKey?.toUpperCase()} />
-            <KV label="# Analysts" value={p.numberOfAnalysts?.toString()} />
+            <KV label={t('recommendationLabel')} value={p.recommendationKey?.toUpperCase()} />
+            <KV label={t('numAnalysts')} value={p.numberOfAnalysts?.toString()} />
           </div>
         </Section>
       )}
 
       {/* Valuation */}
-      <Section icon={<DollarSign className="w-3 h-3" />} title="Valuation">
+      <Section icon={<DollarSign className="w-3 h-3" />} title={t('valuationSection')}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <KV label="P/E (TTM)" value={q?.pe != null ? q.pe.toFixed(2) : null} />
-          <KV label="P/E (Fwd)" value={q?.forwardPE != null ? q.forwardPE.toFixed(2) : null} />
-          <KV label="P/B" value={q?.priceToBook != null ? q.priceToBook.toFixed(2) : null} />
-          <KV label="Book Value" value={q?.bookValue != null ? `$${q.bookValue.toFixed(2)}` : null} />
-          <KV label="EPS (TTM)" value={q?.eps != null ? `$${q.eps.toFixed(2)}` : null} />
-          <KV label="EPS (Fwd)" value={q?.epsForward != null ? `$${q.epsForward.toFixed(2)}` : null} />
+          <KV label={t('peTtm')} value={q?.pe != null ? q.pe.toFixed(2) : null} />
+          <KV label={t('peFwd')} value={q?.forwardPE != null ? q.forwardPE.toFixed(2) : null} />
+          <KV label={t('pbLabel')} value={q?.priceToBook != null ? q.priceToBook.toFixed(2) : null} />
+          <KV label={t('bookValueLabel')} value={q?.bookValue != null ? `$${q.bookValue.toFixed(2)}` : null} />
+          <KV label={t('epsTtm')} value={q?.eps != null ? `$${q.eps.toFixed(2)}` : null} />
+          <KV label={t('epsFwd')} value={q?.epsForward != null ? `$${q.epsForward.toFixed(2)}` : null} />
         </div>
       </Section>
 
       {/* Trading Data */}
-      <Section icon={<BarChart3 className="w-3 h-3" />} title="Trading">
+      <Section icon={<BarChart3 className="w-3 h-3" />} title={t('tradingSection')}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <KV label="Open" value={q?.open != null ? `$${q.open.toFixed(2)}` : null} />
-          <KV label="Prev Close" value={q?.previousClose != null ? `$${q.previousClose.toFixed(2)}` : null} />
-          <KV label="50D Avg" value={q?.fiftyDayAvg != null ? `$${q.fiftyDayAvg.toFixed(2)}` : null} />
-          <KV label="200D Avg" value={q?.twoHundredDayAvg != null ? `$${q.twoHundredDayAvg.toFixed(2)}` : null} />
-          <KV label="Beta" value={q?.beta != null ? q.beta.toFixed(2) : null} />
-          <KV label="Short Ratio" value={q?.shortRatio != null ? q.shortRatio.toFixed(2) : null} />
-          <KV label="Shares Out" value={formatCompact(q?.sharesOutstanding)} hint="outstanding" />
-          <KV label="Float" value={formatCompact(q?.floatShares)} />
-          <KV label="Div Yield" value={q?.dividendYield != null ? `${(q.dividendYield * 100).toFixed(2)}%` : null} />
-          <KV label="Div Rate" value={q?.dividendRate != null ? `$${q.dividendRate.toFixed(2)}` : null} />
-          {q?.earningsDate && <KV label="Earnings" value={new Date(q.earningsDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} />}
+          <KV label={t('openLabel')} value={q?.open != null ? `$${q.open.toFixed(2)}` : null} />
+          <KV label={t('prevClose')} value={q?.previousClose != null ? `$${q.previousClose.toFixed(2)}` : null} />
+          <KV label={t('fiftyDayAvg')} value={q?.fiftyDayAvg != null ? `$${q.fiftyDayAvg.toFixed(2)}` : null} />
+          <KV label={t('twoHundredDayAvg')} value={q?.twoHundredDayAvg != null ? `$${q.twoHundredDayAvg.toFixed(2)}` : null} />
+          <KV label={t('betaLabel')} value={q?.beta != null ? q.beta.toFixed(2) : null} />
+          <KV label={t('shortRatioLabel')} value={q?.shortRatio != null ? q.shortRatio.toFixed(2) : null} />
+          <KV label={t('sharesOut')} value={formatCompact(q?.sharesOutstanding)} />
+          <KV label={t('floatLabel')} value={formatCompact(q?.floatShares)} />
+          <KV label={t('divYield')} value={q?.dividendYield != null ? `${(q.dividendYield * 100).toFixed(2)}%` : null} />
+          <KV label={t('divRate')} value={q?.dividendRate != null ? `$${q.dividendRate.toFixed(2)}` : null} />
+          {q?.earningsDate && <KV label={t('earningsLabel')} value={new Date(q.earningsDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} />}
         </div>
       </Section>
     </div>
@@ -660,10 +683,11 @@ function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: Stock
 
 // ── Bloomberg-style Financials View ──
 function FinancialsView({ quote: _q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+  const t = useT();
   if (!p) {
     return (
       <div className="flex items-center justify-center h-full text-[10px] font-mono text-neutral/40 uppercase">
-        No financial data available
+        {t('noFinancialData')}
       </div>
     );
   }
@@ -671,38 +695,38 @@ function FinancialsView({ quote: _q, profile: p }: { quote: any; profile: StockP
   return (
     <div className="p-3 space-y-3">
       {/* Profitability */}
-      <Section icon={<TrendingUp className="w-3 h-3" />} title="Profitability">
+      <Section icon={<TrendingUp className="w-3 h-3" />} title={t('profitability')}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <KV label="Profit Margin" value={fmtPct(p.profitMargins)} />
-          <KV label="ROE" value={fmtPct(p.returnOnEquity)} />
-          <KV label="ROA" value={fmtPct(p.returnOnAssets)} />
-          <KV label="Rev Growth" value={fmtPct(p.revenueGrowth)} />
-          <KV label="Earnings Growth" value={fmtPct(p.earningsGrowth)} />
+          <KV label={t('profitMargin')} value={fmtPct(p.profitMargins)} />
+          <KV label={t('roe')} value={fmtPct(p.returnOnEquity)} />
+          <KV label={t('roa')} value={fmtPct(p.returnOnAssets)} />
+          <KV label={t('revGrowth')} value={fmtPct(p.revenueGrowth)} />
+          <KV label={t('earningsGrowthLabel')} value={fmtPct(p.earningsGrowth)} />
         </div>
       </Section>
 
       {/* Income & Revenue */}
-      <Section icon={<DollarSign className="w-3 h-3" />} title="Income Statement">
+      <Section icon={<DollarSign className="w-3 h-3" />} title={t('incomeStatement')}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <KV label="Revenue" value={formatCompact(p.totalRevenue)} />
-          <KV label="Gross Profit" value={formatCompact(p.grossProfit)} />
-          <KV label="EBITDA" value={formatCompact(p.ebitda)} />
-          <KV label="Free Cash Flow" value={formatCompact(p.freeCashflow)} />
-          <KV label="Op. Cash Flow" value={formatCompact(p.operatingCashflow)} />
+          <KV label={t('revenueLabel')} value={formatCompact(p.totalRevenue)} />
+          <KV label={t('grossProfit')} value={formatCompact(p.grossProfit)} />
+          <KV label={t('ebitdaLabel')} value={formatCompact(p.ebitda)} />
+          <KV label={t('freeCashFlow')} value={formatCompact(p.freeCashflow)} />
+          <KV label={t('opCashFlow')} value={formatCompact(p.operatingCashflow)} />
         </div>
       </Section>
 
       {/* Balance Sheet */}
-      <Section icon={<BarChart3 className="w-3 h-3" />} title="Balance Sheet">
+      <Section icon={<BarChart3 className="w-3 h-3" />} title={t('balanceSheet')}>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <KV label="Total Cash" value={formatCompact(p.totalCash)} />
-          <KV label="Total Debt" value={formatCompact(p.totalDebt)} />
-          <KV label="D/E Ratio" value={p.debtToEquity != null ? p.debtToEquity.toFixed(2) : null} />
-          <KV label="Current Ratio" value={p.currentRatio != null ? p.currentRatio.toFixed(2) : null} />
+          <KV label={t('totalCash')} value={formatCompact(p.totalCash)} />
+          <KV label={t('totalDebtLabel')} value={formatCompact(p.totalDebt)} />
+          <KV label={t('deRatio')} value={p.debtToEquity != null ? p.debtToEquity.toFixed(2) : null} />
+          <KV label={t('currentRatioLabel')} value={p.currentRatio != null ? p.currentRatio.toFixed(2) : null} />
         </div>
         {p.totalCash != null && p.totalDebt != null && (
           <div className="mt-2">
-            <CashDebtBar cash={p.totalCash} debt={p.totalDebt} />
+            <CashDebtBar cash={p.totalCash} debt={p.totalDebt} cashLabel={t('cashLabel')} debtLabel={t('debtLabel')} />
           </div>
         )}
       </Section>
@@ -724,13 +748,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-function KV({ label, value, accent, hint }: { label: string; value: string | null | undefined; accent?: boolean; hint?: string }) {
+function KV({ label, value, accent }: { label: string; value: string | null | undefined; accent?: boolean }) {
   return (
     <div className="flex items-baseline justify-between py-0.5">
       <span className="text-[8px] font-mono text-neutral/50 uppercase tracking-wider">{label}</span>
       <span className={`text-[10px] font-mono font-bold ${accent ? 'text-accent' : 'text-gray-300'}`}>
         {value || '--'}
-        {hint && <span className="text-neutral/30 ml-0.5 text-[7px]">{hint}</span>}
       </span>
     </div>
   );
@@ -744,26 +767,26 @@ function TargetBar({ current, low, mean, high }: { current: number; low: number 
   const pctMean = Math.max(0, Math.min(100, ((mean - lo) / range) * 100));
 
   return (
-    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+    <div className="relative h-2 bg-white/5 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-bearish/30 via-neutral/10 to-bullish/30" />
       <div className="absolute top-0 bottom-0 w-0.5 bg-accent" style={{ left: `${pctMean}%` }} title={`Target: $${mean.toFixed(2)}`} />
-      <div className="absolute top-0 bottom-0 w-1 bg-white rounded-full" style={{ left: `${pctCurrent}%`, transform: 'translateX(-50%)' }} title={`Current: $${current.toFixed(2)}`} />
+      <div className="absolute top-0 bottom-0 w-1 bg-white" style={{ left: `${pctCurrent}%`, transform: 'translateX(-50%)' }} title={`Current: $${current.toFixed(2)}`} />
     </div>
   );
 }
 
-function CashDebtBar({ cash, debt }: { cash: number; debt: number }) {
+function CashDebtBar({ cash, debt, cashLabel, debtLabel }: { cash: number; debt: number; cashLabel: string; debtLabel: string }) {
   const total = cash + debt || 1;
   const cashPct = (cash / total) * 100;
   return (
     <div className="space-y-1">
-      <div className="flex h-1.5 rounded-full overflow-hidden">
+      <div className="flex h-1.5 overflow-hidden">
         <div className="bg-bullish/60" style={{ width: `${cashPct}%` }} />
         <div className="bg-bearish/60" style={{ width: `${100 - cashPct}%` }} />
       </div>
       <div className="flex justify-between text-[7px] font-mono text-neutral/40">
-        <span>Cash {formatCompact(cash)}</span>
-        <span>Debt {formatCompact(debt)}</span>
+        <span>{cashLabel} {formatCompact(cash)}</span>
+        <span>{debtLabel} {formatCompact(debt)}</span>
       </div>
     </div>
   );

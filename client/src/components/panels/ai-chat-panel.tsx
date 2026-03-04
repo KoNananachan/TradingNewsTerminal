@@ -189,7 +189,7 @@ export function AiChatPanel() {
       headerRight={
         <button
           onClick={clearChat}
-          className="text-neutral hover:text-accent transition-none p-0.5"
+          className="text-neutral hover:text-accent transition-colors p-0.5"
           title={t('aiChatClear')}
         >
           <Trash2 className="w-3 h-3" />
@@ -335,7 +335,7 @@ export function AiChatPanel() {
                     <button
                       key={key}
                       onClick={() => handleSend(getSuggestion(key))}
-                      className="text-left px-2 py-1.5 border border-border/50 bg-[#050505] hover:border-accent/50 hover:bg-[#0a0a0a] text-[10px] font-mono text-neutral/70 hover:text-neutral transition-none uppercase"
+                      className="text-left px-2 py-1.5 border border-border/50 bg-[#050505] hover:border-accent/50 hover:bg-[#0a0a0a] text-[10px] font-mono text-neutral/70 hover:text-neutral transition-colors uppercase"
                     >
                       &gt; {getSuggestion(key)}
                     </button>
@@ -360,7 +360,7 @@ export function AiChatPanel() {
                 {msg.role === 'assistant' && (
                   <button
                     onClick={() => copyMessage(msg.content, i)}
-                    className="opacity-0 group-hover:opacity-100 text-neutral/30 hover:text-accent transition-none ml-auto"
+                    className="opacity-0 group-hover:opacity-100 text-neutral/30 hover:text-accent transition-colors ml-auto"
                     title="Copy"
                   >
                     {copiedIdx === i ? (
@@ -440,7 +440,7 @@ export function AiChatPanel() {
           {isStreaming ? (
             <button
               onClick={abort}
-              className="p-1 text-bearish hover:text-white transition-none shrink-0 mb-0.5"
+              className="p-1 text-bearish hover:text-white transition-colors shrink-0 mb-0.5"
               title={t('aiChatStop')}
             >
               <Square className="w-3.5 h-3.5" />
@@ -449,7 +449,7 @@ export function AiChatPanel() {
             <button
               onClick={() => handleSend()}
               disabled={!inputValue.trim()}
-              className="p-1 text-accent hover:text-white transition-none disabled:text-neutral/20 shrink-0 mb-0.5"
+              className="p-1 text-accent hover:text-white transition-colors disabled:text-neutral/20 disabled:cursor-not-allowed shrink-0 mb-0.5"
               title={t('aiChatSend')}
             >
               <Send className="w-3.5 h-3.5" />

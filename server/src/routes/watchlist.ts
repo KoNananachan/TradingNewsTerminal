@@ -80,6 +80,7 @@ router.get('/search', async (req, res) => {
     const url = `${YAHOO_SEARCH}?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0`;
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!resp.ok) return res.json([]);
@@ -103,7 +104,8 @@ router.get('/search', async (req, res) => {
 // DELETE /api/watchlist/:symbol - remove ticker
 router.delete('/:symbol', async (req, res) => {
   try {
-    const sym = req.params.symbol.toUpperCase();
+    const sym = req.params.symbol.toUpperCase().trim();
+    if (!/^[A-Z0-9.\-]{1,10}$/.test(sym)) return res.status(400).json({ error: 'Invalid symbol format' });
 
     await prisma.trackedStock.deleteMany({ where: { symbol: sym } });
     await prisma.stockQuote.deleteMany({ where: { symbol: sym } });

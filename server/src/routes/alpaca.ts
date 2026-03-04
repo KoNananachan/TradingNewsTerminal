@@ -52,7 +52,8 @@ router.post('/connect', async (req, res) => {
     try {
       await alpacaFetch(apiKey, secretKey, paper, '/v2/account');
     } catch (err: any) {
-      return res.status(400).json({ error: 'Invalid Alpaca credentials: ' + (err?.message || '') });
+      console.error('[Alpaca] Credential verification failed:', err?.message);
+      return res.status(400).json({ error: 'Alpaca credentials verification failed. Check your API keys.' });
     }
 
     await prisma.user.update({

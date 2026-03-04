@@ -70,7 +70,7 @@ export function NewsDetail() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedArticleId(null)}
-                  className="p-1 -ml-1 text-neutral hover:text-white rounded hover:bg-white/5 transition-all"
+                  className="p-1 -ml-1 text-neutral hover:text-whitehover:bg-white/5 transition-all"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -84,7 +84,7 @@ export function NewsDetail() {
               </div>
               <button
                 onClick={() => setSelectedArticleId(null)}
-                className="text-neutral hover:text-white p-1 rounded-full hover:bg-white/5 transition-colors"
+                className="text-neutral hover:text-white p-1  hover:bg-white/5 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -92,7 +92,7 @@ export function NewsDetail() {
 
             {isLoading ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-1 bg-border/30 rounded-full overflow-hidden">
+                <div className="w-12 h-1 bg-border/30  overflow-hidden">
                   <motion.div 
                     initial={{ x: '-100%' }}
                     animate={{ x: '100%' }}
@@ -120,7 +120,7 @@ export function NewsDetail() {
 
                   {/* Image Support */}
                   {article.imageUrl && (
-                    <div className="mb-8 rounded-xl overflow-hidden border border-border/30 shadow-2xl">
+                    <div className="mb-8 overflow-hidden border border-border/30 shadow-2xl">
                       <img 
                         src={article.imageUrl} 
                         alt={article.title} 
@@ -136,7 +136,7 @@ export function NewsDetail() {
                   </h2>
 
                   {/* Meta Grid */}
-                  <div className="grid grid-cols-2 gap-px bg-border/20 border border-border/20 rounded-lg overflow-hidden mb-10 shadow-inner">
+                  <div className="grid grid-cols-2 gap-px bg-border/20 border border-border/20  overflow-hidden mb-10 shadow-inner">
                     <div className="p-4 bg-black/30 flex flex-col gap-2">
                       <span className="text-[10px] font-black text-neutral uppercase tracking-[0.2em]">{t('intelligenceSentiment')}</span>
                       <SentimentBadge sentiment={article.sentiment} />
@@ -166,7 +166,7 @@ export function NewsDetail() {
                           return (
                           <div
                             key={rec.id}
-                            className={`p-4 bg-white/[0.02] hover:bg-white/[0.04] rounded-xl border border-border/30 hover:border-accent/30 transition-all group shadow-sm relative ${isLocked ? 'overflow-hidden' : ''}`}
+                            className={`p-4 bg-white/[0.02] hover:bg-white/[0.04]  border border-border/30 hover:border-accent/30 transition-all group shadow-sm relative ${isLocked ? 'overflow-hidden' : ''}`}
                           >
                             {/* Locked overlay for non-first recommendations */}
                             {isLocked && (
@@ -182,7 +182,7 @@ export function NewsDetail() {
                             )}
                             <div className="flex items-center justify-between mb-2.5">
                               <div className="flex items-center gap-3 min-w-0">
-                                <span className="font-mono text-sm font-black text-white bg-black/40 px-2.5 py-1 rounded border border-border/50 group-hover:border-accent/40 transition-colors shrink-0">
+                                <span className="font-mono text-sm font-black text-white bg-black/40 px-2.5 py-1border border-border/50 group-hover:border-accent/40 transition-colors shrink-0">
                                   {rec.symbol}
                                 </span>
                                 {fullName && (
@@ -191,7 +191,7 @@ export function NewsDetail() {
                                   </span>
                                 )}
                                 <span
-                                  className="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-[0.1em] border shrink-0"
+                                  className="text-[10px] font-black px-2 py-0.5uppercase tracking-[0.1em] border shrink-0"
                                   style={{
                                     backgroundColor: getActionColor(rec.action) + '15',
                                     color: getActionColor(rec.action),
@@ -205,14 +205,14 @@ export function NewsDetail() {
                                 onClick={() => isTradeable && handleTrade(rec.symbol)}
                                 disabled={!isTradeable}
                                 title={isTradeable ? `Trade ${rec.symbol} on Hyperliquid` : 'Not available on Hyperliquid'}
-                                className={`shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-[0.1em] border transition-all ${
+                                className={`shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1text-[9px] font-black uppercase tracking-[0.1em] border transition-all ${
                                   isTradeable
                                     ? 'bg-bullish/10 text-bullish border-bullish/40 hover:bg-bullish/20 hover:border-bullish/60 cursor-pointer'
                                     : 'bg-white/[0.03] text-neutral/40 border-border/20 cursor-not-allowed'
                                 }`}
                               >
                                 <Zap className="w-3 h-3" />
-                                TRADE
+                                {t('tradeAction')}
                               </button>
                             </div>
                             {/* Reason: visible for first rec, blurred for rest if non-Pro */}
@@ -253,7 +253,7 @@ export function NewsDetail() {
                       href={article.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 text-[11px] font-black text-white bg-accent hover:bg-accent-glow transition-all py-4 rounded-md uppercase tracking-[0.2em]"
+                      className="flex-1 flex items-center justify-center gap-2 text-[11px] font-black text-white bg-accent hover:bg-accent-glow transition-all py-4uppercase tracking-[0.2em]"
                     >
                       <ExternalLink className="w-4 h-4" />
                       {t('viewSource')}

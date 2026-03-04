@@ -54,7 +54,7 @@ export async function attachUser(req: Request, _res: Response, next: NextFunctio
       alpacaPaper: session.user.alpacaPaper,
     };
   } catch (err) {
-    console.error('[Auth] attachUser error:', err);
+    console.error('[Auth] Session lookup failed:', (err as any)?.code || (err as any)?.message);
   }
   next();
 }

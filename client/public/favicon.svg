@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#000"/>
+  <rect x="1" y="1" width="30" height="30" fill="none" stroke="#ff9900" stroke-width="1.5"/>
+  <path d="M6 22 L11 14 L16 18 L22 8 L26 12" fill="none" stroke="#00ff00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="16" y="28" text-anchor="middle" font-family="monospace" font-size="5" font-weight="bold" fill="#ff9900">TNT</text>
+</svg>

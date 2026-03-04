@@ -9,7 +9,8 @@ export function UserMenu() {
   const user = useAuthStore((s) => s.user);
   const isPro = useAuthStore((s) => s.isPro);
   const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
-  const { logout, openPortal, openCheckout } = useAuthActions();
+  const setUpgradeModalOpen = useAuthStore((s) => s.setUpgradeModalOpen);
+  const { logout, openPortal } = useAuthActions();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -41,7 +42,7 @@ export function UserMenu() {
       <div className="flex items-center gap-2">
         {!isPro() && (
           <button
-            onClick={() => openCheckout()}
+            onClick={() => setUpgradeModalOpen(true)}
             className="px-2 py-0.5 bg-accent text-black text-[9px] font-black uppercase tracking-widest hover:bg-accent/90"
           >
             Pro
@@ -81,7 +82,7 @@ export function UserMenu() {
             </button>
           ) : (
             <button
-              onClick={() => { openCheckout(); setMenuOpen(false); }}
+              onClick={() => { setUpgradeModalOpen(true); setMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono text-accent hover:bg-accent/5 text-left"
             >
               <CreditCard className="w-3 h-3" />

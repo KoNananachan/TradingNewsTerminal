@@ -56,3 +56,25 @@ const server = app.listen(env.PORT, async () => {
 
   console.log('[Server] All services started');
 });
+
+// ── Graceful Shutdown ──
+async function shutdown(signal: string) {
+  console.log(`\n[Server] ${signal} received — shutting down gracefully...`);
+  server.close(async () => {
+    try {
+      await prisma.$disconnect();
+      console.log('[Server] Database disconnected');
+    } catch (err) {
+      console.error('[Server] Error during shutdown:', err);
+    }
+    process.exit(0);
+  });
+  // Force exit after 10s if graceful shutdown hangs
+  setTimeout(() => {
+    console.error('[Server] Forced exit after timeout');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
