@@ -10,14 +10,6 @@ export class ApiError extends Error {
   }
 }
 
-// Debounce login modal to avoid multiple triggers
-let loginModalTimer: ReturnType<typeof setTimeout> | null = null;
-function triggerLoginModal() {
-  if (loginModalTimer) return;
-  useAuthStore.getState().setLoginModalOpen(true);
-  loginModalTimer = setTimeout(() => { loginModalTimer = null; }, 3000);
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Abort controller with timeout
   const controller = new AbortController();
@@ -35,9 +27,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!res.ok) {
-      if (res.status === 401) {
-        triggerLoginModal();
-      }
       const body = await res.json().catch(() => ({ error: res.statusText }));
       throw new ApiError(res.status, body.error || res.statusText);
     }
@@ -52,6 +41,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/** Open the login modal (call explicitly from user-initiated actions only) */
+export function openLoginModal() {
+  useAuthStore.getState().setLoginModalOpen(true);
 }
 
 export const api = {

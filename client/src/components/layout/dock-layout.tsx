@@ -41,7 +41,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 7; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 8; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -206,6 +206,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
           {
             type: 'tabset',
             weight: 55,
+            selected: 0, // Default to MARKET WATCH
             children: [
               { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
               { type: 'tab', name: 'AI INSIGHTS', component: PANEL_IDS.AI, id: PANEL_IDS.AI },
