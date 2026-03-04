@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
-import { Activity, Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2 } from 'lucide-react';
+import { Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2 } from 'lucide-react';
 import { NotificationPanel } from '../common/notification-panel';
 import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
@@ -40,7 +40,7 @@ export function TopBar() {
     <header className="bg-panel border-b border-border flex items-center justify-between px-2 h-10 shrink-0 z-20 sticky top-0">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-2 py-1 bg-accent text-black font-bold uppercase tracking-widest text-xs">
-          <Activity className="w-3.5 h-3.5" />
+          <img src="/logo.png" alt="Logo" className="w-4 h-4" />
           <span>TradingNewsTerminal</span>
         </div>
         <div className="h-5 w-px bg-border mx-1" />
