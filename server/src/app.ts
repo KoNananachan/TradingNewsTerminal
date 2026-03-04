@@ -143,11 +143,14 @@ export function createApp() {
   });
 
   // ── Global error handler ──
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error & { status?: number; statusCode?: number }, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    console.error(`[Error] ${status} — ${err.message || err}`);
+    const message = err.message || 'Internal server error';
+    if (status >= 500) {
+      console.error(`[Error] ${status} — ${message}`);
+    }
     res.status(status).json({
-      error: isProd ? 'Internal server error' : (err.message || 'Internal server error'),
+      error: isProd && status >= 500 ? 'Internal server error' : message,
     });
   });
 

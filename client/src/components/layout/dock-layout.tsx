@@ -30,8 +30,9 @@ const LiveStreamsPanel = lazy(() => import('../panels/live-streams-panel').then(
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center h-full bg-black">
-        <span className="text-[10px] font-mono text-accent animate-pulse uppercase tracking-widest">Loading...</span>
+      <div className="flex flex-col items-center justify-center h-full bg-black gap-2">
+        <div className="w-5 h-5 border-2 border-accent/30 border-t-accent animate-spin" />
+        <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Initializing...</span>
       </div>
     }>
       {children}

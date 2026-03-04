@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 const router = Router();
+
+// Allowed sentiment values for validation
+const VALID_SENTIMENTS = ['BULLISH', 'BEARISH', 'NEUTRAL'];
 
 // GET /api/news - list articles with pagination, category filter, search
 router.get('/', async (req, res) => {
@@ -9,10 +13,19 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const category = req.query.category as string | undefined;
-    const search = req.query.search as string | undefined;
+    const rawSearch = req.query.search as string | undefined;
     const sentiment = req.query.sentiment as string | undefined;
 
-    const where: any = {};
+    // Input validation
+    const search = rawSearch?.slice(0, 200); // Cap search length
+    if (sentiment && !VALID_SENTIMENTS.includes(sentiment)) {
+      return res.status(400).json({ error: 'Invalid sentiment value' });
+    }
+    if (category && !/^[a-z0-9-]{1,50}$/.test(category)) {
+      return res.status(400).json({ error: 'Invalid category slug' });
+    }
+
+    const where: Prisma.NewsArticleWhereInput = {};
     if (category) where.categorySlug = category;
     if (sentiment) where.sentiment = sentiment;
     if (search) {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNews } from '../../api/hooks/use-news';
+import { useNews, type NewsArticle } from '../../api/hooks/use-news';
 import { useNewsClusters } from '../../api/hooks/use-clusters';
 import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
@@ -49,12 +49,12 @@ export function NewsFeed() {
   ]), [tabSymbols, serverWatchlist]);
 
   // Personalized scoring function (F13)
-  const scoreArticle = useCallback((article: any): number => {
+  const scoreArticle = useCallback((article: NewsArticle): number => {
     let score = 0;
     // Watchlist ticker match (×10)
-    const tickers = article.recommendations?.map((r: any) => r.symbol) || [];
-    for (const t of tickers) {
-      if (watchlistSymbols.has(t)) score += 10;
+    const tickers = article.recommendations?.map((r) => r.symbol) || [];
+    for (const ticker of tickers) {
+      if (watchlistSymbols.has(ticker)) score += 10;
     }
     // Category preference (×2)
     if (article.category?.slug && categoryClicks[article.category.slug]) {
@@ -71,7 +71,7 @@ export function NewsFeed() {
   }, [watchlistSymbols, categoryClicks]);
 
   // Track category clicks for personalization
-  const handleArticleClick = (article: any) => {
+  const handleArticleClick = (article: NewsArticle) => {
     setSelectedArticleId(article.id);
     if (article.category?.slug) {
       trackCategoryClick(article.category.slug);
@@ -175,14 +175,30 @@ export function NewsFeed() {
       </div>
 
       <div className="flex-1 overflow-auto no-scrollbar bg-black">
-        {isLoading && (
-          <div className="flex items-center justify-center h-32">
-            <span className="text-[10px] font-mono text-accent animate-pulse uppercase">{t('synchronizing')}</span>
+        {isLoading && !data && (
+          <div className="flex flex-col">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-[60px_1fr_90px] gap-2 px-2 py-1.5 border-b border-border/50">
+                <div className="flex flex-col gap-1 pt-0.5">
+                  <div className="skeleton h-3 w-10" />
+                  <div className="skeleton h-2 w-6" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="skeleton h-2.5 w-16 mb-0.5" />
+                  <div className="skeleton h-3.5 w-full" />
+                  <div className="skeleton h-3.5 w-3/4" />
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="skeleton h-3 w-12" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         {!isLoading && data?.articles?.length === 0 && (
-          <div className="flex items-center justify-center h-32">
+          <div className="flex flex-col items-center justify-center h-32 gap-1">
+            <Search className="w-4 h-4 text-neutral/30" />
             <span className="text-[10px] font-mono text-neutral uppercase">{t('noResults')}</span>
           </div>
         )}

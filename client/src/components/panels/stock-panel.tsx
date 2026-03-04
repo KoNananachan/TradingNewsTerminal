@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useStockDetail, type StockProfile } from '../../api/hooks/use-stocks';
+import { useStockDetail, type StockProfile, type StockQuote } from '../../api/hooks/use-stocks';
 import { StockChart as ChartWithIndicators } from '../chart/stock-chart';
 import {
   useWatchlist,
@@ -602,7 +602,7 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
 }
 
 // ── Bloomberg-style Fundamentals View ──
-function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+function FundamentalsView({ quote: q, profile: p }: { quote: StockQuote | null | undefined; profile: StockProfile | null | undefined }) {
   const t = useT();
   return (
     <div className="p-3 space-y-3">
@@ -682,7 +682,7 @@ function FundamentalsView({ quote: q, profile: p }: { quote: any; profile: Stock
 }
 
 // ── Bloomberg-style Financials View ──
-function FinancialsView({ quote: _q, profile: p }: { quote: any; profile: StockProfile | null | undefined }) {
+function FinancialsView({ quote: _q, profile: p }: { quote: StockQuote | null | undefined; profile: StockProfile | null | undefined }) {
   const t = useT();
   if (!p) {
     return (

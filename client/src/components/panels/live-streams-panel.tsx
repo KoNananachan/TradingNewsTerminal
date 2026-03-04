@@ -103,7 +103,7 @@ export function LiveStreamsPanel() {
           onError: (e: any) => {
             // Error codes: 2=invalid param, 5=HTML5 error, 100=not found, 101/150=embed blocked
             // 150 is the alias for 101 (same meaning)
-            console.warn(`[LiveStreams] YT error ${e.data} for ${videoId}`);
+            // YT embed error (e.g. 101/150 = embed blocked by channel)
             if (!destroyed) setEmbedError(true);
           },
           onReady: () => {

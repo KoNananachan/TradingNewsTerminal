@@ -20,7 +20,12 @@ const server = app.listen(env.PORT, async () => {
 
   console.log(`[Server] HTTP server running on port ${env.PORT}`);
 
-  await seedDatabase();
+  try {
+    await seedDatabase();
+  } catch (err) {
+    console.error('[Server] Database seeding failed:', err);
+  }
+
   startWebSocketServer(server);
   startScraperScheduler();
   startStockTracker();
@@ -78,3 +83,13 @@ async function shutdown(signal: string) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+// Catch unhandled errors to prevent silent crashes
+process.on('unhandledRejection', (reason) => {
+  console.error('[Server] Unhandled rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught exception:', err);
+  // Give the server a moment to log, then exit
+  setTimeout(() => process.exit(1), 1000);
+});
