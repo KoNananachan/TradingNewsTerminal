@@ -8,6 +8,7 @@ import { PanelToggleMenu } from '../common/panel-toggle-menu';
 import { OnboardingTooltip } from '../common/onboarding-tooltip';
 import { UserMenu } from '../auth/user-menu';
 import { WalletButton } from '../common/wallet-button';
+import { useAuthStore } from '../../stores/use-auth-store';
 
 export function TopBar() {
   const [localTime, setLocalTime] = useState(getLocalTime());
@@ -21,6 +22,7 @@ export function TopBar() {
   const settingsPanelOpen = useAppStore((s) => s.settingsPanelOpen);
   const setSettingsPanelOpen = useAppStore((s) => s.setSettingsPanelOpen);
   const t = useT();
+  const user = useAuthStore((s) => s.user);
 
   const [panelMenuOpen, setPanelMenuOpen] = useState(false);
   const panelMenuRef = useRef<HTMLDivElement>(null);
@@ -131,9 +133,12 @@ export function TopBar() {
 
         <div className="h-5 w-px bg-border mx-1" />
 
-        <WalletButton />
-
-        <div className="h-5 w-px bg-border mx-1" />
+        {user && (
+          <>
+            <WalletButton />
+            <div className="h-5 w-px bg-border mx-1" />
+          </>
+        )}
 
         <UserMenu />
 

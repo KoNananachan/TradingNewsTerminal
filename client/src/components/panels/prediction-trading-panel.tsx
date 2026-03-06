@@ -6,6 +6,7 @@ import { PolymarketTradeForm } from '../trading/polymarket-trade-form';
 import { useCLOBPositions } from '../../hooks/use-polymarket';
 import { parseJsonArray, type PolymarketMarket } from '../../lib/polymarket/types';
 import { useT } from '../../i18n';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { TrendingUp, Wallet, Target, BarChart3 } from 'lucide-react';
 
 type PredictionTab = 'markets' | 'positions';
@@ -139,6 +140,22 @@ export function PredictionTradingPanel() {
 
 function PositionsView({ address }: { address: string | null }) {
   const t = useT();
+  const user = useAuthStore((s) => s.user);
+  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Wallet className="w-6 h-6 text-neutral/30" />
+        <button
+          onClick={() => setLoginModalOpen(true)}
+          className="text-[10px] font-mono text-accent uppercase tracking-widest hover:text-accent/80"
+        >
+          {t('login')}
+        </button>
+      </div>
+    );
+  }
 
   if (!address) {
     return (

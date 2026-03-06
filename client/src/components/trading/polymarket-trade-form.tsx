@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAccount, useBalance, useSwitchChain, useSignTypedData } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { polygon } from 'wagmi/chains';
 import { useT } from '../../i18n';
 import { useAppStore } from '../../stores/use-app-store';
@@ -23,6 +24,8 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
   const { isConnected, address, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChain } = useSwitchChain();
+  const user = useAuthStore((s) => s.user);
+  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
   const { signTypedDataAsync } = useSignTypedData();
   const { data: usdcBalance } = useBalance({
     address,
@@ -352,7 +355,15 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
         )}
 
         {/* Submit */}
-        {!isConnected ? (
+        {!user ? (
+          <button
+            type="button"
+            onClick={() => setLoginModalOpen(true)}
+            className="py-2.5 text-[11px] font-black uppercase tracking-widest border border-accent/30 text-accent bg-accent/10 hover:bg-accent/20 transition-colors flex items-center justify-center gap-2"
+          >
+            {t('login')}
+          </button>
+        ) : !isConnected ? (
           <button
             type="button"
             onClick={() => openConnectModal?.()}
