@@ -26,6 +26,7 @@ const OptionsFlowPanel = lazy(() => import('../panels/options-flow-panel').then(
 const InsiderTradesPanel = lazy(() => import('../panels/insider-trades-panel').then(m => ({ default: m.InsiderTradesPanel })));
 const CorrelationMatrixPanel = lazy(() => import('../panels/correlation-matrix-panel').then(m => ({ default: m.CorrelationMatrixPanel })));
 const LiveStreamsPanel = lazy(() => import('../panels/live-streams-panel').then(m => ({ default: m.LiveStreamsPanel })));
+const PredictionTradingPanel = lazy(() => import('../panels/prediction-trading-panel').then(m => ({ default: m.PredictionTradingPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -42,7 +43,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 8; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 9; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -62,6 +63,7 @@ export const PANEL_IDS = {
   INSIDERS: 'insider-trades',
   CORRELATIONS: 'correlation-matrix',
   LIVE_STREAMS: 'live-streams',
+  PREDICTION: 'prediction-trading',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -70,7 +72,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.STOCKS]: 'MARKET WATCH',
   [PANEL_IDS.AI]: 'AI INSIGHTS',
   [PANEL_IDS.LOG]: 'TERMINAL LOG',
-  [PANEL_IDS.TRADING]: 'TRADING',
+  [PANEL_IDS.TRADING]: 'STOCK TRADING',
   [PANEL_IDS.AI_CHAT]: 'AI CHAT',
   [PANEL_IDS.ECON_CALENDAR]: 'ECONOMIC CALENDAR',
   [PANEL_IDS.ALERTS]: 'ALERTS',
@@ -82,6 +84,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.INSIDERS]: 'INSIDER TRADES',
   [PANEL_IDS.CORRELATIONS]: 'CORRELATIONS',
   [PANEL_IDS.LIVE_STREAMS]: 'LIVE STREAMS',
+  [PANEL_IDS.PREDICTION]: 'PREDICTION TRADING',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -91,7 +94,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.STOCKS]: 'panelMarketWatch',
   [PANEL_IDS.AI]: 'panelAiInsights',
   [PANEL_IDS.LOG]: 'panelTerminalLog',
-  [PANEL_IDS.TRADING]: 'panelTrading',
+  [PANEL_IDS.TRADING]: 'panelStockTrading',
   [PANEL_IDS.AI_CHAT]: 'panelAiChat',
   [PANEL_IDS.ECON_CALENDAR]: 'panelEconCalendar',
   [PANEL_IDS.ALERTS]: 'panelAlerts',
@@ -103,6 +106,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.INSIDERS]: 'panelInsiderTrades',
   [PANEL_IDS.CORRELATIONS]: 'panelCorrelations',
   [PANEL_IDS.LIVE_STREAMS]: 'panelLiveStreams',
+  [PANEL_IDS.PREDICTION]: 'panelPredictionTrading',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -121,7 +125,7 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
   PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.STOCKS,
   PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.TRADING,
-  PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
+  PANEL_IDS.PREDICTION, PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
   PANEL_IDS.ECON_CALENDAR, PANEL_IDS.INSIDERS,
 ]);
 
@@ -218,7 +222,8 @@ const DEFAULT_LAYOUT: IJsonModel = {
             type: 'tabset',
             weight: 45,
             children: [
-              { type: 'tab', name: 'TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
+              { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
+              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
             ],
           },
         ],
@@ -401,6 +406,7 @@ export function DockLayout() {
       case PANEL_IDS.INSIDERS: content = <LazyWrap><InsiderTradesPanel /></LazyWrap>; break;
       case PANEL_IDS.CORRELATIONS: content = <LazyWrap><CorrelationMatrixPanel /></LazyWrap>; break;
       case PANEL_IDS.LIVE_STREAMS: content = <LazyWrap><LiveStreamsPanel /></LazyWrap>; break;
+      case PANEL_IDS.PREDICTION: content = <LazyWrap><PredictionTradingPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

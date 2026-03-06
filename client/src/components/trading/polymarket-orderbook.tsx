@@ -1,0 +1,101 @@
+import { useMemo } from 'react';
+import { useCLOBBook, useCLOBMidpoint } from '../../hooks/use-polymarket';
+
+interface PolymarketOrderbookProps {
+  tokenId: string;
+  outcomeName: string;
+}
+
+export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderbookProps) {
+  const { data: book } = useCLOBBook(tokenId);
+  const { data: midData } = useCLOBMidpoint(tokenId);
+
+  const midPrice = midData?.mid ? parseFloat(midData.mid) : null;
+
+  const bids = useMemo(() => {
+    if (!book?.bids) return [];
+    return book.bids.slice(0, 10);
+  }, [book]);
+
+  const asks = useMemo(() => {
+    if (!book?.asks) return [];
+    return book.asks.slice(0, 10).reverse();
+  }, [book]);
+
+  const maxSize = useMemo(() => {
+    const allSizes = [...bids, ...asks].map(l => parseFloat(l.size));
+    return Math.max(...allSizes, 1);
+  }, [bids, asks]);
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-black/60 shrink-0">
+        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-400">
+          {outcomeName} Order Book
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 px-3 py-0.5 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider">
+        <span>Price</span>
+        <span className="text-right">Size</span>
+      </div>
+
+      {/* Asks (sells) */}
+      <div className="flex-1 overflow-hidden flex flex-col justify-end">
+        {asks.length === 0 && (
+          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">No asks</div>
+        )}
+        {asks.map((level, i) => {
+          const size = parseFloat(level.size);
+          const pct = (size / maxSize) * 100;
+          return (
+            <div key={`a-${i}`} className="grid grid-cols-2 px-3 py-[1px] relative text-[10px] font-mono">
+              <div className="absolute right-0 top-0 bottom-0 bg-bearish/8" style={{ width: `${pct}%` }} />
+              <span className="text-bearish font-bold relative z-10">{fmtPrice(level.price)}</span>
+              <span className="text-right text-gray-500 relative z-10">${fmtSize(size)}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mid price */}
+      <div className="px-3 py-1 border-y border-border/30 bg-black/80 text-center">
+        <span className="text-[12px] font-mono font-black text-white">
+          {midPrice != null ? `${(midPrice * 100).toFixed(1)}%` : '—'}
+        </span>
+        <span className="text-[8px] font-mono text-neutral/40 ml-1.5">
+          {midPrice != null ? `$${midPrice.toFixed(3)}` : ''}
+        </span>
+      </div>
+
+      {/* Bids (buys) */}
+      <div className="flex-1 overflow-hidden">
+        {bids.length === 0 && (
+          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">No bids</div>
+        )}
+        {bids.map((level, i) => {
+          const size = parseFloat(level.size);
+          const pct = (size / maxSize) * 100;
+          return (
+            <div key={`b-${i}`} className="grid grid-cols-2 px-3 py-[1px] relative text-[10px] font-mono">
+              <div className="absolute right-0 top-0 bottom-0 bg-bullish/8" style={{ width: `${pct}%` }} />
+              <span className="text-bullish font-bold relative z-10">{fmtPrice(level.price)}</span>
+              <span className="text-right text-gray-500 relative z-10">${fmtSize(size)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function fmtPrice(px: string): string {
+  const n = parseFloat(px);
+  return `${(n * 100).toFixed(1)}%`;
+}
+
+function fmtSize(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toFixed(0);
+}

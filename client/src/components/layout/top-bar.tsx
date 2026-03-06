@@ -7,6 +7,7 @@ import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
 import { OnboardingTooltip } from '../common/onboarding-tooltip';
 import { UserMenu } from '../auth/user-menu';
+import { WalletButton } from '../common/wallet-button';
 
 export function TopBar() {
   const [localTime, setLocalTime] = useState(getLocalTime());
@@ -127,6 +128,10 @@ export function TopBar() {
             <SettingsPanel />
           </div>
         </div>
+
+        <div className="h-5 w-px bg-border mx-1" />
+
+        <WalletButton />
 
         <div className="h-5 w-px bg-border mx-1" />
 
