@@ -42,6 +42,7 @@ interface ApiItem {
   analyzed_at: string;
   is_breaking: boolean;
   breaking_reason: string;
+  category: string;
   assets: ApiAsset[];
   raw_news: ApiRawNews;
 }
@@ -113,10 +114,14 @@ export class TradingNewsSource implements NewsSource {
       url: news.origin_url || null,
       publishedAt,
       isBreaking: item.is_breaking,
+      category: item.category || undefined,
       assets,
     };
   }
 }
+
+// Known API categories (must match seed data)
+const KNOWN_CATEGORIES = new Set(['finance', 'world', 'business', 'politics']);
 
 // ── Scraper engine (source-agnostic) ──
 
@@ -190,6 +195,7 @@ export async function scrapeArticles(source?: NewsSource | null): Promise<number
             url: item.url || '',
             imageUrl: null,
             publishedAt: item.publishedAt,
+            categorySlug: item.category && KNOWN_CATEGORIES.has(item.category) ? item.category : null,
           },
         });
 

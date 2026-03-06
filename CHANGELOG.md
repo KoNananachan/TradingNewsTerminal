@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-03-06
+
+### Changed
+- **News categories:** switched from AI-generated categories (10) to API-provided categories (finance, world, business, politics)
+- **AI analysis:** removed category classification from AI prompt; AI now only handles sentiment, location, and conflict detection
+- **Conflict detection:** AI flags articles as `isConflict` (war, armed conflict, riots, terrorism) instead of relying on GDELT API + geopolitics category
+- **Conflict map:** shows AI-flagged conflict points from last 3 days (was 7 days from geopolitics category + GDELT)
+- Removed GDELT API dependency entirely — conflict data is now 100% from AI-analyzed articles
+- Added `isConflict` field to NewsArticle schema with composite index on `(isConflict, scrapedAt)`
+- Scraper now saves API category directly on article creation (no longer deferred to AI)
+- Seed always runs on startup to ensure new categories exist
+
 ## [0.10.3] - 2026-03-06
 
 ### Changed

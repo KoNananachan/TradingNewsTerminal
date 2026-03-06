@@ -12,6 +12,7 @@ export interface NewsItem {
   url: string | null;
   publishedAt: Date;
   isBreaking?: boolean;
+  category?: string;
   assets: NewsItemAsset[];
 }
 

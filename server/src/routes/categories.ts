@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma.js';
 const router = Router();
 
 // Priority ordering: these slugs appear first, in this order
-const PRIORITY_ORDER = ['geopolitics', 'tech', 'earnings'];
+const PRIORITY_ORDER = ['world', 'finance', 'business', 'politics'];
 
 // GET /api/categories
 router.get('/', async (req, res) => {

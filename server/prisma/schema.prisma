@@ -18,14 +18,17 @@ model NewsArticle {
   publishedAt DateTime?
   scrapedAt   DateTime @default(now())
 
-  // AI enrichment
+  // Category from news API (finance, world, business, politics)
   categorySlug String?
   category     NewsCategory? @relation(fields: [categorySlug], references: [slug])
+
+  // AI enrichment
   sentiment    String?       // BULLISH, BEARISH, NEUTRAL
   sentimentScore Float?      // -1 to 1
   locationName String?
   latitude     Float?
   longitude    Float?
+  isConflict   Boolean @default(false)
 
   recommendations StockRecommendation[]
   aiLogs          AiAnalysisLog[]
@@ -38,6 +41,7 @@ model NewsArticle {
   @@index([analyzed])
   @@index([scrapedAt])
   @@index([latitude, longitude])
+  @@index([isConflict, scrapedAt])
 }
 
 model NewsCategory {

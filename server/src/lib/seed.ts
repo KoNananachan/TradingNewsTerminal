@@ -1,16 +1,10 @@
 import { prisma } from './prisma.js';
 
 const categories = [
-  { slug: 'earnings', name: 'Earnings', color: '#ff8c00', icon: '📊' },
-  { slug: 'macro', name: 'Macro', color: '#2196f3', icon: '🌍' },
-  { slug: 'geopolitics', name: 'Geopolitics', color: '#ff1744', icon: '🏛️' },
-  { slug: 'tech', name: 'Technology', color: '#9c27b0', icon: '💻' },
-  { slug: 'crypto', name: 'Crypto', color: '#ff9800', icon: '₿' },
-  { slug: 'energy', name: 'Energy', color: '#4caf50', icon: '⚡' },
-  { slug: 'healthcare', name: 'Healthcare', color: '#00bcd4', icon: '🏥' },
-  { slug: 'ipo-ma', name: 'IPO & M&A', color: '#e91e63', icon: '🤝' },
-  { slug: 'regulation', name: 'Regulation', color: '#795548', icon: '⚖️' },
-  { slug: 'commodities', name: 'Commodities', color: '#ffc107', icon: '🛢️' },
+  { slug: 'finance', name: 'Finance', color: '#2196f3', icon: '💰' },
+  { slug: 'world', name: 'World', color: '#ff1744', icon: '🌍' },
+  { slug: 'business', name: 'Business', color: '#ff8c00', icon: '🏢' },
+  { slug: 'politics', name: 'Politics', color: '#9c27b0', icon: '🏛️' },
 ];
 
 const defaultStocks = [
@@ -27,11 +21,6 @@ const defaultStocks = [
 ];
 
 export async function seedDatabase() {
-  const catCount = await prisma.newsCategory.count();
-  const stockCount = await prisma.trackedStock.count();
-
-  if (catCount > 0 && stockCount > 0) return;
-
   console.log('[Seed] Seeding database...');
 
   for (const cat of categories) {
