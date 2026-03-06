@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { usePolymarketMarkets } from '../../hooks/use-polymarket';
 import { useT } from '../../i18n';
 import { Search, TrendingUp, Clock, BarChart3 } from 'lucide-react';
@@ -99,7 +99,7 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
   );
 }
 
-function MarketCard({ market, selected, onSelect }: {
+const MarketCard = memo(function MarketCard({ market, selected, onSelect }: {
   market: PolymarketMarket;
   selected: boolean;
   onSelect: () => void;
@@ -193,7 +193,7 @@ function MarketCard({ market, selected, onSelect }: {
       </div>
     </button>
   );
-}
+});
 
 function fmtVolume(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';

@@ -5,6 +5,10 @@ const router = Router();
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const CLOB_API = 'https://clob.polymarket.com';
 
+// Simple in-memory cache for market listings (reduce Gamma API calls)
+const marketsCache = new Map<string, { data: any; expiresAt: number }>();
+const MARKETS_CACHE_TTL = 30_000; // 30 seconds
+
 // Headers that should be forwarded to the CLOB API for authenticated requests
 const POLY_HEADERS = [
   'POLY_ADDRESS',
@@ -49,6 +53,12 @@ router.get('/markets', async (req: Request, res: Response) => {
     if (req.query.offset) params.set('offset', String(req.query.offset));
     if (req.query.tag) params.set('tag', String(req.query.tag));
 
+    const cacheKey = params.toString();
+    const cached = marketsCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json(cached.data);
+    }
+
     const response = await fetch(`${GAMMA_API}/markets?${params}`);
     if (!response.ok) {
       return res.status(response.status).json({ error: 'Polymarket API error' });
@@ -64,6 +74,7 @@ router.get('/markets', async (req: Request, res: Response) => {
           } catch { return true; }
         })
       : data;
+    marketsCache.set(cacheKey, { data: filtered, expiresAt: Date.now() + MARKETS_CACHE_TTL });
     res.json(filtered);
   } catch (err) {
     console.error('[Polymarket] markets error:', err);

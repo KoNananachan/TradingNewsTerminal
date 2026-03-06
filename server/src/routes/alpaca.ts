@@ -148,8 +148,20 @@ router.post('/orders', async (req, res) => {
       return res.status(400).json({ error: 'symbol and side are required' });
     }
 
+    if (!['buy', 'sell'].includes(side)) {
+      return res.status(400).json({ error: 'side must be "buy" or "sell"' });
+    }
+
     if (!qty && !notional) {
       return res.status(400).json({ error: 'qty or notional is required' });
+    }
+
+    if (qty && (isNaN(Number(qty)) || Number(qty) <= 0)) {
+      return res.status(400).json({ error: 'qty must be a positive number' });
+    }
+
+    if (notional && (isNaN(Number(notional)) || Number(notional) <= 0)) {
+      return res.status(400).json({ error: 'notional must be a positive number' });
     }
 
     const orderPayload: Record<string, unknown> = {
@@ -174,7 +186,7 @@ router.post('/orders', async (req, res) => {
     res.json(order);
   } catch (err: any) {
     console.error('[Alpaca] Order error:', err?.message);
-    res.status(502).json({ error: err?.message || 'Failed to place order' });
+    res.status(502).json({ error: 'Failed to place order' });
   }
 });
 

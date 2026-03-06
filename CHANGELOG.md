@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.3] - 2026-03-06
+
+### Changed
+- GDELT conflict data: switched from dead v2/geo API to v2/doc PointData endpoint with non-JSON response guard
+- Polymarket: market list shows full question instead of option name (groupItemTitle)
+- Polymarket: server-side 30s response cache for market listings to reduce Gamma API calls
+- Polymarket: `MarketCard` wrapped in `React.memo` to reduce list re-renders
+- Stock panel: lazy-load `MarketHeatmap` and `MultiChart` for faster initial render
+- Language selector: Chinese moved to last position
+- Alpaca: added input validation (side, qty, notional) and sanitized error responses
+
 ## [0.10.1] - 2026-03-06
 
 ### Changed

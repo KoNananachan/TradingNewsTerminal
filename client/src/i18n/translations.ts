@@ -2,11 +2,11 @@ export type Locale = 'en' | 'zh' | 'ja' | 'ko' | 'es' | 'fr';
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: 'English',
-  zh: '中文',
   ja: '日本語',
   ko: '한국어',
   es: 'Español',
   fr: 'Français',
+  zh: '中文',
 };
 
 const en = {

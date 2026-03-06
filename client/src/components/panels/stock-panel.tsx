@@ -16,8 +16,10 @@ import { ConfirmDialog } from '../common/confirm-dialog';
 import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin, Building2, Target, DollarSign, BarChart3, ExternalLink } from 'lucide-react';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MarketHeatmap } from './market-heatmap';
-import { MultiChart } from './multi-chart';
+import { lazy, Suspense } from 'react';
+
+const MarketHeatmap = lazy(() => import('./market-heatmap').then(m => ({ default: m.MarketHeatmap })));
+const MultiChart = lazy(() => import('./multi-chart').then(m => ({ default: m.MultiChart })));
 
 export function StockPanel() {
   const stockPanelView = useAppStore((s) => s.stockPanelView);
