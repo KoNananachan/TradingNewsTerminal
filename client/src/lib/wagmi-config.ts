@@ -4,7 +4,7 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 
 export const config = getDefaultConfig({
   appName: 'Trading Terminal',
-  projectId: 'trading-terminal-dev', // Replace with WalletConnect Cloud project ID for production
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'trading-terminal-dev',
   chains: [arbitrum, mainnet, polygon],
   transports: {
     [arbitrum.id]: http(),
