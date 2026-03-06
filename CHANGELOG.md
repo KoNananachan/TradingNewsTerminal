@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.1] - 2026-03-06
+
+### Changed
+- Polymarket: filter out resolved/settled markets (closed, inactive, or any outcome ≥ 99%) on both server and client
+- Polymarket: sparkline uses 1-week history instead of all-time for faster load and more relevant trend
+- Polymarket: "Connect Wallet" is now a clickable button that opens RainbowKit modal (was plain text)
+- Polymarket: server-side filtering reduces payload size for market listings
+- Removed unused `parseJsonArray` import from orderbook component
+
+## [0.10.0] - 2026-03-04
+
+### Added
+- **Polymarket Prediction Trading:** Full prediction market integration via Polymarket
+  - Browse markets by category (All, Politics, Crypto, Sports, Science, Culture)
+  - Real-time orderbook with bid/ask depth visualization
+  - Price sparkline charts with trend coloring (green/red)
+  - Trade form with market/limit orders, outcome selection, and order summary
+  - CLOB API proxy for order book, midpoint, price history, and order placement
+  - EIP-712 wallet authentication for signed trading
+  - User position tracking via CLOB data endpoint
+- **Wallet Button in Top Bar:** Persistent wallet connection status visible across all panels
+- **Polygon Chain Support:** Added Polygon network to wagmi config for Polymarket USDC transactions
+- **6-language i18n:** Full translations for all prediction trading keys (EN, 中文, 日本語, 한국어, ES, FR)
+- Renamed "Trading" panel to "Stock Trading" to distinguish from prediction trading
+
 ## [0.9.1] - 2026-03-04
 
 ### Added
