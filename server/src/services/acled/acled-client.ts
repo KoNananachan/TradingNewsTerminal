@@ -95,22 +95,28 @@ function extractFirstLink(html: string): { url: string; title: string } {
 }
 
 async function fetchFromGDELT(): Promise<ConflictEvent[] | null> {
-  const query =
-    'theme:ARMEDCONFLICT ' +
-    '(airstrike OR shelling OR bombing OR missile OR "drone strike" OR offensive OR battle OR casualties)';
+  const query = 'war conflict airstrike missile bombing';
 
+  // v2 geo API is dead (404 since late 2025), use v2 doc PointData instead
   const url =
-    'https://api.gdeltproject.org/api/v2/geo/geo' +
+    'https://api.gdeltproject.org/api/v2/doc/doc' +
     '?query=' + encodeURIComponent(query) +
-    '&mode=pointdata&format=geojson&timespan=7d&maxpoints=1000';
+    '&mode=PointData&format=GeoJSON&timespan=24h&maxrecords=250';
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) {
     console.warn(`[Conflicts] GDELT returned ${res.status}`);
     return null;
   }
 
-  const geojson = await res.json();
+  const text = await res.text();
+  // GDELT sometimes returns HTML error pages instead of JSON
+  if (!text.startsWith('{') && !text.startsWith('[')) {
+    console.warn('[Conflicts] GDELT returned non-JSON response');
+    return null;
+  }
+
+  const geojson = JSON.parse(text);
   const features: any[] = geojson.features || [];
 
   return features

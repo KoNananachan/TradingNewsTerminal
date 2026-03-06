@@ -13,3 +13,4 @@ dist/
 # Deployment configs with project-specific secrets
 cloudbuild.yaml
 DEPLOY.md
+DEPLOYMENT_GUIDE.md

@@ -135,7 +135,7 @@ function MarketCard({ market, selected, onSelect }: {
         <div className="flex-1 min-w-0">
           {/* Question */}
           <div className="text-[10px] font-mono font-bold text-white leading-tight mb-1 line-clamp-2 group-hover:text-violet-200">
-            {market.groupItemTitle || market.question}
+            {market.question}
           </div>
 
           {/* Outcome bar */}
