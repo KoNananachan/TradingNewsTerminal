@@ -41,6 +41,10 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   STRIPE_PRICE_ID: z.string().default(''),
+
+  // Encryption key for sensitive credentials (Alpaca API keys)
+  // Use a 64-char hex string or any passphrase
+  ENCRYPTION_KEY: z.string().default(''),
 });
 
 // Parse raw env, then resolve aliases (AI_* takes priority over GEMINI_*)

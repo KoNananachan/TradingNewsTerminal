@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { decrypt, isEncrypted } from '../lib/crypto.js';
 
 export interface AuthUser {
   id: number;
@@ -42,6 +43,18 @@ export async function attachUser(req: Request, _res: Response, next: NextFunctio
       return next();
     }
 
+    // Decrypt Alpaca credentials if they exist and are encrypted
+    let alpacaApiKey = session.user.alpacaApiKey;
+    let alpacaSecretKey = session.user.alpacaSecretKey;
+    try {
+      if (alpacaApiKey && isEncrypted(alpacaApiKey)) alpacaApiKey = decrypt(alpacaApiKey);
+      if (alpacaSecretKey && isEncrypted(alpacaSecretKey)) alpacaSecretKey = decrypt(alpacaSecretKey);
+    } catch {
+      // If decryption fails, treat as no credentials
+      alpacaApiKey = null;
+      alpacaSecretKey = null;
+    }
+
     req.user = {
       id: session.user.id,
       email: session.user.email,
@@ -49,8 +62,8 @@ export async function attachUser(req: Request, _res: Response, next: NextFunctio
       avatarUrl: session.user.avatarUrl,
       plan: session.user.plan,
       planExpiresAt: session.user.planExpiresAt,
-      alpacaApiKey: session.user.alpacaApiKey,
-      alpacaSecretKey: session.user.alpacaSecretKey,
+      alpacaApiKey,
+      alpacaSecretKey,
       alpacaPaper: session.user.alpacaPaper,
     };
   } catch (err) {

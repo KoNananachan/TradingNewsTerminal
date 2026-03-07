@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { encrypt, decrypt, isEncrypted } from '../lib/crypto.js';
 
 const router = Router();
 
@@ -59,8 +60,8 @@ router.post('/connect', async (req, res) => {
     await prisma.user.update({
       where: { id: req.user!.id },
       data: {
-        alpacaApiKey: apiKey,
-        alpacaSecretKey: secretKey,
+        alpacaApiKey: encrypt(apiKey),
+        alpacaSecretKey: encrypt(secretKey),
         alpacaPaper: paper,
       },
     });

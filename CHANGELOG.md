@@ -47,7 +47,7 @@ All notable changes to this project will be documented in this file.
   - User position tracking via CLOB data endpoint
 - **Wallet Button in Top Bar:** Persistent wallet connection status visible across all panels
 - **Polygon Chain Support:** Added Polygon network to wagmi config for Polymarket USDC transactions
-- **6-language i18n:** Full translations for all prediction trading keys (EN, 中文, 日本語, 한국어, ES, FR)
+- **6-language i18n:** Full translations for all prediction trading keys (EN, ZH, JA, KO, ES, FR)
 - Renamed "Trading" panel to "Stock Trading" to distinguish from prediction trading
 
 ## [0.9.1] - 2026-03-04
@@ -118,7 +118,7 @@ All notable changes to this project will be documented in this file.
 - **News Keyword Search:** Debounced search bar in news feed with i18n support
 - **7 Additional Global Indices:** DAX, CAC 40, Shanghai Composite, Sensex, ASX 200, KOSPI, TSX
 - **Alpaca Trading Channel:** Paper/live stock trading via Alpaca API
-- **i18n System:** 6 languages (EN, 中文, 日本語, 한국어, Español, Français)
+- **i18n System:** 6 languages (EN, ZH, JA, KO, Español, Français)
 - **New User Onboarding Tooltip:** Panel discovery prompt on first visit
 - **Live Streams as Default Panel:** Placed in left-bottom tabset
 
@@ -262,7 +262,7 @@ All notable changes to this project will be documented in this file.
 ## [0.3.0] - 2025-02-27
 
 ### Added
-- Multi-language UI support (English, 中文, 日本語, 한국어, Español, Français)
+- Multi-language UI support (English, ZH, JA, KO, Español, Français)
 - Language selector in Settings panel (persisted in localStorage)
 - All Hyperliquid perpetual contracts shown in trading market list (previously only BTC/ETH)
 - Auto-seed database on server startup (categories + default tracked stocks)

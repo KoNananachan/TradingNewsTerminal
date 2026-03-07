@@ -6,6 +6,34 @@ import { env } from '../config/env.js';
 
 const router = Router();
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// Brute-force protection: track failed verify attempts per IP
+const verifyAttempts = new Map<string, { count: number; resetAt: number }>();
+const VERIFY_MAX_ATTEMPTS = 5;
+const VERIFY_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function isVerifyBlocked(ip: string): boolean {
+  const entry = verifyAttempts.get(ip);
+  if (!entry) return false;
+  if (Date.now() > entry.resetAt) {
+    verifyAttempts.delete(ip);
+    return false;
+  }
+  return entry.count >= VERIFY_MAX_ATTEMPTS;
+}
+
+function recordVerifyAttempt(ip: string) {
+  const entry = verifyAttempts.get(ip);
+  if (!entry || Date.now() > entry.resetAt) {
+    verifyAttempts.set(ip, { count: 1, resetAt: Date.now() + VERIFY_WINDOW_MS });
+  } else {
+    entry.count++;
+  }
+}
+
+function clearVerifyAttempts(ip: string) {
+  verifyAttempts.delete(ip);
+}
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: 'lax' as const,
@@ -121,6 +149,11 @@ router.post('/email/send', async (req, res) => {
 // POST /api/auth/email/verify — Verify code and login
 router.post('/email/verify', async (req, res) => {
   try {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    if (isVerifyBlocked(ip)) {
+      return res.status(429).json({ error: 'Too many verification attempts, please try again later' });
+    }
+
     const { email, code } = req.body;
     if (!email || !code) {
       return res.status(400).json({ error: 'Email and code required' });
@@ -137,9 +170,11 @@ router.post('/email/verify', async (req, res) => {
     });
 
     if (!record) {
+      recordVerifyAttempt(ip);
       return res.status(400).json({ error: 'Invalid or expired code' });
     }
 
+    clearVerifyAttempts(ip);
     await prisma.verificationCode.update({
       where: { id: record.id },
       data: { used: true },

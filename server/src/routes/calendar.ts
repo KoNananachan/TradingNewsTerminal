@@ -30,9 +30,11 @@ router.get('/', async (req, res) => {
     if (country) where.country = country;
     if (impact) where.impact = impact;
 
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit as string) || 200));
     const events = await prisma.economicEvent.findMany({
       where,
       orderBy: { date: 'asc' },
+      take: limit,
     });
 
     res.json(events);

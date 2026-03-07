@@ -22,7 +22,7 @@ A real-time trading news terminal with AI-powered analysis, prediction markets, 
 - **Risk Calculator** — Position sizer, Kelly criterion, max drawdown analyzer
 - **Sector Rotation** — 11 GICS sector ETF momentum analysis
 - **AI Chat** — Context-aware financial assistant with article/chart attachments
-- **6 Languages** — English, Español, Français, 日本語, 한국어, 中文
+- **6 Languages** — English, Español, Français, Japanese, Korean, Chinese
 - **Web3 Wallet** — RainbowKit + wagmi for Polygon/Arbitrum/Mainnet
 - **Auth & Billing** — Google OAuth, email verification, Stripe Pro subscription
 
