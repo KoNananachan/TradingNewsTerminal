@@ -81,7 +81,19 @@ export function createApp() {
 
   // ── Security headers ──
   app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: isProd ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://www.youtube.com", "https://s.ytimg.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+        connectSrc: ["'self'", "https://api.hyperliquid.xyz", "wss://api.hyperliquid.xyz", "https://accounts.google.com"],
+        frameSrc: ["'self'", "https://accounts.google.com", "https://www.youtube.com"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    } : false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,

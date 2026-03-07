@@ -310,7 +310,9 @@ export function WorldMapPanel() {
 
       const header = document.createElement('div');
       header.className = 'popup-header';
-      header.innerHTML = '<span class="pulse-dot"></span>';
+      const dot = document.createElement('span');
+      dot.className = 'pulse-dot';
+      header.appendChild(dot);
       header.appendChild(document.createTextNode(`INTEL NODE: ${props.location || ''}`));
       container.appendChild(header);
 
@@ -346,7 +348,9 @@ export function WorldMapPanel() {
 
       const header = document.createElement('div');
       header.className = 'popup-header';
-      header.innerHTML = '<span class="pulse-dot"></span>';
+      const dot = document.createElement('span');
+      dot.className = 'pulse-dot';
+      header.appendChild(dot);
       header.appendChild(document.createTextNode(`REGIONAL HUB (${total} NODES)`));
       container.appendChild(header);
 

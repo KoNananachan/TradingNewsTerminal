@@ -38,7 +38,9 @@ const tradeSchema = z.object({
 router.post('/session', requireAuth, async (req, res) => {
   try {
     const data = sessionSchema.parse(req.body);
-    const session = await prisma.userSession.create({ data });
+    const session = await prisma.userSession.create({
+      data: { ...data, userId: req.user!.id },
+    });
     res.status(201).json(session);
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -54,7 +56,9 @@ router.post('/session', requireAuth, async (req, res) => {
 router.post('/trade', requireAuth, async (req, res) => {
   try {
     const data = tradeSchema.parse(req.body);
-    const trade = await prisma.tradeOrder.create({ data });
+    const trade = await prisma.tradeOrder.create({
+      data: { ...data, userId: req.user!.id },
+    });
     res.status(201).json(trade);
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -104,17 +108,13 @@ router.get('/ai-logs', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/audit/trades?wallet=0x...&limit=50
+// GET /api/audit/trades?limit=50
 router.get('/trades', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const wallet = req.query.wallet as string | undefined;
-
-    const where: any = {};
-    if (wallet) where.walletAddress = wallet;
 
     const trades = await prisma.tradeOrder.findMany({
-      where,
+      where: { userId: req.user!.id },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
@@ -125,17 +125,13 @@ router.get('/trades', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/audit/sessions?wallet=0x...&limit=50
+// GET /api/audit/sessions?limit=50
 router.get('/sessions', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const wallet = req.query.wallet as string | undefined;
-
-    const where: any = {};
-    if (wallet) where.walletAddress = wallet;
 
     const sessions = await prisma.userSession.findMany({
-      where,
+      where: { userId: req.user!.id },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

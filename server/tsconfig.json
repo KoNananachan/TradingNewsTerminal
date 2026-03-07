@@ -10,7 +10,7 @@
     "rootDir": "src",
     "resolveJsonModule": true,
     "declaration": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],

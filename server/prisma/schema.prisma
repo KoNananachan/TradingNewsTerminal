@@ -136,6 +136,8 @@ model AiAnalysisLog {
 
 model UserSession {
   id            Int      @id @default(autoincrement())
+  userId        Int?
+  user          User?    @relation("userSessions", fields: [userId], references: [id], onDelete: Cascade)
   walletAddress String
   chainId       Int?
   eventType     String   // connect, disconnect
@@ -143,10 +145,13 @@ model UserSession {
   createdAt     DateTime @default(now())
 
   @@index([walletAddress])
+  @@index([userId])
 }
 
 model TradeOrder {
   id              Int      @id @default(autoincrement())
+  userId          Int?
+  user            User?    @relation("userTrades", fields: [userId], references: [id], onDelete: Cascade)
   walletAddress   String
   coin            String
   side            String   // buy, sell
@@ -163,6 +168,7 @@ model TradeOrder {
 
   @@index([walletAddress])
   @@index([createdAt])
+  @@index([userId])
 }
 
 // ── Pro Trading Features (v0.7.0) ──
@@ -189,6 +195,8 @@ model EconomicEvent {
 
 model Alert {
   id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation("userAlerts", fields: [userId], references: [id], onDelete: Cascade)
   name      String
   type      String   // price_cross, price_change_pct, sentiment_shift, news_keyword, volume_spike
   symbol    String?
@@ -201,6 +209,7 @@ model Alert {
   @@index([type])
   @@index([symbol])
   @@index([enabled])
+  @@index([userId])
 }
 
 model AlertTrigger {
@@ -297,6 +306,9 @@ model User {
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
   sessions             AuthSession[]
+  alerts               Alert[]       @relation("userAlerts")
+  userSessions         UserSession[] @relation("userSessions")
+  trades               TradeOrder[]  @relation("userTrades")
 }
 
 model AuthSession {

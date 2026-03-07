@@ -23,10 +23,11 @@ const updateAlertSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
-// GET /api/alerts - list all alerts with trigger count
-router.get('/', async (_req, res) => {
+// GET /api/alerts - list user's alerts with trigger count
+router.get('/', async (req, res) => {
   try {
     const alerts = await prisma.alert.findMany({
+      where: { userId: req.user!.id },
       include: {
         _count: { select: { triggers: true } },
       },
@@ -69,6 +70,7 @@ router.post('/', async (req, res) => {
 
     const alert = await prisma.alert.create({
       data: {
+        userId: req.user!.id,
         name: parsed.data.name,
         type: parsed.data.type,
         symbol: parsed.data.symbol ?? null,
@@ -112,6 +114,10 @@ router.put('/:id', async (req, res) => {
       res.status(404).json({ error: 'Alert not found' });
       return;
     }
+    if (existing.userId !== req.user!.id) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
 
     const alert = await prisma.alert.update({
       where: { id },
@@ -137,6 +143,10 @@ router.delete('/:id', async (req, res) => {
     const existing = await prisma.alert.findUnique({ where: { id } });
     if (!existing) {
       res.status(404).json({ error: 'Alert not found' });
+      return;
+    }
+    if (existing.userId !== req.user!.id) {
+      res.status(403).json({ error: 'Forbidden' });
       return;
     }
 

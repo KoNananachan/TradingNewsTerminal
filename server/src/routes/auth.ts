@@ -137,7 +137,7 @@ router.post('/email/send', async (req, res) => {
         }),
       });
     } else {
-      console.log(`[Auth] Email code for ${email}: ${code} (Resend not configured)`);
+      console.log('[Auth] Verification code generated (Resend not configured)');
     }
 
     res.json({ ok: true });
@@ -237,7 +237,7 @@ router.get('/me/export', requireAuth, async (req, res) => {
   try {
     const userId = req.user!.id;
 
-    const [user, sessions, trades] = await Promise.all([
+    const [user, sessions, trades, alerts, userSessions] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -250,7 +250,6 @@ router.get('/me/export', requireAuth, async (req, res) => {
           alpacaPaper: true,
           createdAt: true,
           updatedAt: true,
-          // Exclude encrypted credentials
         },
       }),
       prisma.authSession.findMany({
@@ -258,7 +257,15 @@ router.get('/me/export', requireAuth, async (req, res) => {
         select: { id: true, createdAt: true, expiresAt: true },
       }),
       prisma.tradeOrder.findMany({
-        where: { walletAddress: req.user!.email },
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.alert.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.userSession.findMany({
+        where: { userId },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
@@ -272,6 +279,8 @@ router.get('/me/export', requireAuth, async (req, res) => {
         expiresAt: s.expiresAt,
       })),
       trades,
+      alerts,
+      walletSessions: userSessions,
     });
   } catch (err: any) {
     console.error('[Auth] Data export error:', err?.message);
@@ -284,8 +293,14 @@ router.delete('/me', requireAuth, async (req, res) => {
   try {
     const userId = req.user!.id;
 
-    // Delete all user data in a transaction
+    // Delete all user data in a transaction (cascade covers alerts, trades, sessions)
     await prisma.$transaction([
+      prisma.alertTrigger.deleteMany({
+        where: { alert: { userId } },
+      }),
+      prisma.alert.deleteMany({ where: { userId } }),
+      prisma.tradeOrder.deleteMany({ where: { userId } }),
+      prisma.userSession.deleteMany({ where: { userId } }),
       prisma.authSession.deleteMany({ where: { userId } }),
       prisma.user.delete({ where: { id: userId } }),
     ]);

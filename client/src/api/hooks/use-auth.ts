@@ -3,6 +3,15 @@ import { useAuthStore, type AuthUser } from '../../stores/use-auth-store';
 
 const BASE = '/api';
 
+function isSafeRedirectUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname.endsWith('.stripe.com');
+  } catch {
+    return false;
+  }
+}
+
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -64,12 +73,12 @@ export function useAuthActions() {
 
   const openCheckout = useCallback(async () => {
     const data = await fetchJSON<{ url: string }>('/billing/checkout', { method: 'POST' });
-    if (data.url) window.location.href = data.url;
+    if (data.url && isSafeRedirectUrl(data.url)) window.location.href = data.url;
   }, []);
 
   const openPortal = useCallback(async () => {
     const data = await fetchJSON<{ url: string }>('/billing/portal', { method: 'POST' });
-    if (data.url) window.location.href = data.url;
+    if (data.url && isSafeRedirectUrl(data.url)) window.location.href = data.url;
   }, []);
 
   return { loginWithGoogle, sendEmailCode, verifyEmailCode, logout, openCheckout, openPortal };

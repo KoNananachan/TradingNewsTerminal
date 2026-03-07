@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const YAHOO_SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
 
@@ -34,8 +35,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/watchlist - add ticker
-router.post('/', async (req, res) => {
+// POST /api/watchlist - add ticker (requires auth)
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { symbol } = req.body;
     if (!symbol || typeof symbol !== 'string') {
@@ -102,10 +103,10 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// DELETE /api/watchlist/:symbol - remove ticker
-router.delete('/:symbol', async (req, res) => {
+// DELETE /api/watchlist/:symbol - remove ticker (requires auth)
+router.delete('/:symbol', requireAuth, async (req, res) => {
   try {
-    const sym = req.params.symbol.toUpperCase().trim();
+    const sym = String(req.params.symbol).toUpperCase().trim();
     if (!/^[A-Z0-9.\-]{1,10}$/.test(sym)) return res.status(400).json({ error: 'Invalid symbol format' });
 
     await prisma.trackedStock.deleteMany({ where: { symbol: sym } });

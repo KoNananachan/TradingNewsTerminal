@@ -87,7 +87,7 @@ export function LiveStreamsPanel() {
       // Create a fresh div for the player each time
       const el = document.createElement('div');
       el.id = `yt-player-${Date.now()}`;
-      containerRef.current!.innerHTML = '';
+      containerRef.current!.replaceChildren();
       containerRef.current!.appendChild(el);
 
       player = new (window as any).YT.Player(el.id, {
@@ -122,7 +122,7 @@ export function LiveStreamsPanel() {
         playerRef.current?.destroy();
       } catch { /* ignore */ }
       playerRef.current = null;
-      if (containerRef.current) containerRef.current.innerHTML = '';
+      if (containerRef.current) containerRef.current.replaceChildren();
     };
   }, [videoId, embedError]);
 

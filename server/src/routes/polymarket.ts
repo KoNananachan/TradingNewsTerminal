@@ -86,7 +86,11 @@ router.get('/markets', async (req: Request, res: Response) => {
 // GET /markets/:id - single market detail
 router.get('/markets/:id', async (req: Request, res: Response) => {
   try {
-    const response = await fetch(`${GAMMA_API}/markets/${req.params.id}`);
+    const marketId = String(req.params.id);
+    if (!/^[a-zA-Z0-9_\-]{1,200}$/.test(marketId)) {
+      return res.status(400).json({ error: 'Invalid market ID' });
+    }
+    const response = await fetch(`${GAMMA_API}/markets/${marketId}`);
     if (!response.ok) {
       return res.status(response.status).json({ error: 'Market not found' });
     }
@@ -282,9 +286,13 @@ router.post('/clob/order', requireAuth, async (req: Request, res: Response) => {
 // DELETE /clob/order/:id - Cancel order (pass through headers)
 router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response) => {
   try {
+    const orderId = String(req.params.id);
+    if (!/^[a-zA-Z0-9_\-]{1,200}$/.test(orderId)) {
+      return res.status(400).json({ error: 'Invalid order ID' });
+    }
     const polyHeaders = extractPolyHeaders(req);
 
-    const response = await fetch(`${CLOB_API}/order/${req.params.id}`, {
+    const response = await fetch(`${CLOB_API}/order/${orderId}`, {
       method: 'DELETE',
       headers: {
         ...polyHeaders,
@@ -304,8 +312,8 @@ router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response
   }
 });
 
-// GET /clob/data/position?user=ADDRESS&market=CONDITION_ID - Get user position (no auth needed)
-router.get('/clob/data/position', async (req: Request, res: Response) => {
+// GET /clob/data/position?user=ADDRESS&market=CONDITION_ID - Get user position
+router.get('/clob/data/position', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.query.user;
     const market = req.query.market;

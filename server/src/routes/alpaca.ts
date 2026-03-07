@@ -122,7 +122,8 @@ router.get('/orders', async (req, res) => {
   }
 
   try {
-    const status = req.query.status || 'all';
+    const validStatuses = ['all', 'open', 'closed'];
+    const status = validStatuses.includes(req.query.status as string) ? req.query.status : 'all';
     const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
     const orders = await alpacaFetch(
       alpacaApiKey, alpacaSecretKey, alpacaPaper,
