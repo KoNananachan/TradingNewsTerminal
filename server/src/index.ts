@@ -67,6 +67,11 @@ async function shutdown(signal: string) {
   console.log(`\n[Server] ${signal} received — shutting down gracefully...`);
   server.close(async () => {
     try {
+      // Final backup before shutdown to prevent data loss
+      if (env.GCS_BUCKET) {
+        console.log('[Server] Running final database backup...');
+        await backupDatabase();
+      }
       await prisma.$disconnect();
       console.log('[Server] Database disconnected');
     } catch (err) {
