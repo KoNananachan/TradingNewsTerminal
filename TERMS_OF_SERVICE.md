@@ -120,27 +120,54 @@ To the maximum extent permitted by law:
 
 ---
 
-## 10. Termination
+## 10. Indemnification
+
+You agree to indemnify, defend, and hold harmless Bauhinia AI Limited, its officers, directors, employees, and agents from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising out of or related to:
+
+- Your use of the service or any activity under your account.
+- Your violation of these Terms of Service.
+- Your violation of any applicable law or regulation.
+- Any trading decisions you make based on information or analysis provided through the service.
+- Any content or data you submit to the service.
+
+This indemnification obligation survives termination of your account and these Terms of Service.
+
+---
+
+## 11. Dispute Resolution
+
+Any dispute, controversy, or claim arising out of or relating to these Terms of Service shall be resolved as follows:
+
+1. **Informal Resolution** — You agree to first attempt to resolve any dispute informally by contacting us at the email address below. We will attempt to resolve the dispute within 30 days.
+2. **Mediation** — If the dispute cannot be resolved informally, either party may submit the dispute to mediation administered under the rules of the Hong Kong International Arbitration Centre (HKIAC).
+3. **Arbitration** — If mediation fails, the dispute shall be finally resolved by binding arbitration administered by the HKIAC under its then-current arbitration rules. The arbitration shall be conducted in Hong Kong in the English language. The arbitrator's decision shall be final and binding.
+4. **Exceptions** — Either party may seek injunctive or other equitable relief in any court of competent jurisdiction to prevent the actual or threatened infringement of intellectual property rights.
+
+**Class Action Waiver** — You agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action.
+
+---
+
+## 12. Termination
 
 - We may suspend or terminate your account if you violate these Terms of Service, with or without notice.
 - You may delete your account at any time. Upon deletion, all your data will be permanently removed.
-- Sections that by their nature should survive termination (including Limitation of Liability, Trading Risks, and Not Financial Advice) will survive.
+- Sections that by their nature should survive termination (including Indemnification, Limitation of Liability, Dispute Resolution, Trading Risks, and Not Financial Advice) will survive.
 
 ---
 
-## 11. Governing Law
+## 13. Governing Law
 
-These Terms of Service are governed by and construed in accordance with the laws of the **Hong Kong Special Administrative Region (Hong Kong SAR)**. Any disputes arising from these terms shall be subject to the exclusive jurisdiction of the courts of Hong Kong SAR.
+These Terms of Service are governed by and construed in accordance with the laws of the **Hong Kong Special Administrative Region (Hong Kong SAR)**. Any disputes arising from these terms shall be resolved in accordance with Section 11 (Dispute Resolution).
 
 ---
 
-## 12. Changes to These Terms
+## 14. Changes to These Terms
 
 We may update these Terms of Service from time to time. Changes are effective immediately upon posting. Continued use of the service after changes constitutes acceptance of the updated terms. We encourage you to review these terms periodically.
 
 ---
 
-## 13. Contact
+## 15. Contact
 
 If you have questions about these Terms of Service, contact us at:
 
