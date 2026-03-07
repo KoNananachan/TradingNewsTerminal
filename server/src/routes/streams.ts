@@ -11,7 +11,7 @@ const CACHE_TTL = 5 * 60_000; // 5 min
 router.get('/live-id', async (req, res) => {
   try {
     const handle = (req.query.handle as string || '').trim();
-    if (!handle || !handle.startsWith('@')) {
+    if (!handle || !/^@[a-zA-Z0-9_-]{1,50}$/.test(handle)) {
       return res.status(400).json({ error: 'Valid YouTube @handle required' });
     }
 

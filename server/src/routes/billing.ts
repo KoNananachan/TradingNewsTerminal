@@ -4,6 +4,18 @@ import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { requireAuth } from '../middleware/auth.js';
 
+const ALLOWED_BILLING_ORIGINS = new Set(
+  (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
+);
+
+function getSafeOrigin(req: Request): string {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_BILLING_ORIGINS.has(origin)) return origin;
+  // In development, allow localhost
+  if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) return origin;
+  return process.env.ALLOWED_ORIGINS?.split(',')[0]?.trim() || 'http://localhost:5174';
+}
+
 const router = Router();
 
 function getStripe(): Stripe | null {
@@ -36,7 +48,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
       });
     }
 
-    const origin = req.headers.origin || req.headers.referer || 'http://localhost:5174';
+    const origin = getSafeOrigin(req);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -128,7 +140,7 @@ router.post('/portal', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'No billing account' });
     }
 
-    const origin = req.headers.origin || req.headers.referer || 'http://localhost:5174';
+    const origin = getSafeOrigin(req);
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
       return_url: origin as string,

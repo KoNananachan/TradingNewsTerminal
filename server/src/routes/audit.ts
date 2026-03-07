@@ -35,7 +35,7 @@ const tradeSchema = z.object({
 // ── POST Endpoints ──
 
 // POST /api/audit/session — record wallet connect/disconnect
-router.post('/session', async (req, res) => {
+router.post('/session', requireAuth, async (req, res) => {
   try {
     const data = sessionSchema.parse(req.body);
     const session = await prisma.userSession.create({ data });
@@ -51,7 +51,7 @@ router.post('/session', async (req, res) => {
 });
 
 // POST /api/audit/trade — record trade order
-router.post('/trade', async (req, res) => {
+router.post('/trade', requireAuth, async (req, res) => {
   try {
     const data = tradeSchema.parse(req.body);
     const trade = await prisma.tradeOrder.create({ data });

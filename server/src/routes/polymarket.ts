@@ -139,7 +139,7 @@ router.get('/clob/book', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB book error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -162,7 +162,7 @@ router.get('/clob/midpoint', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB midpoint error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -189,7 +189,7 @@ router.get('/clob/price', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB price error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -215,7 +215,7 @@ router.get('/clob/prices-history', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB prices-history error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -242,7 +242,7 @@ router.post('/clob/auth/derive-api-key', requireAuth, async (req: Request, res: 
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB derive-api-key error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -269,7 +269,7 @@ router.post('/clob/order', requireAuth, async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB order placement error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -294,7 +294,7 @@ router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB order cancel error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -324,7 +324,7 @@ router.get('/clob/data/position', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB position error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error', detail: body });
+      return res.status(response.status).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);

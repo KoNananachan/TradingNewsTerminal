@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+// All alerts routes require authentication
+router.use(requireAuth);
 
 const createAlertSchema = z.object({
   name: z.string().min(1).max(200),

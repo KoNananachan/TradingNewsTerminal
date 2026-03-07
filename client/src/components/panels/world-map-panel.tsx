@@ -305,46 +305,88 @@ export function WorldMapPanel() {
     });
 
     const renderSinglePopup = (props: any, lngLat: maplibregl.LngLat) => {
-      const html = `
-        <div class="terminal-popup single">
-          <div class="popup-header"><span class="pulse-dot"></span>INTEL NODE: ${props.location}</div>
-          <button class="popup-item group" data-id="${props.id}">
-            <div class="sentiment-bar" style="background-color: ${props.color}"></div>
-            <div class="item-content">
-              <div class="item-title">${props.title}</div>
-            </div>
-            <span class="action-hint">VIEW FULL REPORT &rarr;</span>
-          </button>
-        </div>
-      `;
-      createPopup(html, lngLat);
+      const container = document.createElement('div');
+      container.className = 'terminal-popup single';
+
+      const header = document.createElement('div');
+      header.className = 'popup-header';
+      header.innerHTML = '<span class="pulse-dot"></span>';
+      header.appendChild(document.createTextNode(`INTEL NODE: ${props.location || ''}`));
+      container.appendChild(header);
+
+      const btn = document.createElement('button');
+      btn.className = 'popup-item group';
+      btn.dataset.id = String(props.id);
+
+      const bar = document.createElement('div');
+      bar.className = 'sentiment-bar';
+      bar.style.backgroundColor = String(props.color || '#888').replace(/[^#a-zA-Z0-9(),.\s]/g, '');
+      btn.appendChild(bar);
+
+      const content = document.createElement('div');
+      content.className = 'item-content';
+      const titleEl = document.createElement('div');
+      titleEl.className = 'item-title';
+      titleEl.textContent = props.title || '';
+      content.appendChild(titleEl);
+      btn.appendChild(content);
+
+      const hint = document.createElement('span');
+      hint.className = 'action-hint';
+      hint.textContent = 'VIEW FULL REPORT →';
+      btn.appendChild(hint);
+
+      container.appendChild(btn);
+      createPopup(container, lngLat);
     };
 
     const renderClusterPopup = (leaves: any[], total: number, lngLat: maplibregl.LngLat) => {
-      const html = `
-        <div class="terminal-popup">
-          <div class="popup-header"><span class="pulse-dot"></span>REGIONAL HUB (${total} NODES)</div>
-          <div class="popup-list">
-            ${leaves.map(leaf => `
-              <button class="popup-item group" data-id="${leaf.properties.id}">
-                <div class="sentiment-bar" style="background-color: ${leaf.properties.color}"></div>
-                <div class="item-content">
-                  <div class="item-location">${leaf.properties.location}</div>
-                  <div class="item-title">${leaf.properties.title}</div>
-                </div>
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `;
-      createPopup(html, lngLat);
+      const container = document.createElement('div');
+      container.className = 'terminal-popup';
+
+      const header = document.createElement('div');
+      header.className = 'popup-header';
+      header.innerHTML = '<span class="pulse-dot"></span>';
+      header.appendChild(document.createTextNode(`REGIONAL HUB (${total} NODES)`));
+      container.appendChild(header);
+
+      const list = document.createElement('div');
+      list.className = 'popup-list';
+
+      leaves.forEach(leaf => {
+        const btn = document.createElement('button');
+        btn.className = 'popup-item group';
+        btn.dataset.id = String(leaf.properties.id);
+
+        const bar = document.createElement('div');
+        bar.className = 'sentiment-bar';
+        bar.style.backgroundColor = String(leaf.properties.color || '#888').replace(/[^#a-zA-Z0-9(),.\s]/g, '');
+        btn.appendChild(bar);
+
+        const content = document.createElement('div');
+        content.className = 'item-content';
+        const loc = document.createElement('div');
+        loc.className = 'item-location';
+        loc.textContent = leaf.properties.location || '';
+        content.appendChild(loc);
+        const title = document.createElement('div');
+        title.className = 'item-title';
+        title.textContent = leaf.properties.title || '';
+        content.appendChild(title);
+        btn.appendChild(content);
+
+        list.appendChild(btn);
+      });
+
+      container.appendChild(list);
+      createPopup(container, lngLat);
     };
 
-    const createPopup = (html: string, lngLat: maplibregl.LngLat) => {
+    const createPopup = (content: HTMLElement, lngLat: maplibregl.LngLat) => {
       if (popupRef.current) popupRef.current.remove();
       popupRef.current = new maplibregl.Popup({ maxWidth: '320px', offset: 15, className: 'custom-terminal-popup', closeButton: false })
         .setLngLat(lngLat)
-        .setHTML(html)
+        .setDOMContent(content)
         .addTo(map);
 
       setTimeout(() => {
@@ -368,29 +410,56 @@ export function WorldMapPanel() {
       if (!e.features?.length) return;
       const props = e.features[0].properties;
       if (!props) return;
-      const titleText = props.title
-        ? `<div style="font-size:11px;color:#d4d4d8;line-height:1.5;margin-bottom:8px;">${props.title}</div>`
-        : '';
-      const linkBtn = props.url
-        ? `<a href="${props.url}" target="_blank" rel="noopener" style="font-size:9px;color:#ef4444;font-weight:900;text-decoration:none;letter-spacing:0.1em;">VIEW SOURCE &rarr;</a>`
-        : '';
-      const html = `
-        <div class="terminal-popup single">
-          <div class="popup-header" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.2);color:#ef4444;">
-            <span class="pulse-dot" style="background:#ef4444;box-shadow:0 0 10px #ef4444;"></span>CONFLICT ZONE
-          </div>
-          <div style="padding:12px 16px;font-family:'JetBrains Mono',monospace;">
-            <div style="font-size:12px;color:#f4f4f5;font-weight:700;margin-bottom:6px;">${props.name}</div>
-            <div style="font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:8px;">${Number(props.count).toLocaleString()} conflict mentions (3d)</div>
-            ${titleText}
-            ${linkBtn}
-          </div>
-        </div>
-      `;
+
+      const container = document.createElement('div');
+      container.className = 'terminal-popup single';
+
+      const header = document.createElement('div');
+      header.className = 'popup-header';
+      header.style.cssText = 'background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.2);color:#ef4444;';
+      const dot = document.createElement('span');
+      dot.className = 'pulse-dot';
+      dot.style.cssText = 'background:#ef4444;box-shadow:0 0 10px #ef4444;';
+      header.appendChild(dot);
+      header.appendChild(document.createTextNode('CONFLICT ZONE'));
+      container.appendChild(header);
+
+      const body = document.createElement('div');
+      body.style.cssText = "padding:12px 16px;font-family:'JetBrains Mono',monospace;";
+
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-size:12px;color:#f4f4f5;font-weight:700;margin-bottom:6px;';
+      nameEl.textContent = props.name || '';
+      body.appendChild(nameEl);
+
+      const countEl = document.createElement('div');
+      countEl.style.cssText = 'font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:8px;';
+      countEl.textContent = `${Number(props.count).toLocaleString()} conflict mentions (3d)`;
+      body.appendChild(countEl);
+
+      if (props.title) {
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-size:11px;color:#d4d4d8;line-height:1.5;margin-bottom:8px;';
+        titleEl.textContent = props.title;
+        body.appendChild(titleEl);
+      }
+
+      if (props.url) {
+        const link = document.createElement('a');
+        link.href = props.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.style.cssText = 'font-size:9px;color:#ef4444;font-weight:900;text-decoration:none;letter-spacing:0.1em;';
+        link.textContent = 'VIEW SOURCE →';
+        body.appendChild(link);
+      }
+
+      container.appendChild(body);
+
       if (popupRef.current) popupRef.current.remove();
       popupRef.current = new maplibregl.Popup({ maxWidth: '320px', offset: 15, className: 'custom-terminal-popup', closeButton: false })
         .setLngLat(e.lngLat)
-        .setHTML(html)
+        .setDOMContent(container)
         .addTo(map);
     });
 
