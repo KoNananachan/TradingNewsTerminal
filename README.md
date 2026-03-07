@@ -1,19 +1,30 @@
 # TradingNewsWeb
 
-A real-time trading news terminal that scrapes financial news, enriches articles with AI-powered sentiment analysis and stock recommendations, and presents everything in a Bloomberg-style dashboard.
+A real-time trading news terminal with AI-powered analysis, prediction markets, and multi-asset trading — all in a Bloomberg-style dashboard.
+
+[![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/6dr83qcJ)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-yellow.svg)](LICENSE)
+
+**[Live Demo](https://terminal.tradingnews.press)** · **[Discord](https://discord.gg/6dr83qcJ)**
 
 ## Features
 
-- **Live News Feed** — Auto-scrapes trading news and displays articles with sentiment tags and category filters
-- **AI Analysis** — Gemini-powered pipeline that extracts sentiment (bullish/bearish/neutral), geo-location, category, and actionable stock recommendations from each article
-- **Real-time Updates** — WebSocket push for breaking news, quote refreshes, and new trading signals
-- **Interactive Charts** — Multi-chart panel with TradingView lightweight-charts
-- **World Map** — MapLibre GL map plotting news events by geographic location
-- **Market Heatmap** — Visual overview of tracked stock performance
-- **Trading Panel** — Demo order form with Hyperliquid integration (market/limit orders, leverage)
-- **Stock Tracker** — Live quotes via Yahoo Finance with sparkline charts and watchlist management
-- **Web3 Wallet** — RainbowKit + wagmi for wallet connection and session tracking
-- **Dockable Layout** — Drag-and-drop panel arrangement powered by FlexLayout
+- **Live News Feed** — Auto-scrapes trading news with sentiment badges, category filters (finance/world/business/politics), and keyword search
+- **AI Analysis** — Sentiment extraction, geo-location, and conflict detection for every article
+- **Prediction Markets** — Polymarket integration with orderbook, sparkline charts, and wallet-based trading
+- **Stock Trading** — Alpaca paper/live trading and Hyperliquid perpetual contracts (49 stock perps)
+- **Interactive Charts** — Multi-chart panel with TradingView lightweight-charts, technical indicators (RSI, MACD, Bollinger, ATR, VWAP), and drawing tools
+- **World Map** — News events plotted by location, conflict zone heatmap, and live stock exchange markers
+- **Market Heatmap** — Visual treemap of tracked stock performance
+- **Economic Calendar** — Real-time events from Forex Factory with release detection
+- **Options Flow** — Unusual options activity detection from Yahoo Finance
+- **Insider Trading** — SEC EDGAR Form 4 tracking with cluster buy detection
+- **Risk Calculator** — Position sizer, Kelly criterion, max drawdown analyzer
+- **Sector Rotation** — 11 GICS sector ETF momentum analysis
+- **AI Chat** — Context-aware financial assistant with article/chart attachments
+- **6 Languages** — English, Español, Français, 日本語, 한국어, 中文
+- **Web3 Wallet** — RainbowKit + wagmi for Polygon/Arbitrum/Mainnet
+- **Auth & Billing** — Google OAuth, email verification, Stripe Pro subscription
 
 ## Tech Stack
 
@@ -21,12 +32,34 @@ A real-time trading news terminal that scrapes financial news, enriches articles
 |-------|------------|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS 4 |
 | Backend | Express 5, TypeScript, Prisma (SQLite) |
-| AI | OpenAI SDK → Gemini API (configurable base URL) |
+| AI | OpenAI-compatible API (Gemini, GPT, local models) |
 | Real-time | WebSocket (ws) on shared HTTP server |
 | Charts | lightweight-charts, MapLibre GL |
 | Web3 | wagmi, viem, RainbowKit |
+| Payments | Stripe (Checkout + Customer Portal) |
 | UI Layout | FlexLayout React |
-| Deployment | Docker multi-stage build → Google Cloud Run |
+| Deployment | Docker → Google Cloud Run |
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# Initialize database
+cd server && npx prisma migrate dev && cd ..
+
+# Start development
+npm run dev
+```
+
+Frontend runs on `http://localhost:5174`, backend on `http://localhost:3001`.
+
+See [.env.example](.env.example) for all configuration options.
 
 ## Project Structure
 
@@ -36,110 +69,54 @@ TradingNewsWeb/
 │   └── src/
 │       ├── api/hooks/      # React Query data hooks
 │       ├── components/
-│       │   ├── common/     # Badges, notifications, command palette
-│       │   ├── layout/     # App shell, dock layout, status bar, ticker
-│       │   ├── panels/     # News feed, charts, map, heatmap, trading
-│       │   └── trading/    # Orderbook, trade form, portfolio
+│       │   ├── common/     # Badges, notifications, settings
+│       │   ├── layout/     # App shell, dock layout, top bar
+│       │   ├── panels/     # News, charts, map, calendar, etc.
+│       │   └── trading/    # Orderbook, trade form, Polymarket
+│       ├── i18n/           # 6-language translations
 │       ├── realtime/       # WebSocket hook
 │       └── stores/         # Zustand state management
 ├── server/                 # Express backend
 │   ├── prisma/             # Schema + migrations (SQLite)
 │   └── src/
 │       ├── config/         # Environment validation (Zod)
+│       ├── middleware/      # Auth, rate limiting
 │       ├── routes/         # REST API endpoints
 │       └── services/
-│           ├── ai/         # Gemini analysis pipeline
+│           ├── ai/         # Analysis pipeline + clustering
+│           ├── alerts/     # Price/news alert evaluator
+│           ├── calendar/   # Economic calendar tracker
 │           ├── scraper/    # News scraper + scheduler
-│           ├── stocks/     # Yahoo Finance tracker
-│           └── websocket/  # WS server (attached to HTTP)
+│           ├── stocks/     # Yahoo Finance, insider, correlation
+│           └── websocket/  # WS server
 ├── Dockerfile              # Multi-stage production build
-└── .dockerignore
+└── LICENSE                 # BSL 1.1
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- npm 10+
-
-### Setup
+## Deployment
 
 ```bash
-# Install dependencies
-npm install
-
-# Initialize the database
-npm run db:migrate
-npm run db:seed
-
-# Create .env in project root
-cat > .env << 'EOF'
-DATABASE_URL="file:./server/prisma/dev.db"
-GEMINI_API_KEY="your-api-key"
-GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
-GEMINI_MODEL="gemini-2.0-flash"
-PORT=3001
-WS_PORT=3002
-SCRAPE_INTERVAL_MINUTES=10
-EOF
-```
-
-### Development
-
-```bash
-npm run dev
-```
-
-This starts both the backend (port 3001) and frontend dev server (port 5174) concurrently. The Vite dev server proxies `/api` and `/ws` to the backend.
-
-### Production Build
-
-```bash
-npm run build    # Builds client + server
-npm run start    # Runs compiled server (serves client static files)
-```
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/news` | List news articles (with pagination & filters) |
-| GET | `/api/stocks` | Get tracked stock quotes |
-| GET | `/api/recommendations` | Get AI stock recommendations |
-| GET | `/api/categories` | List news categories |
-| GET | `/api/map-events` | Get geo-located news for world map |
-| GET/POST | `/api/watchlist` | Manage stock watchlist |
-| GET | `/api/audit` | View scrape runs and AI analysis logs |
-| POST | `/api/scrape` | Manually trigger a news scrape |
-| GET | `/api/health` | Health check |
-| WS | `/ws` | Real-time updates (news, quotes, recommendations) |
-
-## Deployment (Google Cloud Run)
-
-The project includes a multi-stage Dockerfile optimized for Cloud Run:
-
-```bash
-# Build and submit container image
+# Build container image
 gcloud builds submit --tag gcr.io/PROJECT_ID/tradingnewsweb
 
-# Deploy
+# Deploy to Cloud Run
 gcloud run deploy tradingnewsweb \
   --image gcr.io/PROJECT_ID/tradingnewsweb \
   --platform managed --region us-central1 \
-  --allow-unauthenticated --port 8080 \
-  --set-env-vars "DATABASE_URL=file:./prisma/prod.db,GEMINI_API_KEY=your-key" \
-  --memory 512Mi --cpu 1 \
-  --min-instances 1 --max-instances 3 \
-  --timeout 3600 --session-affinity
+  --allow-unauthenticated --port 3001 \
+  --memory 1Gi --cpu 1 \
+  --min-instances 1 --max-instances 3
 ```
 
-Key deployment notes:
-- WebSocket and HTTP share a single port (8080)
-- SQLite is ephemeral — data resets on instance restart
-- `min-instances 1` keeps the scraper running continuously
-- `session-affinity` routes the same client to the same instance for WebSocket stability
+Environment variables are injected via Cloud Run configuration (not baked into the image).
+
+## Community
+
+- **Discord** — [discord.gg/6dr83qcJ](https://discord.gg/6dr83qcJ)
+- **Issues** — [GitHub Issues](https://github.com/KoNananachan/TradingNewsWeb/issues)
 
 ## License
 
-Private project.
+This project is licensed under the [Business Source License 1.1](LICENSE).
+
+You may view, fork, and modify the code for non-commercial purposes. Commercial use requires a separate license. See [LICENSE](LICENSE) for details.
