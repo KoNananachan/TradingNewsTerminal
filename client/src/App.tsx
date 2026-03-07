@@ -6,6 +6,8 @@ import { BreakingNewsFlash } from './components/common/breaking-news';
 import { KeyboardHUD, ShortcutsModal } from './components/common/keyboard-hud';
 import { LoginModal } from './components/auth/login-modal';
 import { ProUpgradeModal } from './components/auth/pro-upgrade-modal';
+import { CookieConsent } from './components/common/cookie-consent';
+import { DisclaimerModal } from './components/common/disclaimer-modal';
 import { useWebSocket } from './realtime/use-ws';
 import { useKeyboard } from './hooks/use-keyboard';
 import { useSessionTracker } from './hooks/use-session-tracker';
@@ -34,6 +36,8 @@ export default function App() {
       <BreakingNewsFlash />
       <KeyboardHUD />
       <ShortcutsModal />
+      <CookieConsent />
+      <DisclaimerModal />
     </>
   );
 }

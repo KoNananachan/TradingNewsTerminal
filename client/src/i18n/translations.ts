@@ -463,6 +463,23 @@ const en = {
   fiftyTwoWeekRange: '52W Range',
   dayRange: 'Day Range',
   tradeAction: 'TRADE',
+
+  // Legal
+  privacyPolicy: 'Privacy',
+  termsOfService: 'Terms',
+  deleteAccount: 'Delete Account',
+  deleteAccountConfirm: 'Are you sure you want to delete your account? This action cannot be undone.',
+  exportData: 'Export Data',
+  accountDeleted: 'Account deleted successfully',
+
+  // Consent & Disclaimers
+  cookieConsent: 'This site uses essential cookies for authentication. By continuing, you agree to our',
+  cookieAccept: 'Got it',
+  and: 'and',
+  disclaimerTitle: 'RISK DISCLAIMER',
+  disclaimerBody: 'TradingNewsTerminal provides AI-generated market analysis for informational purposes only. This is NOT financial advice. All trading involves risk of loss. Past performance does not guarantee future results. Always do your own research (DYOR) before making investment decisions.',
+  disclaimerAccept: 'I Understand',
+  agreeToTerms: 'I agree to the Terms of Service and Privacy Policy',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -858,6 +875,19 @@ const zh: Record<TranslationKey, string> = {
   fiftyTwoWeekRange: '52周范围',
   dayRange: '日内范围',
   tradeAction: '交易',
+  privacyPolicy: '隐私政策',
+  termsOfService: '服务条款',
+  deleteAccount: '删除账户',
+  deleteAccountConfirm: '确定要删除您的账户吗？此操作不可撤销。',
+  exportData: '导出数据',
+  accountDeleted: '账户已成功删除',
+  cookieConsent: '本站使用必要的身份验证 Cookie。继续使用即表示您同意我们的',
+  cookieAccept: '知道了',
+  and: '和',
+  disclaimerTitle: '风险声明',
+  disclaimerBody: 'TradingNewsTerminal 提供 AI 生成的市场分析，仅供参考。这不是投资建议。所有交易都存在亏损风险。过往表现不代表未来结果。投资前请自行研究（DYOR）。',
+  disclaimerAccept: '我已了解',
+  agreeToTerms: '我同意服务条款和隐私政策',
 };
 
 const ja: Record<TranslationKey, string> = {
@@ -1251,6 +1281,19 @@ const ja: Record<TranslationKey, string> = {
   fiftyTwoWeekRange: '52週レンジ',
   dayRange: '日中レンジ',
   tradeAction: 'トレード',
+  privacyPolicy: 'プライバシー',
+  termsOfService: '利用規約',
+  deleteAccount: 'アカウント削除',
+  deleteAccountConfirm: 'アカウントを削除してもよろしいですか？この操作は取り消せません。',
+  exportData: 'データエクスポート',
+  accountDeleted: 'アカウントが正常に削除されました',
+  cookieConsent: '本サイトは認証に必要なCookieを使用しています。続行すると、',
+  cookieAccept: '了解',
+  and: 'と',
+  disclaimerTitle: 'リスク免責事項',
+  disclaimerBody: 'TradingNewsTerminalはAI生成の市場分析を情報提供のみを目的として提供します。投資助言ではありません。全ての取引には損失リスクがあります。過去の実績は将来の結果を保証しません。投資判断前に必ずご自身で調査してください。',
+  disclaimerAccept: '理解しました',
+  agreeToTerms: '利用規約とプライバシーポリシーに同意します',
 };
 
 const ko: Record<TranslationKey, string> = {
@@ -1644,6 +1687,19 @@ const ko: Record<TranslationKey, string> = {
   fiftyTwoWeekRange: '52주 범위',
   dayRange: '일중 범위',
   tradeAction: '거래',
+  privacyPolicy: '개인정보',
+  termsOfService: '이용약관',
+  deleteAccount: '계정 삭제',
+  deleteAccountConfirm: '계정을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+  exportData: '데이터 내보내기',
+  accountDeleted: '계정이 성공적으로 삭제되었습니다',
+  cookieConsent: '이 사이트는 인증에 필수적인 쿠키를 사용합니다. 계속하면 다음에 동의하는 것입니다:',
+  cookieAccept: '확인',
+  and: '및',
+  disclaimerTitle: '위험 고지',
+  disclaimerBody: 'TradingNewsTerminal은 정보 제공 목적으로만 AI 생성 시장 분석을 제공합니다. 이것은 투자 조언이 아닙니다. 모든 거래에는 손실 위험이 있습니다. 과거 실적이 미래 결과를 보장하지 않습니다. 투자 결정 전 반드시 직접 조사하십시오.',
+  disclaimerAccept: '이해했습니다',
+  agreeToTerms: '서비스 약관 및 개인정보 처리방침에 동의합니다',
 };
 
 const es: Record<TranslationKey, string> = {
@@ -2037,6 +2093,19 @@ const es: Record<TranslationKey, string> = {
   fiftyTwoWeekRange: 'Rango 52S',
   dayRange: 'Rango Diario',
   tradeAction: 'OPERAR',
+  privacyPolicy: 'Privacidad',
+  termsOfService: 'Terminos',
+  deleteAccount: 'Eliminar cuenta',
+  deleteAccountConfirm: 'Seguro que deseas eliminar tu cuenta? Esta accion no se puede deshacer.',
+  exportData: 'Exportar datos',
+  accountDeleted: 'Cuenta eliminada exitosamente',
+  cookieConsent: 'Este sitio utiliza cookies esenciales para autenticacion. Al continuar, aceptas nuestros',
+  cookieAccept: 'Entendido',
+  and: 'y',
+  disclaimerTitle: 'AVISO DE RIESGO',
+  disclaimerBody: 'TradingNewsTerminal proporciona analisis de mercado generado por IA solo con fines informativos. Esto NO es asesoramiento financiero. Toda operacion implica riesgo de perdida. El rendimiento pasado no garantiza resultados futuros. Investiga por tu cuenta (DYOR) antes de tomar decisiones de inversion.',
+  disclaimerAccept: 'Entiendo',
+  agreeToTerms: 'Acepto los Terminos de Servicio y la Politica de Privacidad',
 };
 
 const fr: Record<TranslationKey, string> = {
@@ -2430,6 +2499,19 @@ const fr: Record<TranslationKey, string> = {
   fiftyTwoWeekRange: 'Plage 52S',
   dayRange: 'Plage Jour',
   tradeAction: 'TRADER',
+  privacyPolicy: 'Confidentialite',
+  termsOfService: 'Conditions',
+  deleteAccount: 'Supprimer le compte',
+  deleteAccountConfirm: 'Voulez-vous vraiment supprimer votre compte ? Cette action est irreversible.',
+  exportData: 'Exporter les donnees',
+  accountDeleted: 'Compte supprime avec succes',
+  cookieConsent: 'Ce site utilise des cookies essentiels pour l\'authentification. En continuant, vous acceptez nos',
+  cookieAccept: 'Compris',
+  and: 'et',
+  disclaimerTitle: 'AVERTISSEMENT SUR LES RISQUES',
+  disclaimerBody: 'TradingNewsTerminal fournit des analyses de marche generees par IA a titre informatif uniquement. Ceci n\'est PAS un conseil financier. Tout trading comporte un risque de perte. Les performances passees ne garantissent pas les resultats futurs. Faites toujours vos propres recherches (DYOR).',
+  disclaimerAccept: 'Je comprends',
+  agreeToTerms: 'J\'accepte les Conditions d\'utilisation et la Politique de confidentialite',
 };
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {

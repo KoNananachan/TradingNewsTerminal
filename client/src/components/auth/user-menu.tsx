@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../stores/use-auth-store';
 import { useAuthActions } from '../../api/hooks/use-auth';
 import { useT } from '../../i18n';
-import { LogOut, CreditCard, User } from 'lucide-react';
+import { LogOut, CreditCard, User, Download, Trash2 } from 'lucide-react';
 
 export function UserMenu() {
   const t = useT();
@@ -89,6 +89,42 @@ export function UserMenu() {
               {t('upgradeToPro')}
             </button>
           )}
+
+          <button
+            onClick={async () => {
+              setMenuOpen(false);
+              try {
+                const res = await fetch('/api/auth/me/export', { credentials: 'include' });
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'my-data-export.json';
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch { /* ignore */ }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono text-neutral hover:text-white hover:bg-white/5 text-left border-t border-border"
+          >
+            <Download className="w-3 h-3" />
+            {t('exportData')}
+          </button>
+
+          <button
+            onClick={async () => {
+              if (!confirm(t('deleteAccountConfirm'))) return;
+              setMenuOpen(false);
+              try {
+                await fetch('/api/auth/me', { method: 'DELETE', credentials: 'include' });
+                logout();
+              } catch { /* ignore */ }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono text-neutral hover:text-bearish hover:bg-bearish/5 text-left"
+          >
+            <Trash2 className="w-3 h-3" />
+            {t('deleteAccount')}
+          </button>
 
           <button
             onClick={() => { logout(); setMenuOpen(false); }}

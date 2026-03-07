@@ -1,7 +1,17 @@
 {
-  "name": "trading-news-web",
+  "name": "trading-news-terminal",
   "version": "1.0.0",
+  "description": "AI-powered trading news terminal with real-time sentiment analysis, market data, and prediction markets",
   "private": true,
+  "license": "BUSL-1.1",
+  "author": "Bauhinia AI Limited",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KoNananachan/TradingNewsTerminal.git"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"cd server && npx tsx watch src/index.ts\" \"npm run dev -w client\"",
     "dev:server": "npm run dev -w server",

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -229,6 +230,72 @@ router.post('/logout', async (req, res) => {
   }
   res.clearCookie('session', { path: '/' });
   res.json({ ok: true });
+});
+
+// GET /api/auth/me/export — Export all user data (GDPR data portability)
+router.get('/me/export', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [user, sessions, trades] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatarUrl: true,
+          plan: true,
+          planExpiresAt: true,
+          alpacaPaper: true,
+          createdAt: true,
+          updatedAt: true,
+          // Exclude encrypted credentials
+        },
+      }),
+      prisma.authSession.findMany({
+        where: { userId },
+        select: { id: true, createdAt: true, expiresAt: true },
+      }),
+      prisma.tradeOrder.findMany({
+        where: { walletAddress: req.user!.email },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    res.json({
+      exportedAt: new Date().toISOString(),
+      user,
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        expiresAt: s.expiresAt,
+      })),
+      trades,
+    });
+  } catch (err: any) {
+    console.error('[Auth] Data export error:', err?.message);
+    res.status(500).json({ error: 'Failed to export data' });
+  }
+});
+
+// DELETE /api/auth/me — Delete account and all associated data (GDPR right to erasure)
+router.delete('/me', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+
+    // Delete all user data in a transaction
+    await prisma.$transaction([
+      prisma.authSession.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+
+    res.clearCookie('session', { path: '/' });
+    res.json({ ok: true, message: 'Account deleted' });
+  } catch (err: any) {
+    console.error('[Auth] Account deletion error:', err?.message);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
 });
 
 export default router;

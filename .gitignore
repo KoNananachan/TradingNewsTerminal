@@ -14,3 +14,20 @@ dist/
 cloudbuild.yaml
 DEPLOY.md
 DEPLOYMENT_GUIDE.md
+
+# OS / editor files
+.DS_Store
+*.png
+*.jpg
+*.jpeg
+Thumbs.db
+
+# Test / debug artifacts
+TEST_REPORT.md
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/

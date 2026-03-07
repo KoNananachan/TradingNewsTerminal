@@ -193,6 +193,16 @@ export function LoginModal() {
           </>
         )}
 
+        {/* Terms consent note */}
+        {step !== 'email-verify' && (
+          <p className="mt-4 text-[9px] font-mono text-neutral/50 text-center leading-relaxed">
+            {t('cookieConsent')}{' '}
+            <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/TERMS_OF_SERVICE.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('termsOfService')}</a>
+            {' '}{t('and')}{' '}
+            <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('privacyPolicy')}</a>.
+          </p>
+        )}
+
         {/* Error */}
         {error && (
           <p className="mt-3 text-[10px] font-mono text-bearish text-center">{error}</p>
