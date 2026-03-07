@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+// All audit GET endpoints require authentication
+
 
 // ── Validation Schemas ──
 
@@ -65,7 +69,7 @@ router.post('/trade', async (req, res) => {
 // ── GET Endpoints ──
 
 // GET /api/audit/scrape-runs?limit=20
-router.get('/scrape-runs', async (req, res) => {
+router.get('/scrape-runs', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const runs = await prisma.scrapeRun.findMany({
@@ -80,7 +84,7 @@ router.get('/scrape-runs', async (req, res) => {
 });
 
 // GET /api/audit/ai-logs?articleId=X&limit=20
-router.get('/ai-logs', async (req, res) => {
+router.get('/ai-logs', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const articleId = req.query.articleId ? parseInt(req.query.articleId as string) : undefined;
@@ -101,7 +105,7 @@ router.get('/ai-logs', async (req, res) => {
 });
 
 // GET /api/audit/trades?wallet=0x...&limit=50
-router.get('/trades', async (req, res) => {
+router.get('/trades', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
     const wallet = req.query.wallet as string | undefined;
@@ -122,7 +126,7 @@ router.get('/trades', async (req, res) => {
 });
 
 // GET /api/audit/sessions?wallet=0x...&limit=50
-router.get('/sessions', async (req, res) => {
+router.get('/sessions', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
     const wallet = req.query.wallet as string | undefined;
@@ -143,7 +147,7 @@ router.get('/sessions', async (req, res) => {
 });
 
 // GET /api/audit/stats — aggregated statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', requireAuth, async (req, res) => {
   try {
     const [
       totalScrapes,

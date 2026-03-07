@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -225,7 +226,7 @@ router.get('/clob/prices-history', async (req: Request, res: Response) => {
 });
 
 // POST /clob/auth/derive-api-key - Proxy API key derivation (pass through body and headers)
-router.post('/clob/auth/derive-api-key', async (req: Request, res: Response) => {
+router.post('/clob/auth/derive-api-key', requireAuth, async (req: Request, res: Response) => {
   try {
     const polyHeaders = extractPolyHeaders(req);
 
@@ -252,7 +253,7 @@ router.post('/clob/auth/derive-api-key', async (req: Request, res: Response) => 
 });
 
 // POST /clob/order - Proxy order placement (pass through body and headers)
-router.post('/clob/order', async (req: Request, res: Response) => {
+router.post('/clob/order', requireAuth, async (req: Request, res: Response) => {
   try {
     const polyHeaders = extractPolyHeaders(req);
 
@@ -279,7 +280,7 @@ router.post('/clob/order', async (req: Request, res: Response) => {
 });
 
 // DELETE /clob/order/:id - Cancel order (pass through headers)
-router.delete('/clob/order/:id', async (req: Request, res: Response) => {
+router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const polyHeaders = extractPolyHeaders(req);
 

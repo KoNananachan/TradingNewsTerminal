@@ -546,43 +546,65 @@ export function WorldMapPanel() {
         box-shadow:0 0 10px rgba(${rgb},0.25);
         pointer-events:auto;
       `;
-      el.innerHTML = `
-        <span style="font-size:7px;font-weight:900;color:rgba(255,255,255,0.7);letter-spacing:0.08em;line-height:1;">${city.exchange}</span>
-        <span style="font-size:9px;font-weight:900;color:${hex};line-height:1.3;">${arrow}${Math.abs(pct).toFixed(2)}%</span>
-      `;
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:7px;font-weight:900;color:rgba(255,255,255,0.7);letter-spacing:0.08em;line-height:1;';
+      label.textContent = city.exchange;
+      const value = document.createElement('span');
+      value.style.cssText = `font-size:9px;font-weight:900;color:${hex};line-height:1.3;`;
+      value.textContent = `${arrow}${Math.abs(pct).toFixed(2)}%`;
+      el.appendChild(label);
+      el.appendChild(value);
 
       el.addEventListener('click', (evt) => {
         evt.stopPropagation();
         const indices = city.indices.map(sym => quoteMap.get(sym)).filter(Boolean) as IndexQuote[];
         const hc = up ? '#22c55e' : '#ef4444';
-        const rows = indices.map(q => {
+
+        // Build popup DOM safely (no innerHTML with dynamic data)
+        const popupEl = document.createElement('div');
+        popupEl.className = 'terminal-popup single';
+
+        const header = document.createElement('div');
+        header.className = 'popup-header';
+        header.style.cssText = `background:${hc}15;border-color:${hc}33;color:${hc};`;
+        const dot = document.createElement('span');
+        dot.className = 'pulse-dot';
+        dot.style.cssText = `background:${hc};box-shadow:0 0 10px ${hc};`;
+        header.appendChild(dot);
+        header.appendChild(document.createTextNode(` ${city.exchange} — ${city.city}`));
+        popupEl.appendChild(header);
+
+        const body = document.createElement('div');
+        body.style.cssText = 'padding:8px 16px;font-family:"JetBrains Mono",monospace;';
+        for (const q of indices) {
           const qUp = (q.changePercent ?? 0) >= 0;
           const clr = qUp ? '#22c55e' : '#ef4444';
           const ar = qUp ? '▲' : '▼';
-          const p = q.changePercent != null ? `${ar} ${Math.abs(q.changePercent).toFixed(2)}%` : '';
-          return `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-              <span style="font-size:11px;color:#f4f4f5;font-weight:700;">${q.symbol}</span>
-              <div style="text-align:right;">
-                <span style="font-size:11px;color:#f4f4f5;font-weight:700;">${formatMapPrice(q.price)}</span>
-                <span style="font-size:10px;color:${clr};font-weight:700;margin-left:8px;">${p}</span>
-              </div>
-            </div>`;
-        }).join('');
-        const html = `
-          <div class="terminal-popup single">
-            <div class="popup-header" style="background:${hc}15;border-color:${hc}33;color:${hc};">
-              <span class="pulse-dot" style="background:${hc};box-shadow:0 0 10px ${hc};"></span>
-              ${city.exchange} — ${city.city}
-            </div>
-            <div style="padding:8px 16px;font-family:'JetBrains Mono',monospace;">
-              ${rows}
-            </div>
-          </div>`;
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
+          const sym = document.createElement('span');
+          sym.style.cssText = 'font-size:11px;color:#f4f4f5;font-weight:700;';
+          sym.textContent = q.symbol;
+          const right = document.createElement('div');
+          right.style.cssText = 'text-align:right;';
+          const priceSpan = document.createElement('span');
+          priceSpan.style.cssText = 'font-size:11px;color:#f4f4f5;font-weight:700;';
+          priceSpan.textContent = formatMapPrice(q.price);
+          const changeSpan = document.createElement('span');
+          changeSpan.style.cssText = `font-size:10px;color:${clr};font-weight:700;margin-left:8px;`;
+          changeSpan.textContent = q.changePercent != null ? `${ar} ${Math.abs(q.changePercent).toFixed(2)}%` : '';
+          right.appendChild(priceSpan);
+          right.appendChild(changeSpan);
+          row.appendChild(sym);
+          row.appendChild(right);
+          body.appendChild(row);
+        }
+        popupEl.appendChild(body);
+
         if (popupRef.current) popupRef.current.remove();
         popupRef.current = new maplibregl.Popup({ maxWidth: '320px', offset: 15, className: 'custom-terminal-popup', closeButton: false })
           .setLngLat([city.lng, city.lat])
-          .setHTML(html)
+          .setDOMContent(popupEl)
           .addTo(map);
       });
 
