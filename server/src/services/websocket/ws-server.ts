@@ -8,7 +8,7 @@ const PING_INTERVAL = 20_000; // 20s — keep connection alive through NAT/proxi
 
 export function startWebSocketServer(server: Server) {
   try {
-    wss = new WebSocketServer({ server, path: '/ws' });
+    wss = new WebSocketServer({ server, path: '/ws', maxPayload: 64 * 1024 });
 
     wss.on('connection', (ws) => {
       console.log('[WS] Client connected');

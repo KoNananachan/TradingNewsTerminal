@@ -65,6 +65,7 @@ router.get('/quotes', async (req, res) => {
   try {
     const quotes = await prisma.stockQuote.findMany({
       orderBy: { symbol: 'asc' },
+      take: 500,
     });
     res.json(quotes);
   } catch (err: any) {

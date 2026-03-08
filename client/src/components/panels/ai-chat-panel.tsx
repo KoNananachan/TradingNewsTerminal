@@ -129,7 +129,7 @@ export function AiChatPanel() {
         ]);
       }
     },
-    [inputValue, isStreaming, messages, selectedTickers, sendMessage, clearError, t],
+    [inputValue, isStreaming, messages, selectedTickers, sendMessage, clearError, chatContexts, t],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -158,15 +158,24 @@ export function AiChatPanel() {
     clearError();
   };
 
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const copyMessage = async (content: string, idx: number) => {
     try {
       await navigator.clipboard.writeText(content);
       setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(null), 1500);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopiedIdx(null), 1500);
     } catch {
       // clipboard not available
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const formatTime = (ts: number) => {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

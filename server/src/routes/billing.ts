@@ -13,7 +13,12 @@ function getSafeOrigin(req: Request): string {
   if (ALLOWED_BILLING_ORIGINS.has(origin)) return origin;
   // In development, allow localhost
   if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) return origin;
-  return process.env.ALLOWED_ORIGINS?.split(',')[0]?.trim() || 'http://localhost:5174';
+  // In production, always use the first configured origin (never fall back to localhost)
+  const fallback = process.env.ALLOWED_ORIGINS?.split(',')[0]?.trim();
+  if (!fallback) {
+    console.error('[Billing] ALLOWED_ORIGINS not configured — cannot determine safe redirect URL');
+  }
+  return fallback || 'https://terminal.tradingnews.press';
 }
 
 const router = Router();
@@ -34,7 +39,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Create or reuse Stripe customer
+    // Create or reuse Stripe customer (use updateMany with condition to avoid race)
     let customerId = user.stripeCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -42,10 +47,19 @@ router.post('/checkout', requireAuth, async (req, res) => {
         metadata: { userId: String(user.id) },
       });
       customerId = customer.id;
-      await prisma.user.update({
-        where: { id: user.id },
+      const updated = await prisma.user.updateMany({
+        where: { id: user.id, stripeCustomerId: null },
         data: { stripeCustomerId: customerId },
       });
+      if (updated.count === 0) {
+        // Another request already set the customer ID — re-read and use that
+        const refreshed = await prisma.user.findUnique({ where: { id: user.id } });
+        if (refreshed?.stripeCustomerId) {
+          // Clean up the duplicate Stripe customer we just created
+          await stripe.customers.del(customerId).catch(() => {});
+          customerId = refreshed.stripeCustomerId;
+        }
+      }
     }
 
     const origin = getSafeOrigin(req);

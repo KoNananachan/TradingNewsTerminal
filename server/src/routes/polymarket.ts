@@ -9,6 +9,7 @@ const CLOB_API = 'https://clob.polymarket.com';
 // Simple in-memory cache for market listings (reduce Gamma API calls)
 const marketsCache = new Map<string, { data: any; expiresAt: number }>();
 const MARKETS_CACHE_TTL = 30_000; // 30 seconds
+const MARKETS_CACHE_MAX = 50;
 
 // Headers that should be forwarded to the CLOB API for authenticated requests
 const POLY_HEADERS = [
@@ -51,8 +52,14 @@ router.get('/markets', async (req: Request, res: Response) => {
     params.set('order', String(req.query.order ?? 'volume24hr'));
     params.set('ascending', String(req.query.ascending ?? 'false'));
     params.set('active', 'true');
-    if (req.query.offset) params.set('offset', String(req.query.offset));
-    if (req.query.tag) params.set('tag', String(req.query.tag));
+    if (req.query.offset) {
+      const offset = parseInt(String(req.query.offset));
+      if (!isNaN(offset) && offset >= 0) params.set('offset', String(offset));
+    }
+    if (req.query.tag) {
+      const tag = String(req.query.tag).slice(0, 100);
+      if (/^[a-zA-Z0-9_ -]+$/.test(tag)) params.set('tag', tag);
+    }
 
     const cacheKey = params.toString();
     const cached = marketsCache.get(cacheKey);
@@ -62,7 +69,8 @@ router.get('/markets', async (req: Request, res: Response) => {
 
     const response = await fetch(`${GAMMA_API}/markets?${params}`);
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Polymarket API error' });
+      console.error('[Polymarket] markets upstream error:', response.status);
+      return res.status(502).json({ error: 'Polymarket API error' });
     }
     const data = await response.json();
     // Filter out resolved markets (any outcome price >= 0.99)
@@ -75,6 +83,18 @@ router.get('/markets', async (req: Request, res: Response) => {
           } catch { return true; }
         })
       : data;
+    // Evict expired entries and enforce max cache size
+    if (marketsCache.size >= MARKETS_CACHE_MAX) {
+      const now = Date.now();
+      for (const [k, v] of marketsCache) {
+        if (now > v.expiresAt) marketsCache.delete(k);
+      }
+      // If still over limit, clear oldest
+      if (marketsCache.size >= MARKETS_CACHE_MAX) {
+        const first = marketsCache.keys().next().value;
+        if (first) marketsCache.delete(first);
+      }
+    }
     marketsCache.set(cacheKey, { data: filtered, expiresAt: Date.now() + MARKETS_CACHE_TTL });
     res.json(filtered);
   } catch (err) {
@@ -92,7 +112,7 @@ router.get('/markets/:id', async (req: Request, res: Response) => {
     }
     const response = await fetch(`${GAMMA_API}/markets/${marketId}`);
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Market not found' });
+      return res.status(response.status === 404 ? 404 : 502).json({ error: 'Market not found' });
     }
     const data = await response.json();
     res.json(data);
@@ -111,12 +131,19 @@ router.get('/events', async (req: Request, res: Response) => {
     params.set('order', String(req.query.order ?? 'volume24hr'));
     params.set('ascending', String(req.query.ascending ?? 'false'));
     params.set('active', 'true');
-    if (req.query.offset) params.set('offset', String(req.query.offset));
-    if (req.query.tag) params.set('tag', String(req.query.tag));
+    if (req.query.offset) {
+      const offset = parseInt(String(req.query.offset));
+      if (!isNaN(offset) && offset >= 0) params.set('offset', String(offset));
+    }
+    if (req.query.tag) {
+      const tag = String(req.query.tag).slice(0, 100);
+      if (/^[a-zA-Z0-9_ -]+$/.test(tag)) params.set('tag', tag);
+    }
 
     const response = await fetch(`${GAMMA_API}/events?${params}`);
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Polymarket API error' });
+      console.error('[Polymarket] events upstream error:', response.status);
+      return res.status(502).json({ error: 'Polymarket API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -143,7 +170,7 @@ router.get('/clob/book', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB book error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -166,7 +193,7 @@ router.get('/clob/midpoint', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB midpoint error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -193,7 +220,7 @@ router.get('/clob/price', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB price error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -219,7 +246,7 @@ router.get('/clob/prices-history', async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB prices-history error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -246,7 +273,7 @@ router.post('/clob/auth/derive-api-key', requireAuth, async (req: Request, res: 
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB derive-api-key error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -273,7 +300,7 @@ router.post('/clob/order', requireAuth, async (req: Request, res: Response) => {
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB order placement error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -302,7 +329,7 @@ router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB order cancel error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);
@@ -332,7 +359,7 @@ router.get('/clob/data/position', requireAuth, async (req: Request, res: Respons
     if (!response.ok) {
       const body = await response.text();
       console.error('[Polymarket] CLOB position error:', response.status, body);
-      return res.status(response.status).json({ error: 'CLOB API error' });
+      return res.status(502).json({ error: 'CLOB API error' });
     }
     const data = await response.json();
     res.json(data);

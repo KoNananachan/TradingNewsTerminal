@@ -32,7 +32,7 @@ export function LoginModal() {
   };
 
   const handleSendCode = async () => {
-    if (!email.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError(t('enterValidEmail'));
       return;
     }

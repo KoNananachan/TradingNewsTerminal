@@ -2,16 +2,22 @@ import { env } from './config/env.js';
 import { createApp } from './app.js';
 import { startWebSocketServer } from './services/websocket/ws-server.js';
 import { startScraperScheduler } from './services/scraper/scraper-scheduler.js';
-import { startStockTracker } from './services/stocks/stock-tracker.js';
+import { startStockTracker, stopStockTracker } from './services/stocks/stock-tracker.js';
 import { seedDatabase } from './lib/seed.js';
 import { backupDatabase } from './lib/gcs-backup.js';
-import { startCalendarTracker } from './services/calendar/calendar-tracker.js';
-import { startInsiderTracker } from './services/stocks/insider-tracker.js';
-import { startDataRetention } from './services/data-retention.js';
+import { startCalendarTracker, stopCalendarTracker } from './services/calendar/calendar-tracker.js';
+import { startInsiderTracker, stopInsiderTracker } from './services/stocks/insider-tracker.js';
+import { startDataRetention, stopDataRetention } from './services/data-retention.js';
 import { fetchConflicts } from './services/acled/acled-client.js';
 import { prisma } from './lib/prisma.js';
 
+// Validate ENCRYPTION_KEY at startup — warn early if missing
+if (!process.env.ENCRYPTION_KEY) {
+  console.warn('[Server] WARNING: ENCRYPTION_KEY is not set — Alpaca credential encryption will fail');
+}
+
 const app = createApp();
+const intervals: ReturnType<typeof setInterval>[] = [];
 
 const server = app.listen(env.PORT, async () => {
   // Keep-alive > Cloud Run's 60s idle timeout
@@ -37,7 +43,7 @@ const server = app.listen(env.PORT, async () => {
   fetchConflicts().catch(() => {});
 
   // Clean up expired sessions and verification codes every hour
-  setInterval(async () => {
+  intervals.push(setInterval(async () => {
     try {
       const now = new Date();
       const [sessions, codes] = await Promise.all([
@@ -50,12 +56,12 @@ const server = app.listen(env.PORT, async () => {
     } catch (err) {
       console.error('[Auth] Cleanup error:', err);
     }
-  }, 60 * 60 * 1000);
+  }, 60 * 60 * 1000));
 
   // Periodic database backup to GCS
   if (env.GCS_BUCKET) {
     const intervalMs = env.GCS_BACKUP_INTERVAL_MINUTES * 60 * 1000;
-    setInterval(() => backupDatabase(), intervalMs);
+    intervals.push(setInterval(() => backupDatabase(), intervalMs));
     console.log(`[GCS] Backup scheduled every ${env.GCS_BACKUP_INTERVAL_MINUTES} minutes`);
   }
 
@@ -65,6 +71,15 @@ const server = app.listen(env.PORT, async () => {
 // ── Graceful Shutdown ──
 async function shutdown(signal: string) {
   console.log(`\n[Server] ${signal} received — shutting down gracefully...`);
+  // Stop all service trackers
+  stopStockTracker();
+  stopCalendarTracker();
+  stopInsiderTracker();
+  stopDataRetention();
+  // Clear additional tracked intervals
+  for (const id of intervals) clearInterval(id);
+  intervals.length = 0;
+
   server.close(async () => {
     try {
       // Final backup before shutdown to prevent data loss

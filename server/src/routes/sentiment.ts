@@ -79,11 +79,17 @@ router.get('/trend', async (req, res) => {
     };
 
     if (scope === 'ticker' && value) {
-      // Filter articles that have recommendations matching this symbol
+      const sym = value.toUpperCase().slice(0, 10);
+      if (!/^[A-Z0-9.\-]{1,10}$/.test(sym)) {
+        return res.status(400).json({ error: 'Invalid symbol format' });
+      }
       where.recommendations = {
-        some: { symbol: value.toUpperCase() },
+        some: { symbol: sym },
       };
     } else if (scope === 'category' && value) {
+      if (!/^[a-z0-9-]{1,50}$/.test(value)) {
+        return res.status(400).json({ error: 'Invalid category slug' });
+      }
       where.categorySlug = value;
     }
     // scope === 'market' => no additional filter
@@ -95,7 +101,7 @@ router.get('/trend', async (req, res) => {
         sentimentScore: true,
       },
       orderBy: { scrapedAt: 'asc' },
-      take: 10000, // Cap to prevent unbounded memory usage
+      take: 2000,
     });
 
     // Group into time buckets

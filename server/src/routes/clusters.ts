@@ -7,7 +7,8 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
-    const minImpact = parseFloat(req.query.minImpact as string) || 0;
+    const rawImpact = parseFloat(req.query.minImpact as string);
+    const minImpact = isNaN(rawImpact) ? 0 : rawImpact;
 
     const clusters = await prisma.newsCluster.findMany({
       where: {

@@ -75,11 +75,16 @@ router.post('/connect', async (req, res) => {
 
 // POST /api/alpaca/disconnect — Remove Alpaca API keys
 router.post('/disconnect', async (req, res) => {
-  await prisma.user.update({
-    where: { id: req.user!.id },
-    data: { alpacaApiKey: null, alpacaSecretKey: null },
-  });
-  res.json({ ok: true });
+  try {
+    await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { alpacaApiKey: null, alpacaSecretKey: null },
+    });
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error('[Alpaca] Disconnect error:', err?.message);
+    res.status(500).json({ error: 'Failed to disconnect Alpaca' });
+  }
 });
 
 // GET /api/alpaca/account — Get Alpaca account info
@@ -154,6 +159,16 @@ router.post('/orders', async (req, res) => {
       return res.status(400).json({ error: 'side must be "buy" or "sell"' });
     }
 
+    const validTypes = ['market', 'limit', 'stop', 'stop_limit', 'trailing_stop'];
+    if (type && !validTypes.includes(type)) {
+      return res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
+    }
+
+    const validTif = ['day', 'gtc', 'opg', 'cls', 'ioc', 'fok'];
+    if (time_in_force && !validTif.includes(time_in_force)) {
+      return res.status(400).json({ error: `time_in_force must be one of: ${validTif.join(', ')}` });
+    }
+
     if (!qty && !notional) {
       return res.status(400).json({ error: 'qty or notional is required' });
     }
@@ -166,6 +181,18 @@ router.post('/orders', async (req, res) => {
       return res.status(400).json({ error: 'notional must be a positive number' });
     }
 
+    if (limit_price != null && (isNaN(Number(limit_price)) || Number(limit_price) <= 0)) {
+      return res.status(400).json({ error: 'limit_price must be a positive number' });
+    }
+
+    if (stop_price != null && (isNaN(Number(stop_price)) || Number(stop_price) <= 0)) {
+      return res.status(400).json({ error: 'stop_price must be a positive number' });
+    }
+
+    if (!/^[A-Z0-9.\-]{1,10}$/i.test(symbol)) {
+      return res.status(400).json({ error: 'Invalid symbol format' });
+    }
+
     const orderPayload: Record<string, unknown> = {
       symbol: symbol.toUpperCase(),
       side,
@@ -175,8 +202,8 @@ router.post('/orders', async (req, res) => {
 
     if (qty) orderPayload.qty = String(qty);
     if (notional) orderPayload.notional = String(notional);
-    if (limit_price) orderPayload.limit_price = String(limit_price);
-    if (stop_price) orderPayload.stop_price = String(stop_price);
+    if (limit_price != null) orderPayload.limit_price = String(limit_price);
+    if (stop_price != null) orderPayload.stop_price = String(stop_price);
 
     const order = await alpacaFetch(
       alpacaApiKey, alpacaSecretKey, alpacaPaper,
@@ -200,9 +227,14 @@ router.delete('/orders/:id', async (req, res) => {
   }
 
   try {
+    const orderId = req.params.id;
+    if (!orderId || !/^[a-zA-Z0-9\-]{1,64}$/.test(orderId)) {
+      return res.status(400).json({ error: 'Invalid order ID' });
+    }
+
     await alpacaFetch(
       alpacaApiKey, alpacaSecretKey, alpacaPaper,
-      `/v2/orders/${req.params.id}`,
+      `/v2/orders/${orderId}`,
       { method: 'DELETE' },
     );
     res.json({ ok: true });

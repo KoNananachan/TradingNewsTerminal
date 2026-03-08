@@ -7,7 +7,8 @@ const router = Router();
 router.get('/flow', async (req, res) => {
   try {
     const symbolsParam = (req.query.symbols as string) || '';
-    const minPremium = parseInt(req.query.minPremium as string) || 50000;
+    const rawPremium = parseInt(req.query.minPremium as string);
+    const minPremium = isNaN(rawPremium) || rawPremium < 0 ? 50000 : rawPremium;
 
     if (!symbolsParam) {
       res.status(400).json({ error: 'symbols query parameter is required (comma-separated)' });

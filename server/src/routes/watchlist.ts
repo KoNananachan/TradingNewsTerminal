@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     const tracked = await prisma.trackedStock.findMany({
       where: { source: { in: ['default', 'watchlist'] } },
       orderBy: { addedAt: 'asc' },
+      take: 500,
     });
 
     const symbols = tracked.map((t) => t.symbol);
@@ -76,7 +77,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const q = (req.query.q as string || '').trim();
-    if (q.length < 1) return res.json([]);
+    if (q.length < 1 || q.length > 100) return res.json([]);
 
     const url = `${YAHOO_SEARCH}?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0`;
     const resp = await fetch(url, {

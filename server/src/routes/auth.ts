@@ -35,6 +35,14 @@ function recordVerifyAttempt(ip: string) {
 function clearVerifyAttempts(ip: string) {
   verifyAttempts.delete(ip);
 }
+
+// Periodic cleanup of expired entries to prevent unbounded memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of verifyAttempts) {
+    if (now > entry.resetAt) verifyAttempts.delete(ip);
+  }
+}, VERIFY_WINDOW_MS);
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: 'lax' as const,

@@ -145,6 +145,7 @@ router.get('/sessions', requireAuth, async (req, res) => {
 // GET /api/audit/stats — aggregated statistics
 router.get('/stats', requireAuth, async (req, res) => {
   try {
+    const userId = req.user!.id;
     const [
       totalScrapes,
       successScrapes,
@@ -152,15 +153,13 @@ router.get('/stats', requireAuth, async (req, res) => {
       successAiCalls,
       totalTrades,
       totalSessions,
-      uniqueWallets,
     ] = await Promise.all([
       prisma.scrapeRun.count(),
       prisma.scrapeRun.count({ where: { status: 'success' } }),
       prisma.aiAnalysisLog.count(),
       prisma.aiAnalysisLog.count({ where: { status: 'success' } }),
-      prisma.tradeOrder.count(),
-      prisma.userSession.count(),
-      prisma.userSession.groupBy({ by: ['walletAddress'] }).then((g) => g.length),
+      prisma.tradeOrder.count({ where: { userId } }),
+      prisma.userSession.count({ where: { userId } }),
     ]);
 
     res.json({
@@ -177,9 +176,8 @@ router.get('/stats', requireAuth, async (req, res) => {
       trading: {
         totalOrders: totalTrades,
       },
-      users: {
-        totalSessions: totalSessions,
-        uniqueWallets,
+      sessions: {
+        totalSessions,
       },
     });
   } catch (err) {

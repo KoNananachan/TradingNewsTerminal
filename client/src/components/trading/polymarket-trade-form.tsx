@@ -81,7 +81,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
     if (!address) throw new Error('Wallet not connected');
 
     const timestamp = String(Math.floor(Date.now() / 1000));
-    const nonce = 0;
+    const nonce = BigInt(Date.now());
 
     const signature = await signTypedDataAsync({
       domain: CLOB_AUTH_DOMAIN,
@@ -90,7 +90,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
       message: {
         address: address,
         timestamp,
-        nonce: BigInt(nonce),
+        nonce,
         message: 'This message attests that I control the given wallet',
       },
     });
@@ -100,7 +100,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
       {},
     );
 
-    return { signature, timestamp, nonce, ...resp };
+    return { signature, timestamp, nonce: Number(nonce), ...resp };
   }, [address, signTypedDataAsync]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,6 +122,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
       // For now, sign the CLOB auth to prove ownership, then log the order
       // Full CLOB order signing requires the CTF Exchange EIP-712 domain
       const timestamp = String(Math.floor(Date.now() / 1000));
+      const nonce = BigInt(Date.now());
 
       await signTypedDataAsync({
         domain: CLOB_AUTH_DOMAIN,
@@ -130,7 +131,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
         message: {
           address: address!,
           timestamp,
-          nonce: BigInt(0),
+          nonce,
           message: 'This message attests that I control the given wallet',
         },
       });

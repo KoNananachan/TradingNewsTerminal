@@ -68,7 +68,9 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
 
     // Log trade intent (actual signing would require Hyperliquid EIP-712 integration)
     const sizeVal = parseFloat(size);
+    if (isNaN(sizeVal) || sizeVal <= 0) return;
     const priceVal = orderType === 'limit' ? parseFloat(price) : midPrice;
+    if (priceVal != null && isNaN(priceVal)) return;
 
     const orderDesc = `${side.toUpperCase()} ${sizeVal} ${coin} @ ${orderType === 'market' ? 'MKT' : '$' + priceVal?.toFixed(2)} (${leverage}x)`;
 
