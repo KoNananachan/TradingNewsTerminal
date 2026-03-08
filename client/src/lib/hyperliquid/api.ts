@@ -38,6 +38,10 @@ export function getMeta(): Promise<Universe> {
   return postInfo({ type: 'meta' });
 }
 
+export function getPerpMetaAndCtxs(): Promise<[Universe, AssetCtx[]]> {
+  return postInfo({ type: 'metaAndAssetCtxs' });
+}
+
 export function getSpotMeta(): Promise<SpotMeta> {
   return postInfo({ type: 'spotMeta' });
 }
@@ -59,6 +63,10 @@ export function getFundingRates(coin: string, startTime: number, endTime?: numbe
 
 export function getUserState(user: string): Promise<UserState> {
   return postInfo({ type: 'clearinghouseState', user });
+}
+
+export function getStockUserState(user: string): Promise<UserState> {
+  return postInfo({ type: 'clearinghouseState', user, dex: 'xyz' });
 }
 
 export function getSpotBalances(user: string): Promise<SpotUserState> {

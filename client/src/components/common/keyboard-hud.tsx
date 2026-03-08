@@ -17,7 +17,7 @@ export function KeyboardHUD() {
   ];
 
   return (
-    <div className="fixed bottom-10 right-4 z-50 flex flex-col items-end gap-1 pointer-events-none">
+    <div className="fixed bottom-2 left-4 z-50 flex flex-col items-start gap-1 pointer-events-none">
       <div className="bg-black/70 backdrop-blur-sm border border-border/30 px-3 py-1.5 flex items-center gap-3">
         {baseKeys.map((k) => (
           <div key={k.keys} className="flex items-center gap-1.5">

@@ -28,6 +28,7 @@ import billingRouter, { billingWebhookHandler } from './routes/billing.js';
 import alpacaRouter from './routes/alpaca.js';
 import streamsRouter from './routes/streams.js';
 import polymarketRouter from './routes/polymarket.js';
+import hyperliquidRouter from './routes/hyperliquid.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -139,6 +140,7 @@ export function createApp() {
   app.use('/api/insiders', insidersRouter);
   app.use('/api/correlations', correlationsRouter);
   app.use('/api/polymarket', polymarketRouter);
+  app.use('/api/hyperliquid', hyperliquidRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

@@ -31,3 +31,9 @@ TEST_REPORT.md
 
 # Claude Code
 .claude/
+
+# npm cache artifacts (Windows path leaks)
+D:\\*
+
+# TypeScript build cache
+*.tsbuildinfo

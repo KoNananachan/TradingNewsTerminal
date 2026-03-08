@@ -172,51 +172,17 @@ export function AlpacaTrading() {
     }
   };
 
-  // Not connected — show connect form
+  // Not connected — show feature testing placeholder
   if (!hasAlpaca) {
     return (
-      <div className="h-full flex flex-col p-4 gap-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Link2 className="w-4 h-4 text-accent" />
-          <span className="text-[11px] font-black uppercase tracking-widest text-accent">{t('connectAlpaca')}</span>
+      <div className="h-full flex flex-col items-center justify-center p-6 gap-4">
+        <div className="w-12 h-12 border-2 border-accent/30 flex items-center justify-center">
+          <Link2 className="w-6 h-6 text-accent/50" />
         </div>
-        <p className="text-[10px] font-mono text-neutral leading-relaxed">
-          {t('alpacaDesc')}{' '}
-          <a href="https://app.alpaca.markets" target="_blank" rel="noopener noreferrer" className="text-accent underline">
-            alpaca.markets
-          </a>
+        <span className="text-[13px] font-black uppercase tracking-widest text-accent">{t('featureTesting')}</span>
+        <p className="text-[10px] font-mono text-neutral/60 leading-relaxed text-center max-w-[260px]">
+          {t('featureTestingDesc')}
         </p>
-        <input
-          type="text"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder={t('apiKeyId')}
-          className="w-full bg-black border border-border px-3 py-2 text-[11px] font-mono text-white placeholder:text-neutral/30 focus:border-accent outline-none"
-        />
-        <input
-          type="password"
-          value={secretKey}
-          onChange={(e) => setSecretKey(e.target.value)}
-          placeholder={t('secretKeyLabel')}
-          className="w-full bg-black border border-border px-3 py-2 text-[11px] font-mono text-white placeholder:text-neutral/30 focus:border-accent outline-none"
-        />
-        <label className="flex items-center gap-2 text-[10px] font-mono text-neutral cursor-pointer">
-          <input
-            type="checkbox"
-            checked={paper}
-            onChange={(e) => setPaper(e.target.checked)}
-            className="accent-accent"
-          />
-          {t('paperTrading')}
-        </label>
-        <button
-          onClick={handleConnect}
-          disabled={connecting || !apiKey || !secretKey}
-          className="w-full py-2.5 bg-accent text-black text-[11px] font-black uppercase tracking-widest hover:bg-accent/90 disabled:opacity-50"
-        >
-          {connecting ? t('connectingBtn') : t('connectBtn')}
-        </button>
-        {error && <p className="text-[10px] font-mono text-bearish">{error}</p>}
       </div>
     );
   }

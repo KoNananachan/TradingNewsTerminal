@@ -8,7 +8,7 @@ import { api } from '../../api/client';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { cleanTitle } from '../../utils/clean-title';
-import { Crosshair, Zap, Maximize2, Minimize2, Flame, TrendingUp } from 'lucide-react';
+import { Crosshair, Zap, Maximize2, Minimize2, Flame, TrendingUp, Radio } from 'lucide-react';
 
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const SOURCE_ID = 'news-events';
@@ -127,6 +127,7 @@ export function WorldMapPanel() {
   const { data: conflicts } = useConflicts();
   const [showConflicts, setShowConflicts] = useState(true);
   const [showExchanges, setShowExchanges] = useState(true);
+  const [showNews, setShowNews] = useState(true);
   const { data: indexQuotes } = useQuery({
     queryKey: ['indices'],
     queryFn: () => api.get<IndexQuote[]>('/stocks/indices'),
@@ -565,6 +566,16 @@ export function WorldMapPanel() {
     }
   }, [isMapReady, events, visitedMapNodes]);
 
+  // Toggle news dots visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+    const vis = showNews ? 'visible' : 'none';
+    if (map.getLayer(CIRCLE_LAYER)) map.setLayoutProperty(CIRCLE_LAYER, 'visibility', vis);
+    if (map.getLayer(FLASH_LAYER)) map.setLayoutProperty(FLASH_LAYER, 'visibility', vis);
+    if (map.getLayer(FLASH_LAYER + '-glow')) map.setLayoutProperty(FLASH_LAYER + '-glow', 'visibility', vis);
+  }, [isMapReady, showNews]);
+
   // Update conflict layers
   useEffect(() => {
     const map = mapRef.current;
@@ -693,6 +704,17 @@ export function WorldMapPanel() {
     <GlassCard
       headerRight={
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowNews(v => !v)}
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-colors ${
+              showNews
+                ? 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+                : 'text-neutral bg-black/40 border-border/30 opacity-50'
+            }`}
+            title={showNews ? 'Hide News' : 'Show News'}
+          >
+            <Radio className="w-3 h-3" /> NEWS
+          </button>
           <button
             onClick={() => setShowExchanges(v => !v)}
             className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-colors ${

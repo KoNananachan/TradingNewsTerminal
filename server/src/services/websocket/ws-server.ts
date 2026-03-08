@@ -81,3 +81,7 @@ export function broadcastCalendarRelease(event: unknown) {
 export function broadcastAlertTriggered(alert: unknown) {
   broadcast('alert-triggered', alert);
 }
+
+export function broadcastHyperliquidUpdate(data: unknown) {
+  broadcast('hyperliquid-update', data);
+}

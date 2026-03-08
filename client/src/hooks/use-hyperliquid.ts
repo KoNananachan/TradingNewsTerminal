@@ -5,10 +5,12 @@ import {
   getAllMids,
   getL2Book,
   getUserState,
+  getStockUserState,
   getUserFills,
   getOpenOrders,
   getSpotBalances,
   getMeta,
+  getPerpMetaAndCtxs,
   getSpotMeta,
   getStockPerpMetaAndCtxs,
 } from '../lib/hyperliquid/api';
@@ -41,6 +43,14 @@ export function useMeta() {
     queryKey: ['hl', 'meta'],
     queryFn: getMeta,
     refetchInterval: SLOW,
+  });
+}
+
+export function usePerpMetaAndCtxs() {
+  return useQuery({
+    queryKey: ['hl', 'perpMetaAndCtxs'],
+    queryFn: getPerpMetaAndCtxs,
+    refetchInterval: FAST,
   });
 }
 
@@ -83,18 +93,18 @@ export function useCombinedMids(): { data: AllMids | undefined } {
 }
 
 export function useHyperliquidAssets(): Set<string> {
-  const { data: perpMeta } = useMeta();
+  const { data: perpData } = usePerpMetaAndCtxs();
   const { data: spotMeta } = useSpotMeta();
   return useMemo(() => {
     const set = new Set<string>();
-    if (perpMeta) {
-      for (const a of perpMeta.universe) set.add(a.name);
+    if (perpData) {
+      for (const a of perpData[0].universe) set.add(a.name);
     }
     if (spotMeta) {
       for (const t of spotMeta.tokens) set.add(t.name);
     }
     return set;
-  }, [perpMeta, spotMeta]);
+  }, [perpData, spotMeta]);
 }
 
 export function useUserState() {
@@ -102,6 +112,16 @@ export function useUserState() {
   return useQuery({
     queryKey: ['hl', 'userState', address],
     queryFn: () => getUserState(address!),
+    enabled: !!address,
+    refetchInterval: MEDIUM,
+  });
+}
+
+export function useStockUserState() {
+  const { address } = useAccount();
+  return useQuery({
+    queryKey: ['hl', 'stockUserState', address],
+    queryFn: () => getStockUserState(address!),
     enabled: !!address,
     refetchInterval: MEDIUM,
   });

@@ -113,7 +113,7 @@ export function TradingPanel() {
                     <BookOpen className="w-3 h-3 text-accent" />
                     <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
                       {selectedCoin.startsWith('xyz:') ? selectedCoin.slice(4) : selectedCoin}
-                      {coinType === 'stock' ? '/USDH Spot' : '-USD Perp'}
+                      {'-USDC Perp'}
                       {coinType === 'commodity' && <span className="ml-1 text-amber-400/60">(Commodity)</span>}
                       {coinType === 'stock-perp' && <span className="ml-1 text-violet-400/60">(Stock)</span>}
                     </span>
@@ -136,11 +136,6 @@ export function TradingPanel() {
 
             {activeTab === 'fills' && (
               <div className="h-full overflow-hidden flex flex-col">
-                <div className="px-3 py-1.5 border-b border-border/20 bg-black/60 shrink-0">
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-                    {t('recentFills')}
-                  </span>
-                </div>
                 <RecentFills />
               </div>
             )}

@@ -8,6 +8,7 @@ import { backupDatabase } from './lib/gcs-backup.js';
 import { startCalendarTracker, stopCalendarTracker } from './services/calendar/calendar-tracker.js';
 import { startInsiderTracker, stopInsiderTracker } from './services/stocks/insider-tracker.js';
 import { startDataRetention, stopDataRetention } from './services/data-retention.js';
+import { startHyperliquidTracker, stopHyperliquidTracker } from './services/hyperliquid/hl-tracker.js';
 import { fetchConflicts } from './services/acled/acled-client.js';
 import { prisma } from './lib/prisma.js';
 
@@ -37,6 +38,7 @@ const server = app.listen(env.PORT, async () => {
   startStockTracker();
   startCalendarTracker();
   startInsiderTracker();
+  startHyperliquidTracker();
   startDataRetention();
 
   // Pre-warm conflicts cache so first client request is instant
@@ -75,6 +77,7 @@ async function shutdown(signal: string) {
   stopStockTracker();
   stopCalendarTracker();
   stopInsiderTracker();
+  stopHyperliquidTracker();
   stopDataRetention();
   // Clear additional tracked intervals
   for (const id of intervals) clearInterval(id);
