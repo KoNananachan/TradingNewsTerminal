@@ -102,14 +102,14 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
 
   // Fetch dex offsets once (retry on failure)
   useEffect(() => {
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     getDexOffsets().then(setDexOffsetMap).catch((err) => {
       console.error('[TradeForm] Failed to load dex offsets:', err?.message);
-      // Retry after 5s
-      const timer = setTimeout(() => {
+      retryTimer = setTimeout(() => {
         getDexOffsets().then(setDexOffsetMap).catch(() => {});
       }, 5000);
-      return () => clearTimeout(timer);
     });
+    return () => { if (retryTimer) clearTimeout(retryTimer); };
   }, []);
 
   const assetInfo = useMemo(() => {

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { useUserState, useStockUserState, useSpotBalances, usePerpMetaAndCtxs, useStockPerps, useCombinedMids } from '../../hooks/use-hyperliquid';
 import { useQueryClient } from '@tanstack/react-query';
@@ -34,13 +34,15 @@ export function PortfolioView() {
   const queryClient = useQueryClient();
   const [closingCoin, setClosingCoin] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const closingRef = useRef(false);
 
   const handleClose = useCallback(async (coin: string, szi: string) => {
     if (!address) return;
-    if (closingCoin) return; // Prevent concurrent close requests
+    if (closingRef.current) return; // Prevent concurrent close requests
     const agent = getAgentWallet(address);
     if (!agent) { setCloseError('No trading key. Set up in TRADE tab first.'); return; }
 
+    closingRef.current = true;
     setClosingCoin(coin);
     setCloseError(null);
     try {
@@ -137,9 +139,10 @@ export function PortfolioView() {
     } catch (err: unknown) {
       setCloseError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
+      closingRef.current = false;
       setClosingCoin(null);
     }
-  }, [address, perpData, stockPerps, mids, queryClient, closingCoin]);
+  }, [address, perpData, stockPerps, mids, queryClient]);
 
   if (!isConnected) {
     return (
