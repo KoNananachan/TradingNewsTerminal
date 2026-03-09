@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
-import { ALL_PANEL_IDS, getLocalizedPanelName, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
+import { ALL_PANEL_IDS, PANEL_IDS, getLocalizedPanelName, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
 import { Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface PanelToggleMenuProps {
@@ -54,7 +54,7 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
             </span>
           </div>
           <div className="py-1">
-            {ALL_PANEL_IDS.map((panelId) => {
+            {ALL_PANEL_IDS.filter((id) => id !== PANEL_IDS.PREDICTION).map((panelId) => {
               const isHidden = hiddenPanels.includes(panelId);
               return (
                 <button

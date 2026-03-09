@@ -17,8 +17,8 @@ export function TradingPanel() {
   const { isConnected } = useAccount();
   const [channel, setChannel] = useState<Channel>('hyperliquid');
   const [activeTab, setActiveTab] = useState<TradingTab>('trade');
-  const [selectedCoin, setSelectedCoin] = useState('BTC');
-  const [coinType, setCoinType] = useState<MarketType>('crypto');
+  const [selectedCoin, setSelectedCoin] = useState('xyz:NVDA');
+  const [coinType, setCoinType] = useState<MarketType>('stock-perp');
   const tradingCoin = useAppStore((s) => s.tradingCoin);
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
   const t = useT();

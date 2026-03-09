@@ -125,7 +125,7 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
   PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.STOCKS,
   PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.TRADING,
-  PANEL_IDS.PREDICTION, PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
+  PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
   PANEL_IDS.ECON_CALENDAR, PANEL_IDS.INSIDERS,
 ]);
 
@@ -223,7 +223,6 @@ const DEFAULT_LAYOUT: IJsonModel = {
             weight: 45,
             children: [
               { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
-              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
             ],
           },
         ],
