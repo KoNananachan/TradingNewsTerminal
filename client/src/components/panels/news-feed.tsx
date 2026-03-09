@@ -214,10 +214,10 @@ export function NewsFeed() {
                   {/* Time Column */}
                   <div className="flex flex-col pt-0.5 border-r border-border/30">
                     <span className="text-[10px] font-mono font-bold text-white">
-                      {formatShortTime(article.scrapedAt)}
+                      {formatShortTime(article.publishedAt || article.scrapedAt)}
                     </span>
                     <span className="text-[8px] font-mono text-neutral/60">
-                      {formatTimeAgo(article.scrapedAt)}
+                      {formatTimeAgo(article.publishedAt || article.scrapedAt)}
                     </span>
                   </div>
 

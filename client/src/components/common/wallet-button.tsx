@@ -1,7 +1,11 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { Wallet, ChevronDown, Copy, ExternalLink, Power } from 'lucide-react';
 
 export function WalletButton() {
+  const user = useAuthStore((s) => s.user);
+  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
+
   return (
     <ConnectButton.Custom>
       {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
@@ -16,7 +20,14 @@ export function WalletButton() {
           >
             {!connected ? (
               <button
-                onClick={openConnectModal}
+                onClick={() => {
+                  if (!user) {
+                    setLoginModalOpen(true);
+                  } else {
+                    openConnectModal();
+                  }
+                }}
+                title={!user ? 'Please login first' : 'Connect Wallet'}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 bg-black border border-border text-[10px] font-black font-mono uppercase tracking-widest text-neutral hover:text-accent hover:border-accent transition-colors"
               >
                 <Wallet className="w-3.5 h-3.5" />

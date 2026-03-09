@@ -752,6 +752,8 @@ export function WorldMapPanel() {
       className="h-full relative overflow-hidden flex flex-col"
     >
       <style>{`
+        .maplibregl-map { width: 100% !important; height: 100% !important; }
+        .maplibregl-canvas { width: 100% !important; height: 100% !important; }
         .custom-terminal-popup .maplibregl-popup-content {
           padding: 0; background: transparent; border: none; box-shadow: none;
         }

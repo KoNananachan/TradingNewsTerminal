@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireAuth } from '../middleware/auth.js';
-
 const router = Router();
-router.use(requireAuth);
 
 // GET /api/recommendations - recent AI recommendations
 router.get('/', async (req, res) => {
