@@ -4,12 +4,12 @@ import { useStockNames } from '../../api/hooks/use-stocks';
 import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { cleanTitle } from '../../utils/clean-title';
 import { useAppStore } from '../../stores/use-app-store';
-import { useAuthStore } from '../../stores/use-auth-store';
+// Auth imports removed — all features free in this version
 import { useT } from '../../i18n';
 import { SentimentBadge } from '../common/sentiment-badge';
 import { Badge } from '../common/badge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, BarChart2, Globe, Clock, ChevronLeft, Zap, Lock } from 'lucide-react';
+import { X, ExternalLink, BarChart2, Globe, Clock, ChevronLeft, Zap } from 'lucide-react';
 import { Actions } from 'flexlayout-react';
 import { getModel, PANEL_IDS } from '../layout/dock-layout';
 
@@ -17,10 +17,6 @@ export function NewsDetail() {
   const selectedArticleId = useAppStore((s) => s.selectedArticleId);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
-  const user = useAuthStore((s) => s.user);
-  const isPro = useAuthStore((s) => s.isPro);
-  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
-  const setUpgradeModalOpen = useAuthStore((s) => s.setUpgradeModalOpen);
   const t = useT();
   const { data: article, isLoading } = useNewsById(selectedArticleId);
 
@@ -159,27 +155,14 @@ export function NewsDetail() {
                         <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-border/50" />
                       </div>
                       <div className="grid gap-3 mb-6">
-                        {article.recommendations.map((rec, idx) => {
+                        {article.recommendations.map((rec) => {
                           const isTradeable = hlAssets.has(rec.symbol);
                           const fullName = stockNames?.[rec.symbol];
-                          const isLocked = !isPro() && idx > 0;
                           return (
                           <div
                             key={rec.id}
-                            className={`p-4 bg-white/[0.02] hover:bg-white/[0.04]  border border-border/30 hover:border-accent/30 transition-all group shadow-sm relative ${isLocked ? 'overflow-hidden' : ''}`}
+                            className="p-4 bg-white/[0.02] hover:bg-white/[0.04]  border border-border/30 hover:border-accent/30 transition-all group shadow-sm relative"
                           >
-                            {/* Locked overlay for non-first recommendations */}
-                            {isLocked && (
-                              <div
-                                onClick={() => user ? setUpgradeModalOpen(true) : setLoginModalOpen(true)}
-                                className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[4px] flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Lock className="w-4 h-4 text-accent" />
-                                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral">{t('proBadge')}</span>
-                                </div>
-                              </div>
-                            )}
                             <div className="flex items-center justify-between mb-2.5">
                               <div className="flex items-center gap-3 min-w-0">
                                 <span className="font-mono text-sm font-black text-white bg-black/40 px-2.5 py-1border border-border/50 group-hover:border-accent/40 transition-colors shrink-0">
@@ -215,9 +198,8 @@ export function NewsDetail() {
                                 {t('tradeAction')}
                               </button>
                             </div>
-                            {/* Reason: visible for first rec, blurred for rest if non-Pro */}
                             {rec.reason && (
-                              <p className={`text-[12px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors ${!isPro() && idx === 0 ? 'blur-[4px] select-none' : ''}`}>
+                              <p className="text-[12px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
                                 {rec.reason}
                               </p>
                             )}
@@ -225,19 +207,6 @@ export function NewsDetail() {
                           );
                         })}
                       </div>
-
-                      {/* Upgrade CTA for non-Pro */}
-                      {!isPro() && (
-                        <button
-                          onClick={() => user ? setUpgradeModalOpen(true) : setLoginModalOpen(true)}
-                          className="w-full mb-4 py-3 border border-accent/50 bg-accent/5 flex items-center justify-center gap-2 hover:bg-accent/10 transition-colors"
-                        >
-                          <Zap className="w-4 h-4 text-accent" />
-                          <span className="text-[11px] font-black uppercase tracking-widest text-accent">
-                            {user ? t('unlockAnalysis') : t('loginToUnlock')}
-                          </span>
-                        </button>
-                      )}
 
                       <div className="px-4 py-2 border border-bearish/30 bg-bearish/5 rounded">
                         <p className="text-[10px] font-mono text-neutral leading-normal uppercase">

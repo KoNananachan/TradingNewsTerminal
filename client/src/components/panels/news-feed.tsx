@@ -3,7 +3,7 @@ import { useNews, type NewsArticle } from '../../api/hooks/use-news';
 import { useNewsClusters } from '../../api/hooks/use-clusters';
 import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
-import { useAuthStore } from '../../stores/use-auth-store';
+// Auth store used for login prompt only
 import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { GlassCard } from '../common/glass-card';
 import { CategorySidebar } from './category-sidebar';
@@ -11,7 +11,7 @@ import { cleanTitle } from '../../utils/clean-title';
 import { useT } from '../../i18n';
 import { Actions } from 'flexlayout-react';
 import { getModel, PANEL_IDS } from '../layout/dock-layout';
-import { MapPin, Zap, Layers, Lock, Search, X } from 'lucide-react';
+import { MapPin, Zap, Layers, Search, X } from 'lucide-react';
 
 export function NewsFeed() {
   const selectedCategory = useAppStore((s) => s.selectedCategory);
@@ -26,10 +26,6 @@ export function NewsFeed() {
   const tabSymbols = useAppStore((s) => s.tabSymbols);
   const { data: serverWatchlist } = useWatchlist();
   const hlAssets = useHyperliquidAssets();
-  const user = useAuthStore((s) => s.user);
-  const isPro = useAuthStore((s) => s.isPro);
-  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
-  const setUpgradeModalOpen = useAuthStore((s) => s.setUpgradeModalOpen);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
   const t = useT();
   const [viewMode, setViewMode] = useState<'articles' | 'clusters'>('articles');
@@ -270,35 +266,22 @@ export function NewsFeed() {
                             </div>
                           );
                         })}
-                        {/* Additional tickers: blurred for non-Pro */}
-                        {article.recommendations.length > 1 && (
-                          isPro() ? (
-                            article.recommendations.slice(1, 2).map((rec) => {
-                              const tradeable = hlAssets.has(rec.symbol);
-                              return (
-                                <div
-                                  key={rec.id}
-                                  onClick={(e) => handleTickerClick(rec.symbol, e)}
-                                  className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
-                                  style={{ color: getActionColor(rec.action) }}
-                                  title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
-                                >
-                                  <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
-                                  {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
-                                </div>
-                              );
-                            })
-                          ) : (
+                        {/* Additional tickers */}
+                        {article.recommendations.slice(1, 2).map((rec) => {
+                          const tradeable = hlAssets.has(rec.symbol);
+                          return (
                             <div
-                              onClick={(e) => { e.stopPropagation(); user ? setUpgradeModalOpen(true) : setLoginModalOpen(true); }}
-                              className="flex items-center gap-1 font-mono text-[9px] font-bold text-neutral/30 cursor-pointer hover:text-accent/50"
-                              title="Upgrade to Pro"
+                              key={rec.id}
+                              onClick={(e) => handleTickerClick(rec.symbol, e)}
+                              className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
+                              style={{ color: getActionColor(rec.action) }}
+                              title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
                             >
-                              <Lock className="w-2.5 h-2.5" />
-                              <span className="blur-[3px] select-none">XXXX</span>
+                              <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
+                              {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
                             </div>
-                          )
-                        )}
+                          );
+                        })}
                       </>
                     ) : (
                       <span className="text-[8px] font-mono text-neutral/20 uppercase tracking-tighter">---</span>

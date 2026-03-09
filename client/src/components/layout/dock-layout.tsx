@@ -6,9 +6,7 @@ import { lazy, Suspense } from 'react';
 import { NewsFeed } from '../panels/news-feed';
 import { StockPanel } from '../panels/stock-panel';
 import { AiInsights } from '../panels/ai-insights';
-import { AiChatPanel } from '../panels/ai-chat-panel';
 import { TerminalLog } from '../layout/terminal-log';
-import { ProLockOverlay } from '../auth/pro-lock-overlay';
 import { PanelErrorBoundary } from '../common/error-boundary';
 import { useAppStore } from '../../stores/use-app-store';
 import { translations, type TranslationKey } from '../../i18n/translations';
@@ -43,7 +41,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 9; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 10; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -125,7 +123,7 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
   PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.STOCKS,
   PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.TRADING,
-  PANEL_IDS.AI_CHAT, PANEL_IDS.LIVE_STREAMS,
+  PANEL_IDS.PREDICTION, PANEL_IDS.LIVE_STREAMS,
   PANEL_IDS.ECON_CALENDAR, PANEL_IDS.INSIDERS,
 ]);
 
@@ -215,7 +213,6 @@ const DEFAULT_LAYOUT: IJsonModel = {
             children: [
               { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
               { type: 'tab', name: 'AI INSIGHTS', component: PANEL_IDS.AI, id: PANEL_IDS.AI },
-              { type: 'tab', name: 'AI CHAT', component: PANEL_IDS.AI_CHAT, id: PANEL_IDS.AI_CHAT },
             ],
           },
           {
@@ -223,6 +220,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             weight: 45,
             children: [
               { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
+              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
             ],
           },
         ],
@@ -391,10 +389,10 @@ export function DockLayout() {
       case PANEL_IDS.NEWS: content = <NewsFeed />; break;
       case PANEL_IDS.MAP: content = <LazyWrap><WorldMapPanel /></LazyWrap>; break;
       case PANEL_IDS.STOCKS: content = <StockPanel />; break;
-      case PANEL_IDS.AI: content = <ProLockOverlay><AiInsights /></ProLockOverlay>; break;
+      case PANEL_IDS.AI: content = <AiInsights />; break;
       case PANEL_IDS.LOG: content = <TerminalLog />; break;
       case PANEL_IDS.TRADING: content = <LazyWrap><TradingPanel /></LazyWrap>; break;
-      case PANEL_IDS.AI_CHAT: content = <ProLockOverlay><AiChatPanel /></ProLockOverlay>; break;
+      case PANEL_IDS.AI_CHAT: content = <div className="flex items-center justify-center h-full text-neutral/30 text-[10px] font-mono uppercase tracking-widest">Coming soon</div>; break;
       case PANEL_IDS.ECON_CALENDAR: content = <LazyWrap><EconomicCalendarPanel /></LazyWrap>; break;
       case PANEL_IDS.ALERTS: content = <LazyWrap><AlertsPanel /></LazyWrap>; break;
       case PANEL_IDS.SENTIMENT: content = <LazyWrap><SentimentPanel /></LazyWrap>; break;

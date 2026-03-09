@@ -37,3 +37,7 @@ D:\\*
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Proprietary AI/LLM services (not open source)
+server/src/services/ai/
+server/src/routes/chat.ts
