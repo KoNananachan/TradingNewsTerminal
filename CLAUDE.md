@@ -63,13 +63,14 @@
 ## Security Standards
 
 ### Server-Side
-- All routes under `/api/auth`, `/api/billing`, `/api/alpaca`, `/api/audit` require authentication
+- All routes under `/api/auth`, `/api/alpaca`, `/api/audit`, `/api/recommendations` require authentication
+- Billing routes exist but are currently disabled in the UI (no Pro subscription required)
 - Rate limiting: global 120/min, auth 10/15min, chat 10/min
 - Input validation with Zod schemas on all POST/PUT endpoints
 - Pagination limits on all list endpoints (max 200-500)
 - Error responses: return generic messages to client, log details server-side only
 - Never expose upstream API error bodies to client (e.g., Polymarket, Alpaca)
-- Billing redirect URLs: validate against `ALLOWED_ORIGINS` whitelist, never trust `Origin` header blindly
+- Billing redirect URLs (when re-enabled): validate against `ALLOWED_ORIGINS` whitelist
 - YouTube handle validation: strict regex `/^@[a-zA-Z0-9_-]{1,50}$/`
 
 ### Client-Side
@@ -110,9 +111,10 @@
 server/src/
   config/env.ts        - Environment validation (Zod)
   lib/                 - Shared utilities (prisma, crypto, gcs-backup, seed)
-  middleware/auth.ts    - attachUser, requireAuth, requirePro
+  middleware/auth.ts    - attachUser, requireAuth (requirePro exists but unused)
   routes/              - Express route handlers
-  services/            - Business logic (scraper, AI, stocks, calendar, alerts)
+  services/            - Business logic (scraper, stocks, calendar, alerts)
+                         services/ai/ is gitignored (proprietary, not open source)
   scripts/             - One-off scripts (restore-db)
 
 client/src/
@@ -216,12 +218,12 @@ client/src/
 | ENCRYPTION_KEY | AES-256 key for credential encryption |
 | GCS_BUCKET | Database backup bucket |
 | GOOGLE_CLIENT_ID | OAuth |
-| STRIPE_SECRET_KEY | Billing |
-| STRIPE_WEBHOOK_SECRET | Webhook verification |
-| STRIPE_PRICE_ID | Pro subscription price |
+| STRIPE_SECRET_KEY | Billing (optional, currently disabled) |
+| STRIPE_WEBHOOK_SECRET | Webhook verification (optional) |
+| STRIPE_PRICE_ID | Pro subscription price (optional) |
 | RESEND_API_KEY | Email sending (optional) |
 
 ---
 
-*Last updated: 2026-03-07*
+*Last updated: 2026-03-09*
 *Maintainer: KoNananachan*

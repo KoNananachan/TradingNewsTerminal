@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
 import { PolymarketMarkets } from '../trading/polymarket-markets';
 import { PolymarketOrderbook } from '../trading/polymarket-orderbook';
 import { parseJsonArray, type PolymarketMarket } from '../../lib/polymarket/types';

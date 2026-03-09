@@ -21,10 +21,9 @@ A real-time trading news terminal with AI-powered analysis, prediction markets, 
 - **Insider Trading** — SEC EDGAR Form 4 tracking with cluster buy detection
 - **Risk Calculator** — Position sizer, Kelly criterion, max drawdown analyzer
 - **Sector Rotation** — 11 GICS sector ETF momentum analysis
-- **AI Chat** — Context-aware financial assistant with article/chart attachments
 - **6 Languages** — English, Español, Français, Japanese, Korean, Chinese
 - **Web3 Wallet** — RainbowKit + wagmi for Polygon/Arbitrum/Mainnet
-- **Auth & Billing** — Google OAuth, email verification, Stripe Pro subscription
+- **Auth** — Google OAuth, email verification
 
 ## Tech Stack
 
@@ -36,7 +35,7 @@ A real-time trading news terminal with AI-powered analysis, prediction markets, 
 | Real-time | WebSocket (ws) on shared HTTP server |
 | Charts | lightweight-charts, MapLibre GL |
 | Web3 | wagmi, viem, RainbowKit |
-| Payments | Stripe (Checkout + Customer Portal) |
+| Auth | Google OAuth, email verification |
 | UI Layout | FlexLayout React |
 | Deployment | Docker → Google Cloud Run |
 
