@@ -8,7 +8,7 @@ import { MarketOverview, type MarketType } from '../trading/market-overview';
 import { AlpacaTrading } from '../trading/alpaca-trading';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
-import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3 } from 'lucide-react';
+import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3, FlaskConical } from 'lucide-react';
 
 type TradingTab = 'portfolio' | 'trade' | 'fills';
 type Channel = 'hyperliquid' | 'alpaca';
@@ -65,6 +65,14 @@ export function TradingPanel() {
             {t('connected')}
           </span>
         )}
+      </div>
+
+      {/* Early access banner */}
+      <div className="px-3 py-1.5 bg-amber-500/[0.08] border-b border-amber-500/30 shrink-0 flex items-center gap-2">
+        <FlaskConical className="w-3 h-3 text-amber-400 shrink-0" />
+        <span className="text-[8px] font-mono font-bold text-amber-400/90 uppercase tracking-wider leading-tight">
+          Early Access — Trading features are experimental. Use with caution. Not financial advice.
+        </span>
       </div>
 
       {/* Alpaca channel */}

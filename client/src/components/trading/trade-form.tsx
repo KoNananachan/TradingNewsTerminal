@@ -745,13 +745,6 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
               ? `Loading ${displayCoin(coin)}...`
               : `${side === 'buy' ? t('long') : t('short')} ${displayCoin(coin)}`}
       </button>
-
-      {/* Caution warning */}
-      <div className="mt-1 px-2 py-1.5 border border-amber-500/30 bg-amber-500/[0.06] rounded">
-        <p className="text-[8px] font-mono font-bold text-amber-400/80 text-center leading-relaxed tracking-wider">
-          ⚠ USE WITH CAUTION — Real orders submitted to Hyperliquid. Not financial advice. DYOR.
-        </p>
-      </div>
     </form>
   );
 }
