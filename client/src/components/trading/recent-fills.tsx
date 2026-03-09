@@ -1,23 +1,48 @@
 import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { useUserFills, useOpenOrders } from '../../hooks/use-hyperliquid';
+import { useUserFills, useOpenOrders, usePerpMetaAndCtxs, useStockPerps } from '../../hooks/use-hyperliquid';
 import { useQueryClient } from '@tanstack/react-query';
 import { signL1Action, getAgentWallet } from '../../lib/hyperliquid/agent-wallet';
+import { getDexOffsets, getDexPrefix } from '../../lib/hyperliquid/signing';
 import { X, Loader2 } from 'lucide-react';
 
 const HL_EXCHANGE_URL = 'https://api.hyperliquid.xyz/exchange';
 
 /** Strip dex prefix: "xyz:NVDA" → "NVDA" */
 function displayCoin(coin: string): string {
-  return coin.includes(':') ? coin.split(':').pop()! : coin;
+  if (!coin.includes(':')) return coin;
+  const parts = coin.split(':');
+  return parts[parts.length - 1] || coin;
 }
 
 export function RecentFills() {
   const { isConnected, address } = useAccount();
   const { data: fills } = useUserFills();
   const { data: openOrders } = useOpenOrders();
+  const { data: perpMeta } = usePerpMetaAndCtxs();
+  const { data: stockMeta } = useStockPerps();
   const queryClient = useQueryClient();
   const [cancellingOid, setCancellingOid] = useState<number | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  /** Resolve the global asset index for a coin. */
+  const resolveAssetIndex = useCallback(async (coin: string): Promise<number> => {
+    // Regular perps
+    if (perpMeta) {
+      const idx = perpMeta[0].universe.findIndex((a) => a.name === coin);
+      if (idx >= 0) return idx;
+    }
+    // Builder dex perps (xyz, etc.)
+    if (stockMeta) {
+      const idx = stockMeta[0].universe.findIndex((a) => a.name === coin);
+      if (idx >= 0) {
+        const dexName = getDexPrefix(coin);
+        const offsets = await getDexOffsets();
+        return (offsets[dexName] ?? 0) + idx;
+      }
+    }
+    return -1;
+  }, [perpMeta, stockMeta]);
 
   const handleCancel = useCallback(async (coin: string, oid: number) => {
     if (!address) return;
@@ -25,14 +50,19 @@ export function RecentFills() {
     if (!agent) return;
 
     setCancellingOid(oid);
+    setCancelError(null);
     try {
+      const assetIndex = await resolveAssetIndex(coin);
+      if (assetIndex < 0) {
+        setCancelError(`Cannot resolve asset index for ${displayCoin(coin)}`);
+        return;
+      }
+
       const action = {
         type: 'cancel',
-        cancels: [{ a: 0, o: oid }],
+        cancels: [{ a: assetIndex, o: oid }],
       };
 
-      // We need the asset index, but we can use the oid-based cancel
-      // Hyperliquid also supports cancelByCloid, but oid cancel is simpler
       const nonce = Date.now();
       const sig = await signL1Action(
         agent.privateKey,
@@ -49,23 +79,27 @@ export function RecentFills() {
           signature: sig,
           vaultAddress: null,
         }),
+        signal: AbortSignal.timeout(15_000),
       });
 
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      console.log('[Cancel] Response:', JSON.stringify(data));
 
       if (data.status === 'ok') {
         queryClient.invalidateQueries({ queryKey: ['hl', 'openOrders'] });
         queryClient.invalidateQueries({ queryKey: ['hl', 'userState'] });
         queryClient.invalidateQueries({ queryKey: ['hl', 'stockUserState'] });
         queryClient.invalidateQueries({ queryKey: ['hl', 'spotBalances'] });
+      } else {
+        const errMsg = data.response?.payload || data.response || 'Cancel failed';
+        setCancelError(String(errMsg));
       }
     } catch (err) {
-      console.error('[Cancel] Error:', err);
+      setCancelError(err instanceof Error ? err.message : 'Cancel failed');
     } finally {
       setCancellingOid(null);
     }
-  }, [address, queryClient]);
+  }, [address, queryClient, resolveAssetIndex]);
 
   if (!isConnected) return null;
 
@@ -74,6 +108,12 @@ export function RecentFills() {
 
   return (
     <div className="overflow-auto flex-1">
+      {/* Cancel error banner */}
+      {cancelError && (
+        <div className="px-3 py-1.5 bg-bearish/10 border-b border-bearish/30 text-[9px] font-mono text-bearish">
+          {cancelError}
+        </div>
+      )}
       {/* Open Orders */}
       {orders.length > 0 && (
         <div>

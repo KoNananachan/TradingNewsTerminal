@@ -12,9 +12,14 @@ import { startHyperliquidTracker, stopHyperliquidTracker } from './services/hype
 import { fetchConflicts } from './services/acled/acled-client.js';
 import { prisma } from './lib/prisma.js';
 
-// Validate ENCRYPTION_KEY at startup — warn early if missing
+// Validate ENCRYPTION_KEY at startup — fail early in production if missing
 if (!process.env.ENCRYPTION_KEY) {
-  console.warn('[Server] WARNING: ENCRYPTION_KEY is not set — Alpaca credential encryption will fail');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[Server] FATAL: ENCRYPTION_KEY is required in production');
+    process.exit(1);
+  } else {
+    console.warn('[Server] WARNING: ENCRYPTION_KEY is not set — Alpaca credential encryption will fail');
+  }
 }
 
 const app = createApp();

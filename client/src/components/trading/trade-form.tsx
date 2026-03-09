@@ -100,9 +100,16 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
   // Resolve asset index (global) and szDecimals from meta
   const [dexOffsetMap, setDexOffsetMap] = useState<Record<string, number> | null>(null);
 
-  // Fetch dex offsets once
+  // Fetch dex offsets once (retry on failure)
   useEffect(() => {
-    getDexOffsets().then(setDexOffsetMap);
+    getDexOffsets().then(setDexOffsetMap).catch((err) => {
+      console.error('[TradeForm] Failed to load dex offsets:', err?.message);
+      // Retry after 5s
+      const timer = setTimeout(() => {
+        getDexOffsets().then(setDexOffsetMap).catch(() => {});
+      }, 5000);
+      return () => clearTimeout(timer);
+    });
   }, []);
 
   const assetInfo = useMemo(() => {
@@ -149,8 +156,9 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
   const maxSize = useMemo(() => {
     if (availableUsd == null || !midPrice || midPrice <= 0) return null;
     const effectivePrice = orderType === 'limit' && price ? parseFloat(price) : midPrice;
-    if (!effectivePrice || effectivePrice <= 0) return null;
-    return (availableUsd * leverage) / effectivePrice;
+    if (!effectivePrice || effectivePrice <= 0 || !Number.isFinite(effectivePrice)) return null;
+    const raw = (availableUsd * leverage) / effectivePrice;
+    return Number.isFinite(raw) ? raw : null;
   }, [availableUsd, midPrice, leverage, orderType, price]);
 
   const setSizePercent = (pct: number) => {
@@ -230,8 +238,10 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
           nonce,
           signature: { r, s, v: Number(v) },
         }),
+        signal: AbortSignal.timeout(15_000),
       });
 
+      if (!res.ok) throw new Error(`Transfer HTTP ${res.status}`);
       const data = await res.json();
       if (data.status === 'ok') {
         addLogEntry({ type: 'trade', message: `${t('transferSuccess')}: ${amt} USDC → ${toPerp ? 'Perps' : 'Spot'}` });
@@ -268,7 +278,17 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
     }
 
     const sizeVal = parseFloat(size);
-    if (isNaN(sizeVal) || sizeVal <= 0) return;
+    if (isNaN(sizeVal) || sizeVal <= 0 || !Number.isFinite(sizeVal)) {
+      setLastStatus('Invalid size');
+      return;
+    }
+
+    // Validate formatted size is non-zero (could round to 0 with few szDecimals)
+    const formattedSize = formatSize(sizeVal, assetInfo.szDecimals);
+    if (parseFloat(formattedSize) <= 0) {
+      setLastStatus(`Size too small (min ${Math.pow(10, -assetInfo.szDecimals)})`);
+      return;
+    }
 
     const isBuy = side === 'buy';
     let orderPrice: number;
@@ -280,7 +300,10 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
       tif = 'Ioc';
     } else {
       orderPrice = parseFloat(price);
-      if (isNaN(orderPrice) || orderPrice <= 0) return;
+      if (isNaN(orderPrice) || orderPrice <= 0 || !Number.isFinite(orderPrice)) {
+        setLastStatus('Invalid limit price');
+        return;
+      }
       tif = 'Gtc';
     }
 
@@ -322,15 +345,18 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
           signature: levSig,
           vaultAddress: null,
         }),
+        signal: AbortSignal.timeout(15_000),
       });
+      if (!levRes.ok) throw new Error(`Leverage update HTTP ${levRes.status}`);
       const levData = await levRes.json();
       if (levData.status !== 'ok') {
-        console.warn('[TradeForm] Leverage update failed:', JSON.stringify(levData));
+        const levErr = levData.response?.payload || levData.response || 'unknown';
+        throw new Error(`Leverage update failed: ${levErr}`);
       }
 
       setLastStatus(`Signing order locally...`);
-      // Use a fresh nonce after leverage update to avoid duplicate nonce
-      const nonce = Date.now();
+      // Ensure nonce is unique: at least 1ms after leverage nonce
+      const nonce = Math.max(Date.now(), levNonce + 1);
       const { r, s, v } = await signL1Action(
         agentWallet.privateKey,
         action as Record<string, unknown>,
@@ -351,8 +377,10 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(15_000),
       });
 
+      if (!res.ok) throw new Error(`Order HTTP ${res.status}`);
       const data = await res.json();
       if (import.meta.env.DEV) console.log('[TradeForm] Order response:', JSON.stringify(data));
 
@@ -408,7 +436,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
         midPrice: midPrice ?? undefined,
         notionalValue: notional || undefined,
         marginRequired: notional ? notional / leverage : undefined,
-        status: 'live',
+        status: 'submitted',
         sourceArticleId: tradingSourceArticleId ?? undefined,
       }).catch(() => {});
     } catch (err: any) {

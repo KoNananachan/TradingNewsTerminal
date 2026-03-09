@@ -20,6 +20,14 @@ router.get('/', async (req, res) => {
     const country = req.query.country as string | undefined;
     const impact = req.query.impact as string | undefined;
 
+    // Validate filter parameters
+    if (country && !/^[A-Za-z]{2,3}$/.test(country)) {
+      return res.status(400).json({ error: 'Invalid country code' });
+    }
+    if (impact && !/^(high|medium|low)$/i.test(impact)) {
+      return res.status(400).json({ error: 'Invalid impact level (high|medium|low)' });
+    }
+
     const where: any = {
       date: {
         gte: new Date(from),
@@ -28,7 +36,7 @@ router.get('/', async (req, res) => {
     };
 
     if (country) where.country = country;
-    if (impact) where.impact = impact;
+    if (impact) where.impact = impact.toLowerCase();
 
     const limit = Math.min(500, Math.max(1, parseInt(req.query.limit as string) || 200));
     const events = await prisma.economicEvent.findMany({

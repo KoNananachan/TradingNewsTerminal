@@ -18,7 +18,9 @@ const HL_EXCHANGE_URL = 'https://api.hyperliquid.xyz/exchange';
 
 /** Strip dex prefix for display: "xyz:NVDA" → "NVDA" */
 function displayCoin(coin: string): string {
-  return coin.includes(':') ? coin.split(':').pop()! : coin;
+  if (!coin.includes(':')) return coin;
+  const parts = coin.split(':');
+  return parts[parts.length - 1] || coin;
 }
 
 export function PortfolioView() {
@@ -35,6 +37,7 @@ export function PortfolioView() {
 
   const handleClose = useCallback(async (coin: string, szi: string) => {
     if (!address) return;
+    if (closingCoin) return; // Prevent concurrent close requests
     const agent = getAgentWallet(address);
     if (!agent) { setCloseError('No trading key. Set up in TRADE tab first.'); return; }
 
@@ -69,15 +72,15 @@ export function PortfolioView() {
       }
 
       if (assetIndex < 0) {
-        console.error('[Close] Could not find asset index for', coin);
+        setCloseError(`Could not resolve asset index for ${displayCoin(coin)}`);
         return;
       }
 
       // Get mid price for market order
       const midStr = mids?.[coin] ?? mids?.[baseCoin];
       const midPrice = midStr ? parseFloat(midStr) : 0;
-      if (!midPrice) {
-        console.error('[Close] No mid price for', coin);
+      if (!midPrice || !Number.isFinite(midPrice)) {
+        setCloseError(`No mid price available for ${displayCoin(coin)}`);
         return;
       }
 
@@ -111,8 +114,10 @@ export function PortfolioView() {
           signature: sig,
           vaultAddress: null,
         }),
+        signal: AbortSignal.timeout(15_000),
       });
 
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.status === 'ok') {
         queryClient.invalidateQueries({ queryKey: ['hl', 'userState'] });
@@ -134,7 +139,7 @@ export function PortfolioView() {
     } finally {
       setClosingCoin(null);
     }
-  }, [address, perpData, stockPerps, mids, queryClient]);
+  }, [address, perpData, stockPerps, mids, queryClient, closingCoin]);
 
   if (!isConnected) {
     return (

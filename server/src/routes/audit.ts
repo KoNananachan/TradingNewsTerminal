@@ -44,7 +44,7 @@ router.post('/session', requireAuth, async (req, res) => {
     res.status(201).json(session);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      res.status(400).json({ error: 'Validation failed', details: err.errors });
+      res.status(400).json({ error: 'Validation failed' });
       return;
     }
     console.error('[Audit] Error creating session:', err);
@@ -62,7 +62,7 @@ router.post('/trade', requireAuth, async (req, res) => {
     res.status(201).json(trade);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      res.status(400).json({ error: 'Validation failed', details: err.errors });
+      res.status(400).json({ error: 'Validation failed' });
       return;
     }
     console.error('[Audit] Error creating trade:', err);

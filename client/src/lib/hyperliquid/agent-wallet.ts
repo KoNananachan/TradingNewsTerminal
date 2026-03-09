@@ -33,6 +33,14 @@ export const APPROVE_AGENT_TYPES = {
   ],
 } as const;
 
+/**
+ * In-memory agent wallet cache — primary store.
+ * sessionStorage is used as backup so keys survive page refresh within a tab
+ * but are cleared when the tab closes (unlike localStorage which persists and
+ * is vulnerable to XSS exfiltration across sessions).
+ */
+const agentCache = new Map<string, AgentWallet>();
+
 /** Generate a new random agent wallet. */
 export function generateAgentWallet(): AgentWallet {
   const privateKey = generatePrivateKey();
@@ -40,28 +48,51 @@ export function generateAgentWallet(): AgentWallet {
   return { privateKey, address: account.address };
 }
 
-/** Save agent wallet to localStorage, keyed by user address. */
+/** Save agent wallet to in-memory cache + sessionStorage. */
 export function saveAgentWallet(userAddress: Address, agent: AgentWallet): void {
-  localStorage.setItem(
-    `${STORAGE_PREFIX}${userAddress.toLowerCase()}`,
-    JSON.stringify(agent),
-  );
-}
-
-/** Retrieve agent wallet from localStorage. */
-export function getAgentWallet(userAddress: Address): AgentWallet | null {
-  const raw = localStorage.getItem(`${STORAGE_PREFIX}${userAddress.toLowerCase()}`);
-  if (!raw) return null;
+  const key = `${STORAGE_PREFIX}${userAddress.toLowerCase()}`;
+  agentCache.set(key, agent);
   try {
-    return JSON.parse(raw) as AgentWallet;
-  } catch {
-    return null;
-  }
+    sessionStorage.setItem(key, JSON.stringify(agent));
+  } catch { /* sessionStorage may be disabled */ }
+  // Migrate: remove any old localStorage entry
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
 }
 
-/** Remove agent wallet from localStorage. */
+/** Retrieve agent wallet (memory first, then sessionStorage fallback). */
+export function getAgentWallet(userAddress: Address): AgentWallet | null {
+  const key = `${STORAGE_PREFIX}${userAddress.toLowerCase()}`;
+  const cached = agentCache.get(key);
+  if (cached) return cached;
+  // Fallback: try sessionStorage
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (raw) {
+      const agent = JSON.parse(raw) as AgentWallet;
+      agentCache.set(key, agent);
+      return agent;
+    }
+  } catch { /* ignore */ }
+  // Migrate: check old localStorage and move to session
+  try {
+    const old = localStorage.getItem(key);
+    if (old) {
+      const agent = JSON.parse(old) as AgentWallet;
+      agentCache.set(key, agent);
+      try { sessionStorage.setItem(key, JSON.stringify(agent)); } catch { /* ignore */ }
+      localStorage.removeItem(key); // Clear from persistent storage
+      return agent;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/** Remove agent wallet from all stores. */
 export function removeAgentWallet(userAddress: Address): void {
-  localStorage.removeItem(`${STORAGE_PREFIX}${userAddress.toLowerCase()}`);
+  const key = `${STORAGE_PREFIX}${userAddress.toLowerCase()}`;
+  agentCache.delete(key);
+  try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
 }
 
 /**

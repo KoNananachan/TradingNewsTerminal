@@ -35,7 +35,8 @@ async function alpacaFetch(
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`Alpaca API ${res.status}: ${body.slice(0, 200)}`);
+    console.error(`[Alpaca] Upstream error ${res.status}: ${body.slice(0, 200)}`);
+    throw new Error(`Alpaca API returned ${res.status}`);
   }
 
   return res.json();

@@ -192,20 +192,28 @@ export async function getDexOffsets(): Promise<Record<string, number>> {
   if (dexOffsetsPromise) return dexOffsetsPromise;
 
   dexOffsetsPromise = (async () => {
-    const res = await fetch('https://api.hyperliquid.xyz/info', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'perpDexs' }),
-    });
-    const data = await res.json();
-    const offsets: Record<string, number> = { '': 0 };
-    for (let i = 1; i < data.length; i++) {
-      if (data[i]?.name) {
-        offsets[data[i].name] = 110000 + (i - 1) * 10000;
+    try {
+      const res = await fetch('https://api.hyperliquid.xyz/info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'perpDexs' }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const offsets: Record<string, number> = { '': 0 };
+      for (let i = 1; i < data.length; i++) {
+        if (data[i]?.name) {
+          offsets[data[i].name] = 110000 + (i - 1) * 10000;
+        }
       }
+      dexOffsets = offsets;
+      return offsets;
+    } catch (err) {
+      // Clear cached promise so next call retries instead of returning rejected promise forever
+      dexOffsetsPromise = null;
+      throw err;
     }
-    dexOffsets = offsets;
-    return offsets;
   })();
 
   return dexOffsetsPromise;

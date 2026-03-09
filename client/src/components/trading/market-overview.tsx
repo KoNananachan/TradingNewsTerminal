@@ -169,6 +169,7 @@ export function MarketOverview({ onSelectCoin, selectedCoin }: MarketOverviewPro
 }
 
 function fmtPrice(n: number): string {
+  if (!Number.isFinite(n)) return '—';
   if (n >= 10000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
   if (n >= 100) return n.toFixed(1);
   if (n >= 1) return n.toFixed(2);
@@ -176,6 +177,7 @@ function fmtPrice(n: number): string {
 }
 
 function fmtCompact(n: number): string {
+  if (!Number.isFinite(n)) return '—';
   if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
