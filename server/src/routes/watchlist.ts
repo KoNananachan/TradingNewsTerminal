@@ -6,8 +6,8 @@ const YAHOO_SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
 
 const router = Router();
 
-// GET /api/watchlist - user's watchlist (default + user-added)
-router.get('/', requireAuth, async (req, res) => {
+// GET /api/watchlist - watchlist (default + user-added), public for reading
+router.get('/', async (req, res) => {
   try {
     const tracked = await prisma.trackedStock.findMany({
       where: { source: { in: ['default', 'watchlist'] } },

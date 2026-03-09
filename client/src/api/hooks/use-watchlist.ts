@@ -13,7 +13,7 @@ export function useWatchlist() {
   return useQuery({
     queryKey: ['watchlist'],
     queryFn: () => api.get<WatchlistItem[]>('/watchlist'),
-    refetchInterval: 10_000,
+    refetchInterval: 60_000,
   });
 }
 

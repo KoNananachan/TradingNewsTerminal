@@ -44,7 +44,7 @@ const ALLOWED_ORIGINS: (string | RegExp)[] = isProd
 // ── Rate limiters ──
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,  // 1 minute
-  max: 120,              // 120 requests per minute
+  max: 300,              // 300 requests per minute
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
@@ -88,7 +88,14 @@ export function createApp() {
         scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://www.youtube.com", "https://s.ytimg.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "https://api.hyperliquid.xyz", "wss://api.hyperliquid.xyz", "https://accounts.google.com"],
+        connectSrc: [
+          "'self'",
+          "https://api.hyperliquid.xyz", "wss://api.hyperliquid.xyz",
+          "https://accounts.google.com",
+          "https://basemaps.cartocdn.com", "https://*.basemaps.cartocdn.com",
+          "https://*.cartocdn.com",
+        ],
+        workerSrc: ["'self'", "blob:"],
         frameSrc: ["'self'", "https://accounts.google.com", "https://www.youtube.com"],
         fontSrc: ["'self'", "data:"],
         objectSrc: ["'none'"],
@@ -107,7 +114,7 @@ export function createApp() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400, // Cache preflight for 24h
+    maxAge: 3600, // Cache preflight for 1h
   }));
 
   app.use(cookieParser());

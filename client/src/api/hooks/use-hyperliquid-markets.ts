@@ -29,7 +29,7 @@ export function useHlMarkets() {
   return useQuery({
     queryKey: ['hl', 'markets'],
     queryFn: () => api.get<HlMarketsResponse>('/hyperliquid/markets'),
-    refetchInterval: 5_000, // 5s — server refreshes every 10s
+    refetchInterval: 15_000, // 15s — server refreshes every 10s
   });
 }
 
@@ -38,6 +38,6 @@ export function useHlAssetDetail(symbol: string | null) {
     queryKey: ['hl', 'asset', symbol],
     queryFn: () => api.get<HlAsset>(`/hyperliquid/asset/${encodeURIComponent(symbol!)}`),
     enabled: !!symbol,
-    refetchInterval: 5_000,
+    refetchInterval: 15_000,
   });
 }

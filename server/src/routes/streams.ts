@@ -42,7 +42,7 @@ router.get('/live-id', async (req, res) => {
 
     // Look for canonical video URL or videoId in the page
     // Pattern 1: <link rel="canonical" href="https://www.youtube.com/watch?v=VIDEO_ID">
-    const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/watch\?v=([^"&]+)"/);
+    const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/watch\?v=([^"&]{1,20})"/);
     // Pattern 2: "videoId":"VIDEO_ID" in JSON data
     const jsonMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
     // Pattern 3: Check if it's actually a live stream (has "isLive":true or "isLiveContent":true)

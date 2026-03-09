@@ -94,7 +94,7 @@ export function useStockQuotes() {
   return useQuery({
     queryKey: ['stocks', 'quotes'],
     queryFn: () => api.get<StockQuote[]>('/stocks/quotes'),
-    refetchInterval: 10_000,
+    refetchInterval: 60_000,
   });
 }
 

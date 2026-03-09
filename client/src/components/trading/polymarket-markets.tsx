@@ -31,14 +31,16 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
 
   const filtered = useMemo(() => {
     if (!markets) return [];
-    const active = markets.filter((m) => {
-      if (m.closed || !m.active) return false;
-      const prices = parseJsonArray<number>(m.outcomePrices);
-      return !prices.some((p) => p >= 0.99);
+    const active = markets.filter((m) => !m.closed && m.active);
+    const list = filter
+      ? active.filter((m) => m.question.toLowerCase().includes(filter.toLowerCase()))
+      : active;
+    // Sort: markets with balanced odds first, 99%+ certainty last
+    return list.slice().sort((a, b) => {
+      const maxA = Math.max(...parseJsonArray<number>(a.outcomePrices));
+      const maxB = Math.max(...parseJsonArray<number>(b.outcomePrices));
+      return maxA - maxB;
     });
-    if (!filter) return active;
-    const q = filter.toLowerCase();
-    return active.filter((m) => m.question.toLowerCase().includes(q));
   }, [markets, filter]);
 
   return (
@@ -152,11 +154,11 @@ const MarketCard = memo(function MarketCard({ market, selected, onSelect }: {
             </div>
             <div className="flex gap-1 shrink-0">
               <span className="text-[9px] font-mono font-bold text-bullish">
-                {(yesPrice * 100).toFixed(0)}%
+                {fmtPct(yesPrice)}%
               </span>
               <span className="text-[8px] font-mono text-neutral/30">/</span>
               <span className="text-[9px] font-mono font-bold text-bearish">
-                {(noPrice * 100).toFixed(0)}%
+                {fmtPct(noPrice)}%
               </span>
             </div>
           </div>
@@ -194,6 +196,13 @@ const MarketCard = memo(function MarketCard({ market, selected, onSelect }: {
     </button>
   );
 });
+
+function fmtPct(decimal: number): string {
+  const pct = decimal * 100;
+  if (pct > 0 && pct < 1) return pct.toFixed(1);
+  if (pct > 99 && pct < 100) return pct.toFixed(1);
+  return pct.toFixed(0);
+}
 
 function fmtVolume(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';

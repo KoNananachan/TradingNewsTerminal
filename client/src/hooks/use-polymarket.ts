@@ -71,8 +71,8 @@ export function useCLOBBook(tokenId: string | null) {
     queryFn: () =>
       api.get<CLOBBook>(`/polymarket/clob/book?token_id=${encodeURIComponent(tokenId!)}`),
     enabled: !!tokenId,
-    staleTime: 5_000,
-    refetchInterval: 5_000,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -82,8 +82,8 @@ export function useCLOBMidpoint(tokenId: string | null) {
     queryFn: () =>
       api.get<{ mid: string }>(`/polymarket/clob/midpoint?token_id=${encodeURIComponent(tokenId!)}`),
     enabled: !!tokenId,
-    staleTime: 5_000,
-    refetchInterval: 5_000,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
   });
 }
 

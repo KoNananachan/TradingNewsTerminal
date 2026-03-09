@@ -73,15 +73,10 @@ router.get('/markets', async (req: Request, res: Response) => {
       return res.status(502).json({ error: 'Polymarket API error' });
     }
     const data = await response.json();
-    // Filter out resolved markets (any outcome price >= 0.99)
+    // Filter out closed/inactive markets only; keep all active markets
+    // even if one outcome has high probability (e.g. 99%)
     const filtered = Array.isArray(data)
-      ? data.filter((m: any) => {
-          if (m.closed || !m.active) return false;
-          try {
-            const prices: number[] = JSON.parse(m.outcomePrices || '[]');
-            return !prices.some((p) => p >= 0.99);
-          } catch { return true; }
-        })
+      ? data.filter((m: any) => !m.closed && m.active)
       : data;
     // Evict expired entries and enforce max cache size
     if (marketsCache.size >= MARKETS_CACHE_MAX) {
@@ -160,12 +155,12 @@ router.get('/events', async (req: Request, res: Response) => {
 // GET /clob/book?token_id=X - Order book for a token
 router.get('/clob/book', async (req: Request, res: Response) => {
   try {
-    const tokenId = req.query.token_id;
-    if (!tokenId) {
-      return res.status(400).json({ error: 'token_id query parameter is required' });
+    const tokenId = String(req.query.token_id || '');
+    if (!tokenId || !/^[a-zA-Z0-9_\-]{1,200}$/.test(tokenId)) {
+      return res.status(400).json({ error: 'Valid token_id query parameter is required' });
     }
 
-    const params = new URLSearchParams({ token_id: String(tokenId) });
+    const params = new URLSearchParams({ token_id: tokenId });
     const response = await fetch(`${CLOB_API}/book?${params}`);
     if (!response.ok) {
       const body = await response.text();
@@ -183,12 +178,12 @@ router.get('/clob/book', async (req: Request, res: Response) => {
 // GET /clob/midpoint?token_id=X - Current midpoint price
 router.get('/clob/midpoint', async (req: Request, res: Response) => {
   try {
-    const tokenId = req.query.token_id;
-    if (!tokenId) {
-      return res.status(400).json({ error: 'token_id query parameter is required' });
+    const tokenId = String(req.query.token_id || '');
+    if (!tokenId || !/^[a-zA-Z0-9_\-]{1,200}$/.test(tokenId)) {
+      return res.status(400).json({ error: 'Valid token_id query parameter is required' });
     }
 
-    const params = new URLSearchParams({ token_id: String(tokenId) });
+    const params = new URLSearchParams({ token_id: tokenId });
     const response = await fetch(`${CLOB_API}/midpoint?${params}`);
     if (!response.ok) {
       const body = await response.text();
@@ -206,16 +201,16 @@ router.get('/clob/midpoint', async (req: Request, res: Response) => {
 // GET /clob/price?token_id=X&side=buy|sell - Best price for a side
 router.get('/clob/price', async (req: Request, res: Response) => {
   try {
-    const tokenId = req.query.token_id;
+    const tokenId = String(req.query.token_id || '');
     const side = req.query.side;
-    if (!tokenId) {
-      return res.status(400).json({ error: 'token_id query parameter is required' });
+    if (!tokenId || !/^[a-zA-Z0-9_\-]{1,200}$/.test(tokenId)) {
+      return res.status(400).json({ error: 'Valid token_id query parameter is required' });
     }
     if (!side || (side !== 'buy' && side !== 'sell')) {
       return res.status(400).json({ error: 'side query parameter is required and must be "buy" or "sell"' });
     }
 
-    const params = new URLSearchParams({ token_id: String(tokenId), side: String(side) });
+    const params = new URLSearchParams({ token_id: tokenId, side: String(side) });
     const response = await fetch(`${CLOB_API}/price?${params}`);
     if (!response.ok) {
       const body = await response.text();
@@ -233,14 +228,16 @@ router.get('/clob/price', async (req: Request, res: Response) => {
 // GET /clob/prices-history?market=CONDITION_ID&interval=1d|1w|1m|all&fidelity=1-60 - Price history
 router.get('/clob/prices-history', async (req: Request, res: Response) => {
   try {
-    const market = req.query.market;
-    if (!market) {
-      return res.status(400).json({ error: 'market query parameter is required' });
+    const market = String(req.query.market || '');
+    if (!market || !/^0x[a-fA-F0-9]{1,200}$/.test(market)) {
+      return res.status(400).json({ error: 'Valid market query parameter is required' });
     }
 
-    const params = new URLSearchParams({ market: String(market) });
-    if (req.query.interval) params.set('interval', String(req.query.interval));
-    if (req.query.fidelity) params.set('fidelity', String(req.query.fidelity));
+    const params = new URLSearchParams({ market });
+    const interval = String(req.query.interval || '');
+    if (interval && /^(1d|1w|1m|max|all)$/.test(interval)) params.set('interval', interval);
+    const fidelity = parseInt(String(req.query.fidelity || ''));
+    if (!isNaN(fidelity) && fidelity >= 1 && fidelity <= 60) params.set('fidelity', String(fidelity));
 
     const response = await fetch(`${CLOB_API}/prices-history?${params}`);
     if (!response.ok) {
@@ -342,19 +339,16 @@ router.delete('/clob/order/:id', requireAuth, async (req: Request, res: Response
 // GET /clob/data/position?user=ADDRESS&market=CONDITION_ID - Get user position
 router.get('/clob/data/position', requireAuth, async (req: Request, res: Response) => {
   try {
-    const user = req.query.user;
-    const market = req.query.market;
-    if (!user) {
-      return res.status(400).json({ error: 'user query parameter is required' });
+    const user = String(req.query.user || '');
+    const market = String(req.query.market || '');
+    if (!user || !/^0x[a-fA-F0-9]{40}$/.test(user)) {
+      return res.status(400).json({ error: 'Valid user address is required' });
     }
-    if (!market) {
-      return res.status(400).json({ error: 'market query parameter is required' });
+    if (!market || !/^0x[a-fA-F0-9]{1,200}$/.test(market)) {
+      return res.status(400).json({ error: 'Valid market query parameter is required' });
     }
 
-    const params = new URLSearchParams({
-      user: String(user),
-      market: String(market),
-    });
+    const params = new URLSearchParams({ user, market });
     const response = await fetch(`${CLOB_API}/data/position?${params}`);
     if (!response.ok) {
       const body = await response.text();

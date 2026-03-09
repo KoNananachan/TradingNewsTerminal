@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+const exportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many export requests, please try again later' },
+});
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Brute-force protection: track failed verify attempts per IP
@@ -241,7 +248,7 @@ router.post('/logout', async (req, res) => {
 });
 
 // GET /api/auth/me/export — Export all user data (GDPR data portability)
-router.get('/me/export', requireAuth, async (req, res) => {
+router.get('/me/export', exportLimiter, requireAuth, async (req, res) => {
   try {
     const userId = req.user!.id;
 
