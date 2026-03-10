@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check (server)
+        run: cd server && npx tsc --noEmit
+
+      - name: TypeScript check (client)
+        run: cd client && npx tsc --noEmit
+
+      - name: Build client
+        run: npm run build -w client
+
+      - name: Build server
+        run: npm run build -w server
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for secrets in code
+        run: |
+          if grep -rE '(sk_live|pk_live|AIza[0-9A-Za-z]{35}|ya29\.)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.json' --exclude-dir=node_modules .; then
+            echo "::error::Potential secrets found in code!"
+            exit 1
+          fi
