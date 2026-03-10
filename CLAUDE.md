@@ -149,7 +149,7 @@ client/src/
 
 ### Commits
 - Prefix: `feat:`, `fix:`, `security:`, `chore:`, `refactor:`
-- Author: `KoNananachan <sz67616718@gmail.com>`
+- Author: `KoNananachan <KoNananachan@users.noreply.github.com>`
 - Co-author line for AI-assisted commits
 
 ---

@@ -30,7 +30,7 @@ Examples of unacceptable behavior:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team at **sz67616718@gmail.com**. All complaints will
+reported to the project team at **KoNananachan@users.noreply.github.com**. All complaints will
 be reviewed and investigated promptly and fairly.
 
 ## Attribution

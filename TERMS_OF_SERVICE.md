@@ -171,7 +171,7 @@ We may update these Terms of Service from time to time. Changes are effective im
 
 If you have questions about these Terms of Service, contact us at:
 
-**Email:** sz67616718@gmail.com
+**Email:** KoNananachan@users.noreply.github.com
 
 ---
 

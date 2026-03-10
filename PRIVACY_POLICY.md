@@ -144,7 +144,7 @@ We may update this Privacy Policy from time to time. Changes are effective immed
 
 If you have questions about this Privacy Policy or your data, contact us at:
 
-**Email:** sz67616718@gmail.com
+**Email:** KoNananachan@users.noreply.github.com
 
 ---
 
