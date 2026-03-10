@@ -41,7 +41,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 10; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 11; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -137,7 +137,7 @@ const DEFAULT_PANEL_IDS: Set<string> = new Set([
  * |           |         (70%)            | (55%)              |
  * +-----------+                          +--------------------+
  * | LIVE      +--------------------------+ TRADING            |
- * | STREAMS   |     TERMINAL LOG (30%)   | (45%)              |
+ * | STREAMS   |  PREDICTION TRADING(30%) | (45%)              |
  * | (35%)     |                          |                    |
  * +-----------+--------------------------+--------------------+
  */
@@ -196,7 +196,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             type: 'tabset',
             weight: 30,
             children: [
-              { type: 'tab', name: 'TERMINAL LOG', component: PANEL_IDS.LOG, id: PANEL_IDS.LOG },
+              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
             ],
           },
         ],
@@ -220,7 +220,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             weight: 45,
             children: [
               { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
-              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
+              { type: 'tab', name: 'TERMINAL LOG', component: PANEL_IDS.LOG, id: PANEL_IDS.LOG },
             ],
           },
         ],
