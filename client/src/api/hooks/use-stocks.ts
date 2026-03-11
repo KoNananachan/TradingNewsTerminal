@@ -108,6 +108,89 @@ export function useStockNames(symbols: string[]) {
   });
 }
 
+export interface ExtendedStockData {
+  keyStats: {
+    enterpriseValue: number | null;
+    pegRatio: number | null;
+    shortPercentOfFloat: number | null;
+    sharesShort: number | null;
+    sharesShortPriorMonth: number | null;
+    dateShortInterest: string | null;
+    heldPercentInsiders: number | null;
+    heldPercentInstitutions: number | null;
+    fiftyTwoWeekChange: number | null;
+    sp500FiftyTwoWeekChange: number | null;
+    lastDividendValue: number | null;
+    lastDividendDate: string | null;
+  } | null;
+  earningsHistory: Array<{
+    quarter: string;
+    epsEstimate: number | null;
+    epsActual: number | null;
+    epsDifference: number | null;
+    surprisePercent: number | null;
+  }>;
+  earningsTrend: Array<{
+    period: string;
+    endDate: string | null;
+    growth: number | null;
+    earningsEstimate: { avg: number | null; low: number | null; high: number | null; numberOfAnalysts: number | null };
+    revenueEstimate: { avg: number | null; low: number | null; high: number | null; numberOfAnalysts: number | null };
+  }>;
+  recommendationTrend: Array<{
+    period: string;
+    strongBuy: number;
+    buy: number;
+    hold: number;
+    sell: number;
+    strongSell: number;
+  }>;
+  upgradeDowngradeHistory: Array<{
+    date: string;
+    firm: string;
+    action: string;
+    fromGrade: string;
+    toGrade: string;
+  }>;
+  majorHolders: {
+    insidersPercentHeld: number | null;
+    institutionsPercentHeld: number | null;
+    institutionsFloatPercentHeld: number | null;
+    institutionsCount: number | null;
+  } | null;
+  secFilings: Array<{
+    date: string;
+    type: string;
+    title: string;
+    url: string;
+  }>;
+}
+
+export interface InsiderTransaction {
+  ownerName: string;
+  ownerTitle: string | null;
+  transactionType: string;
+  shares: number;
+  value: number | null;
+  transactionDate: string;
+  filingDate: string | null;
+}
+
+interface ExtendedResponse {
+  extended: ExtendedStockData | null;
+  insiders: InsiderTransaction[];
+}
+
+export function useStockExtended(symbol: string | null) {
+  return useQuery({
+    queryKey: ['stocks', symbol, 'extended'],
+    queryFn: () => api.get<ExtendedResponse>(`/stocks/${symbol}/extended`),
+    enabled: symbol !== null,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+  });
+}
+
 export function useStockDetail(
   symbol: string | null,
   options?: { range?: string; interval?: string },

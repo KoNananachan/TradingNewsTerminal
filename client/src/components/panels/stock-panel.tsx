@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useStockDetail, type StockProfile, type StockQuote } from '../../api/hooks/use-stocks';
+import { useStockDetail, useStockExtended, type StockProfile, type StockQuote, type ExtendedStockData, type InsiderTransaction } from '../../api/hooks/use-stocks';
 import { StockChart as ChartWithIndicators } from '../chart/stock-chart';
 import {
   useWatchlist,
@@ -14,7 +14,7 @@ import { getLocalizedTitle } from '../../api/hooks/use-news';
 import { GlassCard } from '../common/glass-card';
 import { Sparkline } from '../common/sparkline';
 import { ConfirmDialog } from '../common/confirm-dialog';
-import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin, Building2, Target, DollarSign, BarChart3, ExternalLink } from 'lucide-react';
+import { Search, X, TrendingUp, TrendingDown, ArrowLeft, Plus, FolderPlus, Newspaper, Clock, Grid3X3, List, Columns, Pin, Building2, Target, DollarSign, BarChart3, ExternalLink, Users, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cleanTitle } from '../../utils/clean-title';
 import { motion, AnimatePresence } from 'framer-motion';
 import { lazy, Suspense } from 'react';
@@ -437,13 +437,16 @@ const RANGE_API_MAP: Record<RangeOption, string> = {
   '1D': '1d', '5D': '5d', '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', 'ALL': 'max',
 };
 
-type DetailTab = 'chart' | 'fundamentals' | 'financials';
+type DetailTab = 'chart' | 'fundamentals' | 'financials' | 'analysts' | 'ownership';
 
 function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) {
   const t = useT();
   const [range, setRange] = useState<RangeOption>('1Y');
   const [detailTab, setDetailTab] = useState<DetailTab>('chart');
   const { data } = useStockDetail(symbol, { range: RANGE_API_MAP[range] });
+  const { data: extData } = useStockExtended(
+    (detailTab === 'analysts' || detailTab === 'ownership') ? symbol : null,
+  );
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const addChatContext = useAppStore((s) => s.addChatContext);
 
@@ -504,19 +507,28 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
     >
       {/* Detail Tabs */}
       <div className="shrink-0 flex items-center border-b border-border/30 bg-black/20">
-        {(['chart', 'fundamentals', 'financials'] as DetailTab[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setDetailTab(tab)}
-            className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all ${
-              detailTab === tab
-                ? 'border-accent text-accent'
-                : 'border-transparent text-neutral hover:text-gray-300'
-            }`}
-          >
-            {tab === 'chart' ? t('chartTab') : tab === 'fundamentals' ? t('profileTab') : t('financialsTab')}
-          </button>
-        ))}
+        {(['chart', 'fundamentals', 'financials', 'analysts', 'ownership'] as DetailTab[]).map((tab) => {
+          const labelMap: Record<DetailTab, string> = {
+            chart: t('chartTab'),
+            fundamentals: t('profileTab'),
+            financials: t('financialsTab'),
+            analysts: t('analystsTab'),
+            ownership: t('ownershipTab'),
+          };
+          return (
+            <button
+              key={tab}
+              onClick={() => setDetailTab(tab)}
+              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all ${
+                detailTab === tab
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-neutral hover:text-gray-300'
+              }`}
+            >
+              {labelMap[tab]}
+            </button>
+          );
+        })}
       </div>
 
       {detailTab === 'chart' && (
@@ -537,8 +549,20 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         </div>
       )}
 
-      {/* Key Stats Bar (always visible) */}
-      {q && (
+      {detailTab === 'analysts' && (
+        <div className="flex-1 overflow-auto no-scrollbar">
+          <AnalystsView extended={extData?.extended ?? null} quote={q} profile={p} />
+        </div>
+      )}
+
+      {detailTab === 'ownership' && (
+        <div className="flex-1 overflow-auto no-scrollbar">
+          <OwnershipView extended={extData?.extended ?? null} insiders={extData?.insiders ?? []} />
+        </div>
+      )}
+
+      {/* Key Stats Bar (chart tab only) */}
+      {detailTab === 'chart' && q && (
         <div className="shrink-0 border-t border-border/30 bg-black/20">
           <div className="grid grid-cols-4">
             <StatCell label={t('mktCap')} value={formatCompact(q.marketCap)} />
@@ -565,8 +589,8 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         </div>
       )}
 
-      {/* Related News */}
-      {recs.length > 0 && (
+      {/* Related News (chart tab only) */}
+      {detailTab === 'chart' && recs.length > 0 && (
         <div className="shrink-0 border-t border-border/30 flex flex-col max-h-[35%]">
           <div className="flex items-center gap-2 px-4 py-1.5 bg-black/30 border-b border-border/20 shrink-0">
             <Newspaper className="w-3 h-3 text-accent" />
@@ -736,6 +760,326 @@ function FinancialsView({ quote: _q, profile: p }: { quote: StockQuote | null | 
           </div>
         )}
       </Section>
+    </div>
+  );
+}
+
+// ── Analysts View ──
+function AnalystsView({ extended, quote: q, profile: p }: { extended: ExtendedStockData | null; quote: StockQuote | null | undefined; profile: StockProfile | null | undefined }) {
+  const t = useT();
+
+  if (!extended) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
+      </div>
+    );
+  }
+
+  const hasData = extended.recommendationTrend.length > 0 || extended.earningsHistory.length > 0 || extended.upgradeDowngradeHistory.length > 0;
+  if (!hasData) {
+    return (
+      <div className="flex items-center justify-center h-full text-[10px] font-mono text-neutral/40 uppercase">
+        {t('noAnalystData')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-3">
+      {/* Analyst Targets (from profile) */}
+      {p && p.targetMeanPrice != null && (
+        <Section icon={<Target className="w-3 h-3" />} title={t('analystConsensus')}>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+            <KV label={t('targetLow')} value={`$${p.targetLowPrice?.toFixed(2)}`} />
+            <KV label={t('targetMean')} value={`$${p.targetMeanPrice?.toFixed(2)}`} accent />
+            <KV label={t('targetHigh')} value={`$${p.targetHighPrice?.toFixed(2)}`} />
+          </div>
+          {q?.price && p.targetMeanPrice && (
+            <div className="mt-2">
+              <TargetBar current={q.price} low={p.targetLowPrice} mean={p.targetMeanPrice} high={p.targetHighPrice} />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+            <KV label={t('recommendationLabel')} value={p.recommendationKey?.toUpperCase()} />
+            <KV label={t('numAnalysts')} value={p.numberOfAnalysts?.toString()} />
+          </div>
+        </Section>
+      )}
+
+      {/* Recommendation Trend */}
+      {extended.recommendationTrend.length > 0 && (
+        <Section icon={<BarChart3 className="w-3 h-3" />} title={t('recTrend')}>
+          <RecTrendChart data={extended.recommendationTrend} />
+        </Section>
+      )}
+
+      {/* EPS History (Beat/Miss) */}
+      {extended.earningsHistory.length > 0 && (
+        <Section icon={<DollarSign className="w-3 h-3" />} title={t('epsHistory')}>
+          <div className="space-y-0.5">
+            <div className="grid grid-cols-[1fr_60px_60px_60px] gap-1 text-[7px] font-mono text-neutral/40 uppercase tracking-wider px-1">
+              <span>Q</span>
+              <span className="text-right">{t('estimate')}</span>
+              <span className="text-right">{t('actual')}</span>
+              <span className="text-right">{t('surprise')}</span>
+            </div>
+            {extended.earningsHistory.map((e, i) => {
+              const beat = e.epsDifference != null ? e.epsDifference > 0 : null;
+              return (
+                <div key={i} className="grid grid-cols-[1fr_60px_60px_60px] gap-1 px-1 py-0.5 text-[9px] font-mono hover:bg-white/[0.02]">
+                  <span className="text-neutral/60">{e.quarter}</span>
+                  <span className="text-right text-neutral/50">{e.epsEstimate != null ? `$${e.epsEstimate.toFixed(2)}` : '--'}</span>
+                  <span className={`text-right font-bold ${beat === true ? 'text-bullish' : beat === false ? 'text-bearish' : 'text-gray-300'}`}>
+                    {e.epsActual != null ? `$${e.epsActual.toFixed(2)}` : '--'}
+                  </span>
+                  <span className={`text-right ${beat === true ? 'text-bullish' : beat === false ? 'text-bearish' : 'text-neutral/40'}`}>
+                    {e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${(e.surprisePercent * 100).toFixed(1)}%` : '--'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* Earnings Estimates */}
+      {extended.earningsTrend.length > 0 && (
+        <Section icon={<TrendingUp className="w-3 h-3" />} title={t('earningsEstimates')}>
+          <div className="space-y-0.5">
+            <div className="grid grid-cols-[80px_1fr_1fr_1fr_60px] gap-1 text-[7px] font-mono text-neutral/40 uppercase tracking-wider px-1">
+              <span>Period</span>
+              <span className="text-right">Low</span>
+              <span className="text-right">Avg</span>
+              <span className="text-right">High</span>
+              <span className="text-right"># Est</span>
+            </div>
+            {extended.earningsTrend.map((e, i) => (
+              <div key={i} className="grid grid-cols-[80px_1fr_1fr_1fr_60px] gap-1 px-1 py-0.5 text-[9px] font-mono hover:bg-white/[0.02]">
+                <span className="text-neutral/60">{e.period}</span>
+                <span className="text-right text-neutral/50">{e.earningsEstimate.low != null ? `$${e.earningsEstimate.low.toFixed(2)}` : '--'}</span>
+                <span className="text-right text-gray-300 font-bold">{e.earningsEstimate.avg != null ? `$${e.earningsEstimate.avg.toFixed(2)}` : '--'}</span>
+                <span className="text-right text-neutral/50">{e.earningsEstimate.high != null ? `$${e.earningsEstimate.high.toFixed(2)}` : '--'}</span>
+                <span className="text-right text-neutral/40">{e.earningsEstimate.numberOfAnalysts ?? '--'}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Upgrade/Downgrade History */}
+      {extended.upgradeDowngradeHistory.length > 0 && (
+        <Section icon={<ArrowUpRight className="w-3 h-3" />} title={t('upgradeDowngrade')}>
+          <div className="space-y-0.5 max-h-[200px] overflow-y-auto no-scrollbar">
+            {extended.upgradeDowngradeHistory.map((u, i) => {
+              const isUpgrade = u.action.toLowerCase().includes('upgrade') || u.action.toLowerCase() === 'init' || u.action.toLowerCase() === 'reiterated';
+              const isDowngrade = u.action.toLowerCase().includes('downgrade');
+              return (
+                <div key={i} className="flex items-center gap-2 px-1 py-1 text-[9px] font-mono hover:bg-white/[0.02] border-b border-border/10 last:border-0">
+                  <span className="text-neutral/40 w-[65px] shrink-0">{u.date}</span>
+                  <span className={`w-3 h-3 shrink-0 ${isUpgrade ? 'text-bullish' : isDowngrade ? 'text-bearish' : 'text-neutral/40'}`}>
+                    {isUpgrade ? <ArrowUpRight className="w-3 h-3" /> : isDowngrade ? <ArrowDownRight className="w-3 h-3" /> : null}
+                  </span>
+                  <span className="text-gray-300 truncate flex-1">{u.firm}</span>
+                  <span className="text-neutral/50 shrink-0">{u.fromGrade || '--'}</span>
+                  <span className="text-neutral/30 shrink-0">&rarr;</span>
+                  <span className={`font-bold shrink-0 ${isUpgrade ? 'text-bullish' : isDowngrade ? 'text-bearish' : 'text-gray-300'}`}>{u.toGrade || '--'}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+// ── Recommendation Trend Chart ──
+function RecTrendChart({ data }: { data: ExtendedStockData['recommendationTrend'] }) {
+  const t = useT();
+  if (data.length === 0) return null;
+
+  // Reverse so oldest is on left
+  const items = [...data].reverse();
+  const maxTotal = Math.max(...items.map(d => d.strongBuy + d.buy + d.hold + d.sell + d.strongSell), 1);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-1 items-end h-[60px]">
+        {items.map((d, i) => {
+          const total = d.strongBuy + d.buy + d.hold + d.sell + d.strongSell;
+          if (total === 0) return <div key={i} className="flex-1" />;
+          const h = (total / maxTotal) * 60;
+          return (
+            <div key={i} className="flex-1 flex flex-col justify-end" style={{ height: 60 }}>
+              <div className="flex flex-col overflow-hidden" style={{ height: h }}>
+                {d.strongBuy > 0 && <div className="bg-bullish" style={{ height: `${(d.strongBuy / total) * 100}%` }} />}
+                {d.buy > 0 && <div className="bg-bullish/60" style={{ height: `${(d.buy / total) * 100}%` }} />}
+                {d.hold > 0 && <div className="bg-neutral/40" style={{ height: `${(d.hold / total) * 100}%` }} />}
+                {d.sell > 0 && <div className="bg-bearish/60" style={{ height: `${(d.sell / total) * 100}%` }} />}
+                {d.strongSell > 0 && <div className="bg-bearish" style={{ height: `${(d.strongSell / total) * 100}%` }} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1">
+        {items.map((d, i) => (
+          <div key={i} className="flex-1 text-center text-[7px] font-mono text-neutral/40">{d.period}</div>
+        ))}
+      </div>
+      {/* Legend */}
+      <div className="flex items-center gap-3 justify-center mt-1">
+        {[
+          { color: 'bg-bullish', label: t('strongBuy') },
+          { color: 'bg-bullish/60', label: t('buy') },
+          { color: 'bg-neutral/40', label: 'Hold' },
+          { color: 'bg-bearish/60', label: t('sell') },
+          { color: 'bg-bearish', label: t('strongSell') },
+        ].map(l => (
+          <div key={l.label} className="flex items-center gap-1">
+            <div className={`w-2 h-2 ${l.color}`} />
+            <span className="text-[7px] font-mono text-neutral/40">{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Ownership View ──
+function OwnershipView({ extended, insiders }: { extended: ExtendedStockData | null; insiders: InsiderTransaction[] }) {
+  const t = useT();
+
+  if (!extended) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
+      </div>
+    );
+  }
+
+  const mh = extended.majorHolders;
+  const ks = extended.keyStats;
+  const hasData = mh || insiders.length > 0 || extended.secFilings.length > 0;
+
+  if (!hasData) {
+    return (
+      <div className="flex items-center justify-center h-full text-[10px] font-mono text-neutral/40 uppercase">
+        {t('noOwnershipData')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-3">
+      {/* Ownership Breakdown */}
+      {mh && (mh.insidersPercentHeld != null || mh.institutionsPercentHeld != null) && (
+        <Section icon={<Users className="w-3 h-3" />} title={t('ownershipBreakdown')}>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <KV label={t('insiders')} value={fmtPct(mh.insidersPercentHeld)} />
+            <KV label={t('institutions')} value={fmtPct(mh.institutionsPercentHeld)} />
+            <KV label={t('floatHeld')} value={fmtPct(mh.institutionsFloatPercentHeld)} />
+            <KV label={t('instCount')} value={mh.institutionsCount != null ? formatCompact(mh.institutionsCount) : null} />
+          </div>
+          {mh.insidersPercentHeld != null && mh.institutionsPercentHeld != null && (
+            <div className="mt-2">
+              <OwnershipBar insider={mh.insidersPercentHeld} inst={mh.institutionsPercentHeld} />
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* Short Interest */}
+      {ks && (ks.shortPercentOfFloat != null || ks.sharesShort != null) && (
+        <Section icon={<TrendingDown className="w-3 h-3" />} title={t('shortInterest')}>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <KV label={t('shortFloat')} value={fmtPct(ks.shortPercentOfFloat)} />
+            <KV label={t('sharesShort')} value={formatCompact(ks.sharesShort)} />
+            <KV label={t('shortPriorMonth')} value={formatCompact(ks.sharesShortPriorMonth)} />
+            <KV label={t('shortDate')} value={ks.dateShortInterest} />
+          </div>
+        </Section>
+      )}
+
+      {/* Key Stats extras */}
+      {ks && (ks.enterpriseValue != null || ks.pegRatio != null) && (
+        <Section icon={<BarChart3 className="w-3 h-3" />} title="Key Statistics">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <KV label={t('evLabel')} value={formatCompact(ks.enterpriseValue)} />
+            <KV label={t('pegLabel')} value={ks.pegRatio != null ? ks.pegRatio.toFixed(2) : null} />
+            <KV label={t('fiftyTwoWkChg')} value={fmtPct(ks.fiftyTwoWeekChange)} />
+            <KV label={t('sp500Chg')} value={fmtPct(ks.sp500FiftyTwoWeekChange)} />
+          </div>
+        </Section>
+      )}
+
+      {/* Insider Transactions */}
+      {insiders.length > 0 && (
+        <Section icon={<Users className="w-3 h-3" />} title={t('insiderTransactions')}>
+          <div className="space-y-0.5 max-h-[200px] overflow-y-auto no-scrollbar">
+            {insiders.map((tx, i) => {
+              const isPurchase = tx.transactionType === 'P';
+              const isSale = tx.transactionType === 'S';
+              return (
+                <div key={i} className="flex items-center gap-2 px-1 py-1 text-[9px] font-mono hover:bg-white/[0.02] border-b border-border/10 last:border-0">
+                  <span className="text-neutral/40 w-[65px] shrink-0">{tx.transactionDate}</span>
+                  <span className={`text-[7px] font-black uppercase px-1 py-0.5 border shrink-0 ${
+                    isPurchase ? 'text-bullish border-bullish/30 bg-bullish/10' :
+                    isSale ? 'text-bearish border-bearish/30 bg-bearish/10' :
+                    'text-neutral/50 border-border/30 bg-white/5'
+                  }`}>
+                    {isPurchase ? t('purchase') : isSale ? t('sale') : t('award')}
+                  </span>
+                  <span className="text-gray-300 truncate flex-1">{tx.ownerName}</span>
+                  <span className="text-neutral/50 shrink-0">{formatCompact(tx.shares)}</span>
+                  {tx.value != null && <span className="text-neutral/40 shrink-0">${formatCompact(tx.value)}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* SEC Filings */}
+      {extended.secFilings.length > 0 && (
+        <Section icon={<FileText className="w-3 h-3" />} title={t('filings')}>
+          <div className="space-y-0.5 max-h-[200px] overflow-y-auto no-scrollbar">
+            {extended.secFilings.map((f, i) => (
+              <a
+                key={i}
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-1 py-1 text-[9px] font-mono hover:bg-white/[0.02] border-b border-border/10 last:border-0 group"
+              >
+                <span className="text-neutral/40 w-[65px] shrink-0">{f.date}</span>
+                <span className="text-accent/70 font-bold shrink-0 w-[50px]">{f.type}</span>
+                <span className="text-gray-300 truncate flex-1 group-hover:text-accent transition-colors">{f.title}</span>
+                <ExternalLink className="w-2.5 h-2.5 text-neutral/30 group-hover:text-accent shrink-0" />
+              </a>
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function OwnershipBar({ insider, inst }: { insider: number; inst: number }) {
+  const t = useT();
+  const other = Math.max(0, 1 - insider - inst);
+  return (
+    <div className="space-y-1">
+      <div className="flex h-1.5 overflow-hidden">
+        <div className="bg-accent/60" style={{ width: `${insider * 100}%` }} />
+        <div className="bg-bullish/60" style={{ width: `${inst * 100}%` }} />
+        <div className="bg-neutral/20" style={{ width: `${other * 100}%` }} />
+      </div>
+      <div className="flex justify-between text-[7px] font-mono text-neutral/40">
+        <span>{t('insiders')} {(insider * 100).toFixed(1)}%</span>
+        <span>{t('institutions')} {(inst * 100).toFixed(1)}%</span>
+      </div>
     </div>
   );
 }

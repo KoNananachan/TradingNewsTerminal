@@ -366,6 +366,178 @@ function parseProfileResponse(data: any): StockProfile | null {
   };
 }
 
+// ── Extended profile (Bloomberg-level data) ──
+
+export interface ExtendedStockData {
+  keyStats: {
+    enterpriseValue: number | null;
+    pegRatio: number | null;
+    shortPercentOfFloat: number | null;
+    sharesShort: number | null;
+    sharesShortPriorMonth: number | null;
+    dateShortInterest: string | null;
+    heldPercentInsiders: number | null;
+    heldPercentInstitutions: number | null;
+    fiftyTwoWeekChange: number | null;
+    sp500FiftyTwoWeekChange: number | null;
+    lastDividendValue: number | null;
+    lastDividendDate: string | null;
+  } | null;
+  earningsHistory: Array<{
+    quarter: string;
+    epsEstimate: number | null;
+    epsActual: number | null;
+    epsDifference: number | null;
+    surprisePercent: number | null;
+  }>;
+  earningsTrend: Array<{
+    period: string;
+    endDate: string | null;
+    growth: number | null;
+    earningsEstimate: { avg: number | null; low: number | null; high: number | null; numberOfAnalysts: number | null };
+    revenueEstimate: { avg: number | null; low: number | null; high: number | null; numberOfAnalysts: number | null };
+  }>;
+  recommendationTrend: Array<{
+    period: string;
+    strongBuy: number;
+    buy: number;
+    hold: number;
+    sell: number;
+    strongSell: number;
+  }>;
+  upgradeDowngradeHistory: Array<{
+    date: string;
+    firm: string;
+    action: string;
+    fromGrade: string;
+    toGrade: string;
+  }>;
+  majorHolders: {
+    insidersPercentHeld: number | null;
+    institutionsPercentHeld: number | null;
+    institutionsFloatPercentHeld: number | null;
+    institutionsCount: number | null;
+  } | null;
+  secFilings: Array<{
+    date: string;
+    type: string;
+    title: string;
+    url: string;
+  }>;
+}
+
+export async function getExtendedProfile(symbol: string): Promise<ExtendedStockData | null> {
+  try {
+    const auth = await ensureCrumb();
+    if (!auth) return null;
+
+    const modules = 'defaultKeyStatistics,earningsHistory,earningsTrend,recommendationTrend,upgradeDowngradeHistory,majorHoldersBreakdown,secFilings';
+    const url = `${YAHOO_API}/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}&crumb=${encodeURIComponent(auth.crumb)}`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_UA, 'Cookie': auth.cookie },
+    });
+
+    if (resp.status === 401) {
+      yahooCrumb = null;
+      const retry = await ensureCrumb();
+      if (!retry) return null;
+      const retryUrl = `${YAHOO_API}/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}&crumb=${encodeURIComponent(retry.crumb)}`;
+      const retryResp = await fetch(retryUrl, {
+        headers: { 'User-Agent': YAHOO_UA, 'Cookie': retry.cookie },
+      });
+      if (!retryResp.ok) return null;
+      return parseExtendedResponse(await retryResp.json());
+    }
+
+    if (!resp.ok) return null;
+    return parseExtendedResponse(await resp.json());
+  } catch (err) {
+    console.error(`[Yahoo] Error fetching extended profile for ${symbol}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+function parseExtendedResponse(data: any): ExtendedStockData | null {
+  const result = data?.quoteSummary?.result?.[0];
+  if (!result) return null;
+
+  const ks = result.defaultKeyStatistics || {};
+  const eh = result.earningsHistory?.history || [];
+  const et = result.earningsTrend?.trend || [];
+  const rt = result.recommendationTrend?.trend || [];
+  const udh = result.upgradeDowngradeHistory?.history || [];
+  const mh = result.majorHoldersBreakdown || {};
+  const sf = result.secFilings?.filings || [];
+
+  return {
+    keyStats: {
+      enterpriseValue: ks.enterpriseValue?.raw ?? null,
+      pegRatio: ks.pegRatio?.raw ?? null,
+      shortPercentOfFloat: ks.shortPercentOfFloat?.raw ?? null,
+      sharesShort: ks.sharesShort?.raw ?? null,
+      sharesShortPriorMonth: ks.sharesShortPriorMonth?.raw ?? null,
+      dateShortInterest: ks.dateShortInterest?.fmt ?? null,
+      heldPercentInsiders: ks.heldPercentInsiders?.raw ?? null,
+      heldPercentInstitutions: ks.heldPercentInstitutions?.raw ?? null,
+      fiftyTwoWeekChange: ks['52WeekChange']?.raw ?? null,
+      sp500FiftyTwoWeekChange: ks.SandP52WeekChange?.raw ?? null,
+      lastDividendValue: ks.lastDividendValue?.raw ?? null,
+      lastDividendDate: ks.lastDividendDate?.fmt ?? null,
+    },
+    earningsHistory: eh.slice(0, 8).map((e: any) => ({
+      quarter: e.quarter?.fmt ?? e.period ?? '',
+      epsEstimate: e.epsEstimate?.raw ?? null,
+      epsActual: e.epsActual?.raw ?? null,
+      epsDifference: e.epsDifference?.raw ?? null,
+      surprisePercent: e.surprisePercent?.raw ?? null,
+    })),
+    earningsTrend: et.map((e: any) => ({
+      period: e.period ?? '',
+      endDate: e.endDate ?? null,
+      growth: e.growth?.raw ?? null,
+      earningsEstimate: {
+        avg: e.earningsEstimate?.avg?.raw ?? null,
+        low: e.earningsEstimate?.low?.raw ?? null,
+        high: e.earningsEstimate?.high?.raw ?? null,
+        numberOfAnalysts: e.earningsEstimate?.numberOfAnalysts?.raw ?? null,
+      },
+      revenueEstimate: {
+        avg: e.revenueEstimate?.avg?.raw ?? null,
+        low: e.revenueEstimate?.low?.raw ?? null,
+        high: e.revenueEstimate?.high?.raw ?? null,
+        numberOfAnalysts: e.revenueEstimate?.numberOfAnalysts?.raw ?? null,
+      },
+    })),
+    recommendationTrend: rt.map((r: any) => ({
+      period: r.period ?? '',
+      strongBuy: r.strongBuy ?? 0,
+      buy: r.buy ?? 0,
+      hold: r.hold ?? 0,
+      sell: r.sell ?? 0,
+      strongSell: r.strongSell ?? 0,
+    })),
+    upgradeDowngradeHistory: udh.slice(0, 30).map((u: any) => ({
+      date: u.epochGradeDate ? new Date(u.epochGradeDate * 1000).toISOString().slice(0, 10) : '',
+      firm: u.firm ?? '',
+      action: u.action ?? '',
+      fromGrade: u.fromGrade ?? '',
+      toGrade: u.toGrade ?? '',
+    })),
+    majorHolders: {
+      insidersPercentHeld: mh.insidersPercentHeld?.raw ?? null,
+      institutionsPercentHeld: mh.institutionsPercentHeld?.raw ?? null,
+      institutionsFloatPercentHeld: mh.institutionsFloatPercentHeld?.raw ?? null,
+      institutionsCount: mh.institutionsCount?.raw ?? null,
+    },
+    secFilings: sf.slice(0, 20).map((f: any) => ({
+      date: f.date ?? '',
+      type: f.type ?? '',
+      title: f.title ?? '',
+      url: f.edgarUrl ?? '',
+    })),
+  };
+}
+
 // ── Insider Transactions via quoteSummary ──
 
 export interface YahooInsiderTx {

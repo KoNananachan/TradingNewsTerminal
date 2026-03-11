@@ -25,6 +25,7 @@ const InsiderTradesPanel = lazy(() => import('../panels/insider-trades-panel').t
 const CorrelationMatrixPanel = lazy(() => import('../panels/correlation-matrix-panel').then(m => ({ default: m.CorrelationMatrixPanel })));
 const LiveStreamsPanel = lazy(() => import('../panels/live-streams-panel').then(m => ({ default: m.LiveStreamsPanel })));
 const PredictionTradingPanel = lazy(() => import('../panels/prediction-trading-panel').then(m => ({ default: m.PredictionTradingPanel })));
+const MissedOpportunitiesPanel = lazy(() => import('../panels/missed-opportunities-panel').then(m => ({ default: m.MissedOpportunitiesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -62,6 +63,7 @@ export const PANEL_IDS = {
   CORRELATIONS: 'correlation-matrix',
   LIVE_STREAMS: 'live-streams',
   PREDICTION: 'prediction-trading',
+  MISSED_OPP: 'missed-opportunities',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -83,6 +85,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CORRELATIONS]: 'CORRELATIONS',
   [PANEL_IDS.LIVE_STREAMS]: 'LIVE STREAMS',
   [PANEL_IDS.PREDICTION]: 'PREDICTION TRADING',
+  [PANEL_IDS.MISSED_OPP]: 'MISSED OPPORTUNITIES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -105,6 +108,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CORRELATIONS]: 'panelCorrelations',
   [PANEL_IDS.LIVE_STREAMS]: 'panelLiveStreams',
   [PANEL_IDS.PREDICTION]: 'panelPredictionTrading',
+  [PANEL_IDS.MISSED_OPP]: 'panelMissedOpportunities',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -405,6 +409,7 @@ export function DockLayout() {
       case PANEL_IDS.CORRELATIONS: content = <LazyWrap><CorrelationMatrixPanel /></LazyWrap>; break;
       case PANEL_IDS.LIVE_STREAMS: content = <LazyWrap><LiveStreamsPanel /></LazyWrap>; break;
       case PANEL_IDS.PREDICTION: content = <LazyWrap><PredictionTradingPanel /></LazyWrap>; break;
+      case PANEL_IDS.MISSED_OPP: content = <LazyWrap><MissedOpportunitiesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

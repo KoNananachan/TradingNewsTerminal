@@ -27,7 +27,7 @@ export async function fetchConflicts(): Promise<ConflictEvent[]> {
 
   console.log('[Conflicts] Fetching conflict data...');
 
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const articles = await prisma.newsArticle.findMany({
     where: {
@@ -35,7 +35,7 @@ export async function fetchConflicts(): Promise<ConflictEvent[]> {
       latitude: { not: null },
       longitude: { not: null },
       locationName: { not: null },
-      scrapedAt: { gte: threeDaysAgo },
+      scrapedAt: { gte: oneDayAgo },
     },
     select: {
       title: true,

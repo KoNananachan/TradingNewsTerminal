@@ -111,36 +111,9 @@ async function runRetention() {
 
     const now = new Date();
 
-    // Article retention: 7 days
-    const articleCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
-
-    // Archive sentiment before deleting
-    await archiveSentimentAggregates(articleCutoff);
-
-    // Delete cluster articles for old articles
-    const oldArticleIds = await prisma.newsArticle.findMany({
-      where: { scrapedAt: { lt: articleCutoff } },
-      select: { id: true },
-    });
-    const ids = oldArticleIds.map(a => a.id);
-
-    if (ids.length > 0) {
-      // Delete related records first (cascade may handle some, but be explicit)
-      await prisma.newsClusterArticle.deleteMany({
-        where: { articleId: { in: ids } },
-      });
-      await prisma.aiAnalysisLog.deleteMany({
-        where: { articleId: { in: ids } },
-      });
-      await prisma.stockRecommendation.deleteMany({
-        where: { articleId: { in: ids } },
-      });
-      // Delete the articles
-      const deleted = await prisma.newsArticle.deleteMany({
-        where: { scrapedAt: { lt: articleCutoff } },
-      });
-      console.log(`[DataRetention] Deleted ${deleted.count} articles older than 7 days`);
-    }
+    // Archive sentiment aggregates for articles older than 7 days (non-destructive)
+    const sentimentCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
+    await archiveSentimentAggregates(sentimentCutoff);
 
     // Clean up empty clusters
     await prisma.newsCluster.deleteMany({
@@ -149,13 +122,22 @@ async function runRetention() {
       },
     });
 
-    // ScrapeRun retention: 7 days
-    const scrapeRunCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
+    // ScrapeRun retention: 30 days
+    const scrapeRunCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
     const deletedRuns = await prisma.scrapeRun.deleteMany({
       where: { startedAt: { lt: scrapeRunCutoff } },
     });
     if (deletedRuns.count > 0) {
-      console.log(`[DataRetention] Deleted ${deletedRuns.count} scrape runs older than 7 days`);
+      console.log(`[DataRetention] Deleted ${deletedRuns.count} scrape runs older than 30 days`);
+    }
+
+    // AI analysis logs: 30 days
+    const logCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    const deletedLogs = await prisma.aiAnalysisLog.deleteMany({
+      where: { startedAt: { lt: logCutoff } },
+    });
+    if (deletedLogs.count > 0) {
+      console.log(`[DataRetention] Deleted ${deletedLogs.count} AI logs older than 30 days`);
     }
 
     console.log('[DataRetention] Retention complete');

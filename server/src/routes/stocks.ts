@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { getQuote, getQuotes, getHistory, getProfile } from '../services/stocks/yahoo-finance.js';
+import { getQuote, getQuotes, getHistory, getProfile, getExtendedProfile, getInsiderTransactions } from '../services/stocks/yahoo-finance.js';
 
 const INDICES = [
   '^GSPC',   // S&P 500
@@ -203,6 +203,21 @@ router.get('/earnings-calendar', async (req, res) => {
   } catch (err: any) {
     console.error('[Stocks] Error fetching earnings calendar:', err?.message || err);
     res.status(503).json({ error: 'Earnings data temporarily unavailable' });
+  }
+});
+
+// GET /api/stocks/:symbol/extended - Bloomberg-level extended data
+router.get('/:symbol/extended', async (req, res) => {
+  try {
+    const symbol = req.params.symbol.toUpperCase();
+    const [extended, insiders] = await Promise.all([
+      getExtendedProfile(symbol).catch(() => null),
+      getInsiderTransactions(symbol).catch(() => []),
+    ]);
+    res.json({ extended, insiders });
+  } catch (err: any) {
+    console.error('[Stocks] Error fetching extended data:', err?.message || err);
+    res.status(500).json({ error: 'Failed to fetch extended stock data' });
   }
 });
 

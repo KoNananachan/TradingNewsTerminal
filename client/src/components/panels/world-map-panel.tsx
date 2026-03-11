@@ -139,6 +139,7 @@ export function WorldMapPanel() {
   });
 
   const exchangeMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const conflictMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -184,22 +185,23 @@ export function WorldMapPanel() {
         data: { type: 'FeatureCollection', features: [] },
       });
 
+      // Conflict heatmap — subtle red underglow
       map.addLayer({
         id: CONFLICT_HEAT_LAYER,
         type: 'heatmap',
         source: CONFLICT_SOURCE,
         paint: {
-          'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0.4, 10, 0.7, 100, 1, 500, 1.5],
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 1, 0.6, 5, 1, 20, 1.5, 100, 2],
           'heatmap-intensity': 1.5,
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 12, 5, 30, 10, 45],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 12, 5, 25, 10, 40],
           'heatmap-color': [
             'interpolate', ['linear'], ['heatmap-density'],
             0, 'rgba(0,0,0,0)',
-            0.15, 'rgba(255,100,0,0.3)',
-            0.3, 'rgba(255,80,0,0.5)',
-            0.5, 'rgba(255,50,0,0.65)',
-            0.7, 'rgba(220,20,0,0.8)',
-            1, 'rgba(180,0,0,0.9)',
+            0.15, 'rgba(180,20,20,0.1)',
+            0.3, 'rgba(170,15,15,0.2)',
+            0.5, 'rgba(160,10,10,0.32)',
+            0.7, 'rgba(140,5,5,0.45)',
+            1, 'rgba(120,0,0,0.55)',
           ],
           'heatmap-opacity': 0.7,
         },
@@ -264,17 +266,15 @@ export function WorldMapPanel() {
         },
       });
 
-      // Conflict points layer — rendered ABOVE news dots so they're always visible
+      // Conflict points — invisible circle layer kept for click detection only
       map.addLayer({
         id: CONFLICT_POINTS_LAYER,
         type: 'circle',
         source: CONFLICT_SOURCE,
         paint: {
-          'circle-color': '#ef4444',
-          'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 5, 10, 7, 50, 9, 200, 12],
-          'circle-opacity': 0.85,
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': 'rgba(255,200,200,0.6)',
+          'circle-color': 'transparent',
+          'circle-radius': 14,
+          'circle-opacity': 0,
         },
       });
 
@@ -430,10 +430,10 @@ export function WorldMapPanel() {
 
       const header = document.createElement('div');
       header.className = 'popup-header';
-      header.style.cssText = 'background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.2);color:#ef4444;';
+      header.style.cssText = 'background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#e4e4e7;';
       const dot = document.createElement('span');
       dot.className = 'pulse-dot';
-      dot.style.cssText = 'background:#ef4444;box-shadow:0 0 10px #ef4444;';
+      dot.style.cssText = 'background:#e4e4e7;box-shadow:0 0 8px rgba(255,255,255,0.5);';
       header.appendChild(dot);
       const loc = useAppStore.getState().locale;
       const tt = (k: keyof typeof translations.en) => translations[loc]?.[k] ?? translations.en[k];
@@ -465,7 +465,7 @@ export function WorldMapPanel() {
         link.href = props.url;
         link.target = '_blank';
         link.rel = 'noopener';
-        link.style.cssText = 'font-size:9px;color:#ef4444;font-weight:900;text-decoration:none;letter-spacing:0.1em;';
+        link.style.cssText = 'font-size:9px;color:#a1a1aa;font-weight:900;text-decoration:none;letter-spacing:0.1em;';
         link.textContent = `${tt('mapViewSource')} →`;
         body.appendChild(link);
       }
@@ -493,6 +493,8 @@ export function WorldMapPanel() {
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
       exchangeMarkersRef.current.forEach(m => m.remove());
       exchangeMarkersRef.current = [];
+      conflictMarkersRef.current.forEach(m => m.remove());
+      conflictMarkersRef.current = [];
       observer.disconnect();
       mapRef.current = null;
       map.remove();
@@ -605,6 +607,31 @@ export function WorldMapPanel() {
     }
     if (map.getLayer(CONFLICT_POINTS_LAYER)) {
       map.setLayoutProperty(CONFLICT_POINTS_LAYER, 'visibility', showConflicts ? 'visible' : 'none');
+    }
+  }, [isMapReady, conflicts, showConflicts]);
+
+  // Conflict HTML markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old markers
+    conflictMarkersRef.current.forEach(m => m.remove());
+    conflictMarkersRef.current = [];
+
+    if (!showConflicts || !conflicts || !isMapReady) return;
+
+    for (const c of conflicts) {
+      const el = document.createElement('div');
+      el.className = 'conflict-marker';
+      // Scale size by mention count
+      const size = c.count > 50 ? 'lg' : c.count > 10 ? 'md' : 'sm';
+      el.setAttribute('data-size', size);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([c.lng, c.lat])
+        .addTo(map);
+      conflictMarkersRef.current.push(marker);
     }
   }, [isMapReady, conflicts, showConflicts]);
 
@@ -741,7 +768,7 @@ export function WorldMapPanel() {
             onClick={() => setShowConflicts(v => !v)}
             className={`text-[10px] font-mono font-bold px-2 py-0.5 border flex items-center gap-1.5 tracking-widest leading-none transition-colors ${
               showConflicts
-                ? 'text-red-400 bg-red-500/10 border-red-500/30'
+                ? 'text-zinc-300 bg-white/10 border-zinc-400/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
             }`}
             title={showConflicts ? t('hideConflicts') : t('showConflictsTitle')}

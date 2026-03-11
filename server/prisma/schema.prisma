@@ -56,13 +56,18 @@ model NewsCategory {
 
 model StockRecommendation {
   id         Int    @id @default(autoincrement())
-  articleId  Int
-  article    NewsArticle @relation(fields: [articleId], references: [id])
+  articleId  Int?
+  article    NewsArticle? @relation(fields: [articleId], references: [id])
   symbol     String
   action     String   // BUY, SELL, HOLD, WATCH
   confidence Float    // 0-1
   reason     String?
   reasonTranslations String? // JSON: { zh: "...", ja: "...", ko: "...", es: "...", fr: "..." }
+
+  // Denormalized article info (survives article deletion for backtesting)
+  articleTitle       String?
+  titleTranslations  String?
+  publishedAt        DateTime?
 
   createdAt DateTime @default(now())
 

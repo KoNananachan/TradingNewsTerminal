@@ -209,6 +209,8 @@ export async function scrapeArticles(source?: NewsSource | null): Promise<number
                 action: asset.action,
                 confidence: asset.confidence,
                 reason: asset.reason,
+                articleTitle: item.title,
+                publishedAt: item.publishedAt,
               },
             });
           } catch {

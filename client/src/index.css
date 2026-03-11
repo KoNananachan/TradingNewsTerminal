@@ -190,6 +190,44 @@ body {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+/* Conflict map markers — crosshair style */
+.conflict-marker {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Cross shape via two rotated bars */
+.conflict-marker::before,
+.conflict-marker::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 0.5px;
+  top: 50%;
+  left: 50%;
+}
+
+.conflict-marker::before {
+  width: 12px;
+  height: 1.5px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.conflict-marker::after {
+  width: 12px;
+  height: 1.5px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Size variants */
+.conflict-marker[data-size="md"]::before,
+.conflict-marker[data-size="md"]::after { width: 16px; height: 2px; }
+
+.conflict-marker[data-size="lg"]::before,
+.conflict-marker[data-size="lg"]::after { width: 20px; height: 2px; }
+
 /* Price Flash Animations */
 @keyframes price-flash-up {
   0% { background: rgba(0,255,0,0.4); color: #fff; }

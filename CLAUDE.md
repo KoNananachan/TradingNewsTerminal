@@ -91,9 +91,11 @@
 ### News Pipeline
 - News API provides category field (finance/world/business/politics)
 - AI does NOT classify categories; AI handles: sentiment + location + isConflict (single prompt)
-- `isConflict: true` = war, armed conflict, military strikes, bombing, riots, terrorism, violent clashes
-- Pure sanctions/diplomacy/political tension = NOT conflict
-- Conflict map shows last 3 days of `isConflict: true` articles with lat/lng
+- `isConflict: true` = SPECIFIC VIOLENT EVENT already happened or actively happening, with casualties. Must describe a concrete attack/battle/incident, not a general situation.
+- TRUE: airstrikes killing people, bombings, armed battles, terrorist attacks with casualties
+- NOT conflict: missile tests, military drills, troop deployments, ship tracking, sanctions, threats, protests, arms deals, defense spending, cyber attacks, trade wars, economic impact of war, peace talks, military buildup
+- Litmus test: Were weapons fired AT people and did casualties occur? If not, isConflict = false.
+- Conflict map shows last 24h of `isConflict: true` articles with lat/lng
 
 ### API Categories
 - Only 4 categories: `finance`, `world`, `business`, `politics`
