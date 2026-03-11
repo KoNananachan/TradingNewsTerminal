@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
       prisma.newsArticle.findMany({
         where,
         include: { category: true, recommendations: true },
-        orderBy: { scrapedAt: 'desc' },
+        orderBy: [{ publishedAt: 'desc' }, { scrapedAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),

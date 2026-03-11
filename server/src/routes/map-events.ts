@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
           select: { symbol: true, action: true },
         },
       },
-      orderBy: { scrapedAt: 'desc' },
+      orderBy: [{ publishedAt: 'desc' }, { scrapedAt: 'desc' }],
       take: limit,
     });
 
