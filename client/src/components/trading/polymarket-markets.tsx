@@ -5,13 +5,15 @@ import { Search, TrendingUp, Clock, BarChart3 } from 'lucide-react';
 import { parseJsonArray, type PolymarketMarket, type MarketCategory } from '../../lib/polymarket/types';
 import { PolymarketSparkline } from './polymarket-sparkline';
 
-const CATEGORIES: { id: MarketCategory; label: string }[] = [
-  { id: 'all', label: 'ALL' },
-  { id: 'politics', label: 'POLITICS' },
-  { id: 'crypto', label: 'CRYPTO' },
-  { id: 'sports', label: 'SPORTS' },
-  { id: 'science', label: 'SCIENCE' },
-  { id: 'pop-culture', label: 'CULTURE' },
+import type { TranslationKey } from '../../i18n';
+
+const CATEGORIES: { id: MarketCategory; key: TranslationKey }[] = [
+  { id: 'all', key: 'predCatAll' },
+  { id: 'politics', key: 'predCatPolitics' },
+  { id: 'crypto', key: 'predCatCrypto' },
+  { id: 'sports', key: 'predCatSports' },
+  { id: 'science', key: 'predCatScience' },
+  { id: 'pop-culture', key: 'predCatCulture' },
 ];
 
 interface PolymarketMarketsProps {
@@ -57,7 +59,7 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
                 : 'border-transparent text-neutral/40 hover:text-neutral'
             }`}
           >
-            {cat.label}
+            {t(cat.key)}
           </button>
         ))}
       </div>

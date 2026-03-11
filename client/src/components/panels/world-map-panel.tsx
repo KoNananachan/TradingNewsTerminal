@@ -9,6 +9,9 @@ import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { cleanTitle } from '../../utils/clean-title';
 import { Crosshair, Zap, Maximize2, Minimize2, Flame, TrendingUp, Radio } from 'lucide-react';
+import { useT } from '../../i18n';
+import { translations } from '../../i18n/translations';
+import { getLocalizedTitle } from '../../api/hooks/use-news';
 
 const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const SOURCE_ID = 'news-events';
@@ -65,7 +68,7 @@ function toGeoJSON(evts: MapEvent[], visited: number[]): GeoJSON.FeatureCollecti
         geometry: { type: 'Point' as const, coordinates: [e.longitude!, e.latitude!] },
         properties: {
           id: e.id,
-          title: cleanTitle(e.title),
+          title: cleanTitle(getLocalizedTitle(e)),
           location: e.locationName || 'Location Unknown',
           color: visitedSet.has(e.id) ? VISITED_COLOR : getSentimentColor(e.sentiment),
           sentiment: e.sentiment,
@@ -107,6 +110,7 @@ function conflictGeoJSON(events: ConflictEvent[]): GeoJSON.FeatureCollection {
 }
 
 export function WorldMapPanel() {
+  const t = useT();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -314,7 +318,9 @@ export function WorldMapPanel() {
       const dot = document.createElement('span');
       dot.className = 'pulse-dot';
       header.appendChild(dot);
-      header.appendChild(document.createTextNode(`INTEL NODE: ${props.location || ''}`));
+      const loc = useAppStore.getState().locale;
+      const tt = (k: keyof typeof translations.en) => translations[loc]?.[k] ?? translations.en[k];
+      header.appendChild(document.createTextNode(`${tt('intelNode')} ${props.location || ''}`));
       container.appendChild(header);
 
       const btn = document.createElement('button');
@@ -336,7 +342,7 @@ export function WorldMapPanel() {
 
       const hint = document.createElement('span');
       hint.className = 'action-hint';
-      hint.textContent = 'VIEW FULL REPORT →';
+      hint.textContent = `${tt('viewFullReport')} →`;
       btn.appendChild(hint);
 
       container.appendChild(btn);
@@ -352,7 +358,9 @@ export function WorldMapPanel() {
       const dot = document.createElement('span');
       dot.className = 'pulse-dot';
       header.appendChild(dot);
-      header.appendChild(document.createTextNode(`REGIONAL HUB (${total} NODES)`));
+      const loc = useAppStore.getState().locale;
+      const tt = (k: keyof typeof translations.en) => translations[loc]?.[k] ?? translations.en[k];
+      header.appendChild(document.createTextNode(tt('regionalHub').replace('{count}', String(total))));
       container.appendChild(header);
 
       const list = document.createElement('div');
@@ -426,7 +434,9 @@ export function WorldMapPanel() {
       dot.className = 'pulse-dot';
       dot.style.cssText = 'background:#ef4444;box-shadow:0 0 10px #ef4444;';
       header.appendChild(dot);
-      header.appendChild(document.createTextNode('CONFLICT ZONE'));
+      const loc = useAppStore.getState().locale;
+      const tt = (k: keyof typeof translations.en) => translations[loc]?.[k] ?? translations.en[k];
+      header.appendChild(document.createTextNode(tt('conflictZone')));
       container.appendChild(header);
 
       const body = document.createElement('div');
@@ -439,7 +449,7 @@ export function WorldMapPanel() {
 
       const countEl = document.createElement('div');
       countEl.style.cssText = 'font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:8px;';
-      countEl.textContent = `${Number(props.count).toLocaleString()} conflict mentions (3d)`;
+      countEl.textContent = tt('conflictMentions3d').replace('{count}', Number(props.count).toLocaleString());
       body.appendChild(countEl);
 
       if (props.title) {
@@ -455,7 +465,7 @@ export function WorldMapPanel() {
         link.target = '_blank';
         link.rel = 'noopener';
         link.style.cssText = 'font-size:9px;color:#ef4444;font-weight:900;text-decoration:none;letter-spacing:0.1em;';
-        link.textContent = 'VIEW SOURCE →';
+        link.textContent = `${tt('mapViewSource')} →`;
         body.appendChild(link);
       }
 
@@ -711,9 +721,9 @@ export function WorldMapPanel() {
                 ? 'text-blue-400 bg-blue-500/10 border-blue-500/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
             }`}
-            title={showNews ? 'Hide News' : 'Show News'}
+            title={showNews ? t('hideNews') : t('showNewsTitle')}
           >
-            <Radio className="w-3 h-3" /> NEWS
+            <Radio className="w-3 h-3" /> {t('mapNews')}
           </button>
           <button
             onClick={() => setShowExchanges(v => !v)}
@@ -722,9 +732,9 @@ export function WorldMapPanel() {
                 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
             }`}
-            title={showExchanges ? 'Hide Markets' : 'Show Markets'}
+            title={showExchanges ? t('hideMarkets') : t('showMarketsTitle')}
           >
-            <TrendingUp className="w-3 h-3" /> MARKETS
+            <TrendingUp className="w-3 h-3" /> {t('mapMarkets')}
           </button>
           <button
             onClick={() => setShowConflicts(v => !v)}
@@ -733,17 +743,17 @@ export function WorldMapPanel() {
                 ? 'text-red-400 bg-red-500/10 border-red-500/30'
                 : 'text-neutral bg-black/40 border-border/30 opacity-50'
             }`}
-            title={showConflicts ? 'Hide Conflicts' : 'Show Conflicts'}
+            title={showConflicts ? t('hideConflicts') : t('showConflictsTitle')}
           >
-            <Flame className="w-3 h-3" /> CONFLICTS
+            <Flame className="w-3 h-3" /> {t('mapConflicts')}
           </button>
           <div className="text-[10px] font-mono font-bold text-neutral bg-black/40 px-2 py-0.5 border border-border/30 flex items-center gap-2 tracking-widest leading-none">
-            <Crosshair className="w-3 h-3 text-accent"/> {events?.length || 0} NODES
+            <Crosshair className="w-3 h-3 text-accent"/> {events?.length || 0} {t('mapNodes')}
           </div>
           <button
             onClick={toggleFullscreen}
             className="p-1 text-neutral hover:text-accent border border-transparent hover:border-border bg-black/40 transition-colors"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            title={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
@@ -801,7 +811,7 @@ export function WorldMapPanel() {
 
       <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-black/80 backdrop-blur-md rounded border border-accent/20 text-[9px] font-black text-accent uppercase tracking-[0.2em] shadow-2xl">
-          <Zap className="w-3 h-3 text-accent animate-pulse" /> Intelligence Grid
+          <Zap className="w-3 h-3 text-accent animate-pulse" /> {t('intelligenceGrid')}
         </div>
       </div>
 
@@ -816,6 +826,7 @@ export function WorldMapPanel() {
 }
 
 function SentimentTimeline({ events }: { events: MapEvent[] }) {
+  const t = useT();
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
 
   const buckets = useMemo(() => {
@@ -855,7 +866,7 @@ function SentimentTimeline({ events }: { events: MapEvent[] }) {
             <div className="bg-bearish/60 rounded-b-[1px]" style={{ height: `${b.bearishH}%`, minHeight: b.bearish > 0 ? 1 : 0 }} />
             {hoveredHour === i && (
               <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-black/95 border border-border/50 rounded px-2 py-1 text-[8px] font-mono text-gray-300 whitespace-nowrap z-50 pointer-events-none">
-                {String(hour).padStart(2, '0')}:00 — Bullish: {b.bullish}, Bearish: {b.bearish}
+                {String(hour).padStart(2, '0')}:00 — {t('bullish')}: {b.bullish}, {t('bearish')}: {b.bearish}
               </div>
             )}
           </div>

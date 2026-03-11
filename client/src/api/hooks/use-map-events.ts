@@ -4,6 +4,7 @@ import { api } from '../client';
 export interface MapEvent {
   id: number;
   title: string;
+  titleTranslations?: string | null;
   latitude: number;
   longitude: number;
   sentiment: string | null;

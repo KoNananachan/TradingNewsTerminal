@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 
 interface IndexQuote {
   symbol: string;
@@ -11,6 +12,7 @@ interface IndexQuote {
 
 export function StockTicker() {
   const tickerSpeed = useAppStore((s) => s.settings.tickerSpeed);
+  const t = useT();
 
   const { data: quotes } = useQuery({
     queryKey: ['indices'],
@@ -21,7 +23,7 @@ export function StockTicker() {
   if (!quotes || quotes.length === 0) {
     return (
       <div className="bg-panel border-b border-border h-6 flex items-center px-2 shrink-0 z-10 relative">
-        <span className="text-[10px] text-accent font-mono uppercase font-bold animate-pulse">AWAITING DATA STREAM...</span>
+        <span className="text-[10px] text-accent font-mono uppercase font-bold animate-pulse">{t('awaitingDataStream')}</span>
       </div>
     );
   }

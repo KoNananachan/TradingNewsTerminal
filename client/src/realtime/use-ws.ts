@@ -110,6 +110,7 @@ export function useWebSocket() {
               detail: {
                 id: article.id,
                 title: article.title,
+                titleTranslations: article.titleTranslations || null,
                 sentiment: article.sentiment,
                 symbols,
               }
@@ -119,6 +120,7 @@ export function useWebSocket() {
             useAppStore.getState().addNotification({
               id: article.id,
               title: article.title,
+              titleTranslations: article.titleTranslations || null,
               sentiment: article.sentiment,
               symbols,
               time: new Date(),

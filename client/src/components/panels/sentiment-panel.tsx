@@ -4,6 +4,7 @@ import { GlassCard } from '../common/glass-card';
 import { useSentimentTrend } from '../../api/hooks/use-sentiment';
 import { useAppStore } from '../../stores/use-app-store';
 import { Activity } from 'lucide-react';
+import { useT } from '../../i18n';
 
 const SCOPES = ['ticker', 'category', 'market'] as const;
 type Scope = typeof SCOPES[number];
@@ -11,6 +12,7 @@ const WINDOWS = ['1D', '1W', '1M'] as const;
 type Window = typeof WINDOWS[number];
 
 export function SentimentPanel() {
+  const t = useT();
   const selectedSymbol = useAppStore((s) => s.selectedSymbol);
   const [scope, setScope] = useState<Scope>('ticker');
   const [value, setValue] = useState(selectedSymbol ?? '');
@@ -117,13 +119,13 @@ export function SentimentPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <Activity className="w-3 h-3" />
-          SENTIMENT TREND
+          {t('sentimentTrend')}
         </span>
       }
       headerRight={
         data?.reversal ? (
           <span className="px-1.5 py-0.5 text-[8px] font-mono font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
-            REVERSAL
+            {t('reversal')}
           </span>
         ) : null
       }
@@ -185,23 +187,23 @@ export function SentimentPanel() {
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loading')}</span>
           </div>
         )}
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
-            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load sentiment data</span>
-            <button onClick={() => { setValue(''); setTimeout(() => setValue(value), 0); }} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">{t('failedSentiment')}</span>
+            <button onClick={() => { setValue(''); setTimeout(() => setValue(value), 0); }} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">{t('retry')}</button>
           </div>
         )}
         {!isLoading && !error && !data?.buckets?.length && value && (
           <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest z-10">
-            No sentiment data for "{value}"
+            {t('noSentimentData').replace('{value}', value)}
           </div>
         )}
         {!value && (
           <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest z-10">
-            Enter a {scope === 'ticker' ? 'ticker' : scope === 'category' ? 'category' : 'market'} to track
+            {scope === 'ticker' ? t('enterTicker') : scope === 'category' ? t('enterCategory') : t('enterMarket')}
           </div>
         )}
         <div ref={chartContainerRef} className="w-full h-full" />

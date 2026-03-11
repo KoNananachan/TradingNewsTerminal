@@ -4,6 +4,7 @@ import { useOptionsFlow, type OptionsFlow } from '../../api/hooks/use-options';
 import { useWatchlist as useWatchlistData } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
 import { Zap } from 'lucide-react';
+import { useT } from '../../i18n';
 
 const MIN_PREMIUM_OPTIONS = [
   { label: '50K', value: 50_000 },
@@ -23,6 +24,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function OptionsFlowPanel() {
+  const t = useT();
   const watchlistTabs = useAppStore((s) => s.tabSymbols);
   const { data: serverWatchlist } = useWatchlistData();
   const watchlistSymbols = useMemo(() => {
@@ -60,12 +62,12 @@ export function OptionsFlowPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <Zap className="w-3 h-3" />
-          OPTIONS FLOW
+          {t('optionsFlow')}
         </span>
       }
       headerRight={
         <span className="text-[8px] font-mono text-neutral/50">
-          {sorted.length} flows
+          {t('flowsCount').replace('{count}', String(sorted.length))}
         </span>
       }
       className="h-full"
@@ -81,7 +83,7 @@ export function OptionsFlowPanel() {
                 useWatchlist ? 'bg-accent/20 text-accent' : 'text-neutral/40 hover:text-white'
               }`}
             >
-              Watchlist
+              {t('watchlist')}
             </button>
             <button
               onClick={() => setUseWatchlist(false)}
@@ -89,14 +91,14 @@ export function OptionsFlowPanel() {
                 !useWatchlist ? 'bg-accent/20 text-accent' : 'text-neutral/40 hover:text-white'
               }`}
             >
-              Manual
+              {t('manual')}
             </button>
           </div>
 
           <div className="flex-1" />
 
           {/* Min premium */}
-          <span className="text-[8px] font-mono text-neutral/40">Min:</span>
+          <span className="text-[8px] font-mono text-neutral/40">{t('minPremium')}:</span>
           {MIN_PREMIUM_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -126,16 +128,16 @@ export function OptionsFlowPanel() {
 
       {/* Table header */}
       <div className="shrink-0 grid grid-cols-[50px_35px_55px_50px_50px_45px_40px_55px_40px_1fr] text-[7px] font-mono text-neutral/40 uppercase tracking-wider px-3 py-1 border-b border-border/10 bg-black/10">
-        <span>Symbol</span>
-        <span>Type</span>
-        <span className="text-right">Strike</span>
-        <span className="text-right">Expiry</span>
-        <span className="text-right">Vol</span>
-        <span className="text-right">OI</span>
-        <span className="text-right">V/OI</span>
-        <span className="text-right">Premium</span>
-        <span className="text-right">IV</span>
-        <span className="pl-2">Signal</span>
+        <span>{t('symbol')}</span>
+        <span>{t('headerType')}</span>
+        <span className="text-right">{t('strike')}</span>
+        <span className="text-right">{t('expiry')}</span>
+        <span className="text-right">{t('headerVol')}</span>
+        <span className="text-right">{t('openInterest')}</span>
+        <span className="text-right">{t('headerVOI')}</span>
+        <span className="text-right">{t('premium')}</span>
+        <span className="text-right">{t('impliedVol')}</span>
+        <span className="pl-2">{t('headerSignal')}</span>
       </div>
 
       {/* Content */}
@@ -143,23 +145,23 @@ export function OptionsFlowPanel() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loading')}</span>
           </div>
         )}
         {error && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load options flow</span>
-            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">{t('failedOptionsFlow')}</span>
+            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">{t('retry')}</button>
           </div>
         )}
         {!isLoading && !error && symbols.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Add symbols to track
+            {t('addSymbolsToTrack')}
           </div>
         )}
         {!isLoading && !error && symbols.length > 0 && sorted.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No unusual activity
+            {t('noUnusualActivity')}
           </div>
         )}
         {sorted.map((flow, i) => {

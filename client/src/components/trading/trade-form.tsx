@@ -171,7 +171,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
   const handleSetupAgent = useCallback(async () => {
     if (!address || approving) return;
     setApproving(true);
-    setLastStatus('Setting up trading key...');
+    setLastStatus(t('settingUpKey'));
     try {
       // Clear any old agent key first
       removeAgentWallet(address);
@@ -179,22 +179,22 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
 
       await switchChainAsync({ chainId: arbitrumSepolia.id });
       const agent = generateAgentWallet();
-      setLastStatus('Approve trading key in MetaMask...');
+      setLastStatus(t('approveInWallet'));
       await approveAgent(signTypedDataAsync, agent.address);
       saveAgentWallet(address, agent);
       setAgentWallet(agent);
-      setLastStatus('Trading key approved!');
+      setLastStatus(t('keyApproved'));
     } catch (err: any) {
       if (err?.name === 'UserRejectedRequestError' || err?.code === 4001) {
-        setLastStatus('Cancelled');
+        setLastStatus(t('cancelled'));
         return;
       }
-      const msg = err?.shortMessage || err?.message || 'Unknown error';
-      setLastStatus(`Setup failed: ${msg}`);
+      const msg = err?.shortMessage || err?.message || t('unknownError');
+      setLastStatus(`${t('setupFailed')}: ${msg}`);
     } finally {
       setApproving(false);
     }
-  }, [address, approving, switchChainAsync, signTypedDataAsync]);
+  }, [address, approving, switchChainAsync, signTypedDataAsync, t]);
 
   // Transfer USDC between Spot ↔ Perps
   const handleTransfer = useCallback(async () => {
@@ -279,14 +279,14 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
 
     const sizeVal = parseFloat(size);
     if (isNaN(sizeVal) || sizeVal <= 0 || !Number.isFinite(sizeVal)) {
-      setLastStatus('Invalid size');
+      setLastStatus(t('invalidSize'));
       return;
     }
 
     // Validate formatted size is non-zero (could round to 0 with few szDecimals)
     const formattedSize = formatSize(sizeVal, assetInfo.szDecimals);
     if (parseFloat(formattedSize) <= 0) {
-      setLastStatus(`Size too small (min ${Math.pow(10, -assetInfo.szDecimals)})`);
+      setLastStatus(`${t('sizeTooSmall')} (min ${Math.pow(10, -assetInfo.szDecimals)})`);
       return;
     }
 
@@ -301,7 +301,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
     } else {
       orderPrice = parseFloat(price);
       if (isNaN(orderPrice) || orderPrice <= 0 || !Number.isFinite(orderPrice)) {
-        setLastStatus('Invalid limit price');
+        setLastStatus(t('invalidLimitPrice'));
         return;
       }
       tif = 'Gtc';
@@ -321,7 +321,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
     const orderDesc = `${side.toUpperCase()} ${formatSize(sizeVal, assetInfo.szDecimals)} ${displayCoin(coin)} @ ${orderType === 'market' ? 'MKT' : '$' + orderPrice.toFixed(2)} (${leverage}x)`;
 
     setSubmitting(true);
-    setLastStatus(`Setting leverage...`);
+    setLastStatus(t('settingLeverage'));
     try {
       // Set leverage before placing order
       const levAction = {
@@ -354,7 +354,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
         throw new Error(`Leverage update failed: ${levErr}`);
       }
 
-      setLastStatus(`Signing order locally...`);
+      setLastStatus(t('signingLocally'));
       // Ensure nonce is unique: at least 1ms after leverage nonce
       const nonce = Math.max(Date.now(), levNonce + 1);
       const { r, s, v } = await signL1Action(
@@ -441,10 +441,10 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
       }).catch(() => {});
     } catch (err: any) {
       if (err?.name === 'UserRejectedRequestError' || err?.code === 4001) {
-        setLastStatus('User rejected');
+        setLastStatus(t('userRejected'));
         return;
       }
-      const msg = err?.shortMessage || err?.message || 'Unknown error';
+      const msg = err?.shortMessage || err?.message || t('unknownError');
       setLastStatus(`Error: ${msg}`);
       addLogEntry({ type: 'alert', message: `Order failed: ${msg}` });
       addNotification({
@@ -457,7 +457,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
     } finally {
       setSubmitting(false);
     }
-  }, [isConnected, size, address, assetInfo, agentWallet, side, orderType, midPrice, price, leverage, coin, addLogEntry, addNotification, queryClient, tradingSourceArticleId]);
+  }, [isConnected, size, address, assetInfo, agentWallet, side, orderType, midPrice, price, leverage, coin, addLogEntry, addNotification, queryClient, tradingSourceArticleId, t]);
 
   const leverageOptions = [1, 2, 3, 5, 10, 20, 50];
 
@@ -560,7 +560,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
             className="flex items-center justify-center gap-1 mt-0.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.1em] text-accent/60 hover:text-accent transition-colors"
           >
             <ArrowDownUp className="w-2.5 h-2.5" />
-            Spot ↔ Perps
+            {t('spotPerpsTransfer')}
           </button>
           {showTransfer && (
             <div className="flex flex-col gap-1 mt-1 p-2 border border-accent/20 bg-accent/[0.03] rounded">
@@ -574,7 +574,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
                       : 'text-neutral/40 border-border/20'
                   }`}
                 >
-                  → Perps
+                  {t('toPerps')}
                 </button>
                 <button
                   type="button"
@@ -585,7 +585,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
                       : 'text-neutral/40 border-border/20'
                   }`}
                 >
-                  → Spot
+                  {t('toSpot')}
                 </button>
               </div>
               <div className="flex gap-1">
@@ -605,7 +605,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
                   }}
                   className="px-1.5 py-1 text-[7px] font-bold text-accent/60 border border-border/20 hover:text-accent"
                 >
-                  MAX
+                  {t('max')}
                 </button>
               </div>
               <button
@@ -712,7 +712,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
           className="py-2.5 text-[11px] font-black uppercase tracking-widest border flex items-center justify-center gap-2 bg-accent/20 text-accent border-accent hover:bg-accent/30 disabled:opacity-40"
         >
           {approving ? <Loader2 className="w-3 h-3 animate-spin" /> : <KeyRound className="w-3 h-3" />}
-          {approving ? 'Approving...' : 'Setup Trading Key'}
+          {approving ? t('approvingKey') : t('setupTradingKey')}
         </button>
       )}
       {isConnected && agentWallet && (
@@ -722,7 +722,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
           disabled={approving}
           className="text-[7px] font-mono text-neutral/40 hover:text-accent/60 transition-colors"
         >
-          {approving ? 'Approving...' : 'Reset Trading Key'}
+          {approving ? t('approvingKey') : t('resetTradingKey')}
         </button>
       )}
 
@@ -740,7 +740,7 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
         {!isConnected
           ? t('connectWallet')
           : submitting
-            ? 'Signing...'
+            ? t('signingOrder')
             : !assetInfo
               ? `Loading ${displayCoin(coin)}...`
               : `${side === 'buy' ? t('long') : t('short')} ${displayCoin(coin)}`}

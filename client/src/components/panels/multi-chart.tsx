@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createChart, type IChartApi, ColorType } from 'lightweight-charts';
 import { useStockDetail } from '../../api/hooks/use-stocks';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 
 function MiniChart({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +106,7 @@ function MiniChart({ symbol, onRemove }: { symbol: string; onRemove: () => void 
 }
 
 export function MultiChart() {
+  const t = useT();
   const compareSymbols = useAppStore((s) => s.compareSymbols);
   const removeFromCompare = useAppStore((s) => s.removeFromCompare);
   const setStockPanelView = useAppStore((s) => s.setStockPanelView);
@@ -112,12 +114,12 @@ export function MultiChart() {
   if (compareSymbols.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 text-neutral bg-black">
-        <span className="text-[10px] font-mono uppercase tracking-widest font-bold">NO SYMBOLS PINNED FOR COMPARISON</span>
+        <span className="text-[10px] font-mono uppercase tracking-widest font-bold">{t('noSymbolsPinned')}</span>
         <button
           onClick={() => setStockPanelView('watchlist')}
           className="text-accent text-[10px] font-mono hover:underline uppercase"
         >
-          &lt; BACK TO WATCHLIST
+          &lt; {t('backToWatchlist')}
         </button>
       </div>
     );

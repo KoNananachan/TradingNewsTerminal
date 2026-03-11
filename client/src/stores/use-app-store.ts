@@ -5,6 +5,7 @@ import type { Locale } from '../i18n/translations';
 export interface Notification {
   id: number;
   title: string;
+  titleTranslations?: string | null;
   sentiment: string | null;
   symbols: string[];
   time: Date;

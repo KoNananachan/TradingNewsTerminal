@@ -7,6 +7,7 @@ import {
   type SectorRotation,
 } from '../../api/hooks/use-sectors';
 import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useT, type TranslationKey } from '../../i18n';
 
 const PERIODS = ['1D', '1W', '1M', '3M'] as const;
 type Period = typeof PERIODS[number];
@@ -30,11 +31,11 @@ function ArrowIcon({ value }: { value: number }) {
   return <Minus className="w-3 h-3 text-neutral" />;
 }
 
-function HeatmapView({ sectors }: { sectors: SectorPerformance[] }) {
+function HeatmapView({ sectors, t }: { sectors: SectorPerformance[]; t: (key: TranslationKey) => string }) {
   if (!sectors.length) {
     return (
       <div className="flex-1 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase">
-        No sector data
+        {t('noSectorData')}
       </div>
     );
   }
@@ -69,20 +70,20 @@ function HeatmapView({ sectors }: { sectors: SectorPerformance[] }) {
   );
 }
 
-const QUADRANT_LABELS: Record<string, { label: string; color: string }> = {
-  leading: { label: 'LEADING', color: '#22c55e' },
-  weakening: { label: 'WEAKENING', color: '#fbbf24' },
-  lagging: { label: 'LAGGING', color: '#ef4444' },
-  improving: { label: 'IMPROVING', color: '#3b82f6' },
+const QUADRANT_LABELS: Record<string, { key: TranslationKey; color: string }> = {
+  leading: { key: 'leading', color: '#22c55e' },
+  weakening: { key: 'weakening', color: '#fbbf24' },
+  lagging: { key: 'lagging', color: '#ef4444' },
+  improving: { key: 'improving', color: '#3b82f6' },
 };
 
-function RotationView({ sectors }: { sectors: SectorRotation[] }) {
+function RotationView({ sectors, t }: { sectors: SectorRotation[]; t: (key: TranslationKey) => string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   if (!sectors.length) {
     return (
       <div className="flex-1 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase">
-        No rotation data
+        {t('noRotationData')}
       </div>
     );
   }
@@ -95,9 +96,9 @@ function RotationView({ sectors }: { sectors: SectorRotation[] }) {
     <div className="flex-1 overflow-auto no-scrollbar p-2" ref={containerRef}>
       {/* Quadrant labels */}
       <div className="flex items-center justify-center gap-3 mb-2">
-        {Object.entries(QUADRANT_LABELS).map(([key, { label, color }]) => (
-          <span key={key} className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color }}>
-            {label}
+        {Object.entries(QUADRANT_LABELS).map(([k, { key, color }]) => (
+          <span key={k} className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color }}>
+            {t(key)}
           </span>
         ))}
       </div>
@@ -148,6 +149,7 @@ function RotationView({ sectors }: { sectors: SectorRotation[] }) {
 }
 
 export function SectorRotationPanel() {
+  const t = useT();
   const [period, setPeriod] = useState<Period>('1M');
   const [view, setView] = useState<View>('heatmap');
 
@@ -161,7 +163,7 @@ export function SectorRotationPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <BarChart3 className="w-3 h-3" />
-          SECTOR ROTATION
+          {t('sectorRotation')}
         </span>
       }
       className="h-full"
@@ -180,7 +182,7 @@ export function SectorRotationPanel() {
                   : 'text-neutral/50 hover:text-white'
               }`}
             >
-              {v}
+              {v === 'heatmap' ? t('heatmap') : t('rotation')}
             </button>
           ))}
         </div>
@@ -210,12 +212,12 @@ export function SectorRotationPanel() {
       {/* Content */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-          Loading...
+          {t('loading')}
         </div>
       ) : view === 'heatmap' ? (
-        <HeatmapView sectors={perfData?.sectors ?? []} />
+        <HeatmapView sectors={perfData?.sectors ?? []} t={t} />
       ) : (
-        <RotationView sectors={rotData?.sectors ?? []} />
+        <RotationView sectors={rotData?.sectors ?? []} t={t} />
       )}
     </GlassCard>
   );

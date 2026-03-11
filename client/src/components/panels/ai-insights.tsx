@@ -2,6 +2,8 @@ import { useRecommendations } from '../../api/hooks/use-recommendations';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { Brain, RefreshCw } from 'lucide-react';
+import { useT } from '../../i18n';
+import { getLocalizedTitle, getLocalizedReason } from '../../api/hooks/use-news';
 
 const ACTION_COLORS: Record<string, string> = {
   BUY: '#10b981',
@@ -31,6 +33,7 @@ function SkeletonCard() {
 }
 
 export function AiInsights() {
+  const t = useT();
   const { data: recommendations, isLoading, error, refetch } = useRecommendations(15);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
 
@@ -41,7 +44,7 @@ export function AiInsights() {
         <button
           onClick={() => refetch()}
           className="p-0.5 text-neutral/50 hover:text-accent transition-colors"
-          title="Refresh"
+          title={t('refresh')}
           aria-label="Refresh AI insights"
         >
           <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
@@ -62,13 +65,13 @@ export function AiInsights() {
         {error && !recommendations && (
           <div className="flex flex-col items-center justify-center p-8 text-neutral h-32 gap-2">
             <span className="text-[10px] font-mono text-bearish/60 uppercase">
-              FAILED TO LOAD DATA
+              {t('failedToLoadData')}
             </span>
             <button
               onClick={() => refetch()}
               className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors uppercase"
             >
-              RETRY
+              {t('retry')}
             </button>
           </div>
         )}
@@ -118,7 +121,7 @@ export function AiInsights() {
                   {/* Reason snippet */}
                   {rec.reason && (
                     <p className="text-[10px] text-neutral leading-tight mb-1 font-mono uppercase line-clamp-2">
-                      &gt; {rec.reason}
+                      &gt; {getLocalizedReason(rec)}
                     </p>
                   )}
 
@@ -129,7 +132,7 @@ export function AiInsights() {
                       className="flex items-center gap-1 text-[9px] font-bold text-accent hover:underline transition-colors w-full text-left uppercase truncate"
                       aria-label={`View source article: ${rec.article.title}`}
                     >
-                      SOURCE: {rec.article.title}
+                      {t('source')}: {getLocalizedTitle(rec.article)}
                     </button>
                   )}
                 </div>
@@ -143,14 +146,14 @@ export function AiInsights() {
           <div className="flex flex-col items-center justify-center p-8 text-neutral h-32 gap-2">
             <Brain className="w-5 h-5 text-ai/30" />
             <span className="text-[10px] font-mono animate-pulse uppercase">
-              AWAITING NEURAL SYNTHESIS...
+              {t('awaitingSynthesis')}
             </span>
           </div>
         )}
 
         <div className="mt-auto px-2 py-2 border-t border-border bg-[#0a0a0a]">
           <p className="text-[9px] font-mono text-neutral leading-tight uppercase">
-            <span className="text-bearish font-bold">WARNING:</span> AI ANALYSIS MAY BE INACCURATE. NOT FINANCIAL ADVICE. <span className="text-white font-bold">DYOR</span>.
+            {t('aiWarning')}
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useCLOBBook, useCLOBMidpoint } from '../../hooks/use-polymarket';
+import { useT } from '../../i18n';
 
 interface PolymarketOrderbookProps {
   tokenId: string;
@@ -7,6 +8,7 @@ interface PolymarketOrderbookProps {
 }
 
 export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderbookProps) {
+  const t = useT();
   const { data: book } = useCLOBBook(tokenId);
   const { data: midData } = useCLOBMidpoint(tokenId);
 
@@ -32,19 +34,19 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-black/60 shrink-0">
         <span className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-400">
-          {outcomeName} Order Book
+          {outcomeName} {t('orderbookTitle')}
         </span>
       </div>
 
       <div className="grid grid-cols-2 px-3 py-0.5 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider">
-        <span>Price</span>
-        <span className="text-right">Size</span>
+        <span>{t('price')}</span>
+        <span className="text-right">{t('size')}</span>
       </div>
 
       {/* Asks (sells) */}
       <div className="flex-1 overflow-hidden flex flex-col justify-end">
         {asks.length === 0 && (
-          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">No asks</div>
+          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noAsks')}</div>
         )}
         {asks.map((level, i) => {
           const size = parseFloat(level.size);
@@ -72,7 +74,7 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
       {/* Bids (buys) */}
       <div className="flex-1 overflow-hidden">
         {bids.length === 0 && (
-          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">No bids</div>
+          <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noBids')}</div>
         )}
         {bids.map((level, i) => {
           const size = parseFloat(level.size);

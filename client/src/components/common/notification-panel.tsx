@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCheck, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../../stores/use-app-store';
+import { getLocalizedTitle } from '../../api/hooks/use-news';
 
 function timeAgo(date: Date) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -100,7 +101,7 @@ export function NotificationPanel() {
 
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] text-gray-200 leading-snug line-clamp-2 group-hover:text-white transition-colors">
-                        {n.title}
+                        {getLocalizedTitle(n)}
                       </p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[10px] text-neutral font-mono">{timeAgo(n.time)}</span>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
+import { useAppStore } from '../../stores/use-app-store';
 
 interface Category {
   slug: string;
@@ -25,6 +26,7 @@ export interface NewsArticle {
   locationName: string | null;
   latitude: number | null;
   longitude: number | null;
+  titleTranslations: string | null;
   analyzed: boolean;
   recommendations: StockRecommendation[];
 }
@@ -36,6 +38,7 @@ export interface StockRecommendation {
   action: string;
   confidence: number;
   reason: string | null;
+  reasonTranslations?: string | null;
   createdAt: string;
 }
 
@@ -80,4 +83,33 @@ export function useNewsById(id: number | null) {
     queryFn: () => api.get<NewsArticle>(`/news/${id}`),
     enabled: id !== null,
   });
+}
+
+/** Get localized title for an article based on current locale */
+export function getLocalizedTitle(article: { title: string; titleTranslations?: string | null }): string {
+  const locale = useAppStore.getState().locale;
+  if (locale === 'en' || !article.titleTranslations) return article.title;
+  try {
+    const translations = typeof article.titleTranslations === 'string'
+      ? JSON.parse(article.titleTranslations)
+      : article.titleTranslations;
+    return translations[locale] || article.title;
+  } catch {
+    return article.title;
+  }
+}
+
+/** Get localized reason for a recommendation based on current locale */
+export function getLocalizedReason(rec: { reason: string | null; reasonTranslations?: string | null }): string | null {
+  if (!rec.reason) return null;
+  const locale = useAppStore.getState().locale;
+  if (locale === 'en' || !rec.reasonTranslations) return rec.reason;
+  try {
+    const translations = typeof rec.reasonTranslations === 'string'
+      ? JSON.parse(rec.reasonTranslations)
+      : rec.reasonTranslations;
+    return translations[locale] || rec.reason;
+  } catch {
+    return rec.reason;
+  }
 }

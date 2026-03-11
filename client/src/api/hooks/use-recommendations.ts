@@ -8,10 +8,12 @@ export interface Recommendation {
   action: string;
   confidence: number;
   reason: string | null;
+  reasonTranslations?: string | null;
   createdAt: string;
   article: {
     id: number;
     title: string;
+    titleTranslations?: string | null;
     sentiment: string | null;
     sentimentScore: number | null;
     scrapedAt: string;

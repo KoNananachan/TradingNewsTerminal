@@ -31,7 +31,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center h-full bg-black gap-2">
         <div className="w-5 h-5 border-2 border-accent/30 border-t-accent animate-spin" />
-        <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Initializing...</span>
+        <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{translations[useAppStore.getState().locale]?.loading ?? 'Loading...'}</span>
       </div>
     }>
       {children}
@@ -355,6 +355,7 @@ export function addPanelFactory(id: string, factory: PanelFactory) {
 export function DockLayout() {
   const modelRef = useRef<Model>(loadModel());
   const hidePanel = useAppStore((s) => s.hidePanel);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     _modelRef = modelRef.current;
@@ -392,7 +393,7 @@ export function DockLayout() {
       case PANEL_IDS.AI: content = <AiInsights />; break;
       case PANEL_IDS.LOG: content = <TerminalLog />; break;
       case PANEL_IDS.TRADING: content = <LazyWrap><TradingPanel /></LazyWrap>; break;
-      case PANEL_IDS.AI_CHAT: content = <div className="flex items-center justify-center h-full text-neutral/30 text-[10px] font-mono uppercase tracking-widest">Coming soon</div>; break;
+      case PANEL_IDS.AI_CHAT: content = <div className="flex items-center justify-center h-full text-neutral/30 text-[10px] font-mono uppercase tracking-widest">{translations[locale]?.comingSoon ?? 'Coming soon...'}</div>; break;
       case PANEL_IDS.ECON_CALENDAR: content = <LazyWrap><EconomicCalendarPanel /></LazyWrap>; break;
       case PANEL_IDS.ALERTS: content = <LazyWrap><AlertsPanel /></LazyWrap>; break;
       case PANEL_IDS.SENTIMENT: content = <LazyWrap><SentimentPanel /></LazyWrap>; break;
@@ -413,10 +414,21 @@ export function DockLayout() {
     return <PanelErrorBoundary>{content}</PanelErrorBoundary>;
   }, []);
 
+  const onRenderTab = useCallback((node: TabNode, renderValues: { leading: React.ReactNode; content: React.ReactNode; buttons: React.ReactNode[] }) => {
+    const panelId = node.getComponent();
+    if (panelId) {
+      const key = PANEL_NAME_KEYS[panelId];
+      if (key) {
+        renderValues.content = translations[locale]?.[key] ?? translations.en[key];
+      }
+    }
+  }, [locale]);
+
   return (
     <Layout
       model={modelRef.current}
       factory={factory}
+      onRenderTab={onRenderTab}
       onAction={handleAction}
       onModelChange={saveLayout}
     />

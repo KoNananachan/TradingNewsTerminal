@@ -1,4 +1,5 @@
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 
 const INDICATORS = [
   { key: 'rsi', label: 'RSI' },
@@ -9,12 +10,13 @@ const INDICATORS = [
 ] as const;
 
 const DRAWING_TOOLS = [
-  { key: 'trendline', label: 'Trend', icon: '\u{1F4CF}' },
-  { key: 'fibonacci', label: 'Fib', icon: '\u{1F4D0}' },
-  { key: 'hline', label: 'H-Line', icon: '\u2014' },
+  { key: 'trendline', tKey: 'trendLine' as const, icon: '\u{1F4CF}' },
+  { key: 'fibonacci', tKey: 'fibonacci' as const, icon: '\u{1F4D0}' },
+  { key: 'hline', tKey: 'hLine' as const, icon: '\u2014' },
 ] as const;
 
 export function IndicatorToolbar() {
+  const t = useT();
   const indicatorConfig = useAppStore((s) => s.indicatorConfig);
   const toggleIndicator = useAppStore((s) => s.toggleIndicator);
   const activeDrawingTool = useAppStore((s) => s.activeDrawingTool);
@@ -57,10 +59,10 @@ export function IndicatorToolbar() {
                 ? 'bg-accent/20 text-accent border border-accent/30'
                 : 'text-neutral/40 hover:text-white border border-transparent hover:border-border/30'
             }`}
-            title={tool.label}
+            title={t(tool.tKey)}
           >
             <span className="text-[10px]">{tool.icon}</span>
-            {tool.label}
+            {t(tool.tKey)}
           </button>
         );
       })}
@@ -72,9 +74,9 @@ export function IndicatorToolbar() {
           setActiveDrawingTool(null);
         }}
         className="px-2 py-0.5 text-[9px] font-mono text-neutral/30 hover:text-bearish transition-all border border-transparent hover:border-bearish/30"
-        title="Clear all drawings"
+        title={t('clearDrawings')}
       >
-        {'\u{1F5D1}'} Clear
+        {'\u{1F5D1}'} {t('clearDrawings')}
       </button>
     </div>
   );

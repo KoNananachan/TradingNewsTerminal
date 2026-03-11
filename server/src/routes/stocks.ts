@@ -220,7 +220,7 @@ router.get('/:symbol', async (req, res) => {
       getHistory(symbol, { range, interval }),
       prisma.stockRecommendation.findMany({
         where: { symbol },
-        include: { article: { select: { id: true, title: true, scrapedAt: true } } },
+        include: { article: { select: { id: true, title: true, titleTranslations: true, scrapedAt: true } } },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),

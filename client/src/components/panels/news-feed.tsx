@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNews, type NewsArticle } from '../../api/hooks/use-news';
+import { useNews, type NewsArticle, getLocalizedTitle } from '../../api/hooks/use-news';
 import { useNewsClusters } from '../../api/hooks/use-clusters';
 import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
@@ -242,7 +242,7 @@ export function NewsFeed() {
                     </div>
                     
                     <h3 className="text-[12px] font-bold text-neutral group-hover:text-accent leading-snug transition-colors line-clamp-2 uppercase">
-                      {cleanTitle(article.title)}
+                      {cleanTitle(getLocalizedTitle(article))}
                     </h3>
                   </div>
                   
@@ -259,7 +259,7 @@ export function NewsFeed() {
                               onClick={(e) => handleTickerClick(rec.symbol, e)}
                               className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
                               style={{ color: getActionColor(rec.action) }}
-                              title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
+                              title={tradeable ? t('tradeSymbol').replace('{symbol}', rec.symbol) : rec.symbol}
                             >
                               <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
                               {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}
@@ -275,7 +275,7 @@ export function NewsFeed() {
                               onClick={(e) => handleTickerClick(rec.symbol, e)}
                               className={`flex items-center gap-1 font-mono text-[9px] font-bold ${tradeable ? 'cursor-pointer hover:underline' : ''}`}
                               style={{ color: getActionColor(rec.action) }}
-                              title={tradeable ? `Trade ${rec.symbol}` : rec.symbol}
+                              title={tradeable ? t('tradeSymbol').replace('{symbol}', rec.symbol) : rec.symbol}
                             >
                               <span className={tradeable ? 'text-accent' : 'text-white'}>{rec.symbol}</span>
                               {rec.action === 'BUY' ? '▲' : rec.action === 'SELL' ? '▼' : '-'}

@@ -1,10 +1,19 @@
 import { useCategories } from '../../api/hooks/use-categories';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT, type TranslationKey } from '../../i18n';
+
+const CATEGORY_KEYS: Record<string, TranslationKey> = {
+  finance: 'categoryFinance',
+  business: 'categoryBusiness',
+  world: 'categoryWorld',
+  politics: 'categoryPolitics',
+};
 
 export function CategorySidebar() {
   const { data: categories } = useCategories();
   const selectedCategory = useAppStore((s) => s.selectedCategory);
   const setSelectedCategory = useAppStore((s) => s.setSelectedCategory);
+  const t = useT();
 
   return (
     <div className="flex gap-1 px-4 py-2 overflow-x-auto no-scrollbar bg-black border-b border-border">
@@ -16,7 +25,7 @@ export function CategorySidebar() {
             : 'bg-black border-border text-neutral hover:border-accent hover:text-accent'
         }`}
       >
-        ALL
+        {t('categoryAll')}
       </button>
       {categories?.map((cat) => {
         const isSelected = selectedCategory === cat.slug;
@@ -35,7 +44,7 @@ export function CategorySidebar() {
                 : undefined
             }
           >
-            {cat.name}
+            {CATEGORY_KEYS[cat.slug] ? t(CATEGORY_KEYS[cat.slug]) : cat.name}
             <span className={`px-1 font-mono text-[9px] ${isSelected ? 'bg-black/40' : 'bg-border text-neutral'}`}>{cat._count.articles}</span>
           </button>
         );

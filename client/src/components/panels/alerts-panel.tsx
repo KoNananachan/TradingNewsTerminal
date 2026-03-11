@@ -7,6 +7,7 @@ import {
   useDeleteAlert,
   type Alert,
 } from '../../api/hooks/use-alerts';
+import { useT } from '../../i18n';
 import { Bell, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const ALERT_TYPES = [
@@ -19,15 +20,21 @@ const ALERT_TYPES = [
 
 type AlertType = typeof ALERT_TYPES[number];
 
-function getConditionPlaceholder(type: AlertType): string {
-  switch (type) {
-    case 'Price Cross': return 'e.g. above:150.00';
-    case 'Price Change %': return 'e.g. change:5';
-    case 'Sentiment Shift': return 'e.g. direction:bearish';
-    case 'News Keyword': return 'e.g. keyword:earnings';
-    case 'Volume Spike': return 'e.g. multiplier:3';
-  }
-}
+const ALERT_TYPE_KEYS: Record<AlertType, 'priceCross' | 'priceChangePct' | 'sentimentShift' | 'newsKeyword' | 'volumeSpike'> = {
+  'Price Cross': 'priceCross',
+  'Price Change %': 'priceChangePct',
+  'Sentiment Shift': 'sentimentShift',
+  'News Keyword': 'newsKeyword',
+  'Volume Spike': 'volumeSpike',
+};
+
+const CONDITION_PLACEHOLDER_KEYS: Record<AlertType, 'conditionPlaceholderPriceCross' | 'conditionPlaceholderPriceChange' | 'conditionPlaceholderSentiment' | 'conditionPlaceholderKeyword' | 'conditionPlaceholderVolume'> = {
+  'Price Cross': 'conditionPlaceholderPriceCross',
+  'Price Change %': 'conditionPlaceholderPriceChange',
+  'Sentiment Shift': 'conditionPlaceholderSentiment',
+  'News Keyword': 'conditionPlaceholderKeyword',
+  'Volume Spike': 'conditionPlaceholderVolume',
+};
 
 function needsSymbol(type: AlertType): boolean {
   return type !== 'News Keyword' && type !== 'Sentiment Shift';
@@ -91,6 +98,7 @@ function AlertRow({ alert: a, onToggle, onDelete }: {
 }
 
 function CreateAlertForm({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const [name, setName] = useState('');
   const [type, setType] = useState<AlertType>('Price Cross');
   const [symbol, setSymbol] = useState('');
@@ -114,7 +122,7 @@ function CreateAlertForm({ onClose }: { onClose: () => void }) {
     <div className="px-3 py-2 bg-accent/5 border-b border-accent/20 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[9px] font-mono font-bold text-accent uppercase tracking-wider">
-          New Alert
+          {t('newAlert')}
         </span>
         <button onClick={onClose} className="text-neutral/40 hover:text-white transition-colors">
           <ChevronUp className="w-3 h-3" />
@@ -125,26 +133,26 @@ function CreateAlertForm({ onClose }: { onClose: () => void }) {
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Alert Name"
+        placeholder={t('alertName')}
         className="w-full bg-black/40 border border-border/50 px-2 py-1 text-[10px] font-mono text-gray-200 placeholder:text-neutral/30 outline-none focus:border-accent/50"
       />
 
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-0.5">
-          <label className="text-[8px] font-mono text-neutral/40 uppercase">Type</label>
+          <label className="text-[8px] font-mono text-neutral/40 uppercase">{t('alertTypeLabel')}</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as AlertType)}
             className="bg-black/40 border border-border/50 px-2 py-1 text-[10px] font-mono text-gray-200 outline-none focus:border-accent/50 appearance-none"
           >
-            {ALERT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            {ALERT_TYPES.map((at) => (
+              <option key={at} value={at}>{t(ALERT_TYPE_KEYS[at])}</option>
             ))}
           </select>
         </div>
         {needsSymbol(type) && (
           <div className="flex flex-col gap-0.5">
-            <label className="text-[8px] font-mono text-neutral/40 uppercase">Symbol</label>
+            <label className="text-[8px] font-mono text-neutral/40 uppercase">{t('symbol')}</label>
             <input
               type="text"
               value={symbol}
@@ -157,12 +165,12 @@ function CreateAlertForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <label className="text-[8px] font-mono text-neutral/40 uppercase">Condition</label>
+        <label className="text-[8px] font-mono text-neutral/40 uppercase">{t('condition')}</label>
         <input
           type="text"
           value={condition}
           onChange={(e) => setCondition(e.target.value)}
-          placeholder={getConditionPlaceholder(type)}
+          placeholder={t(CONDITION_PLACEHOLDER_KEYS[type])}
           className="w-full bg-black/40 border border-border/50 px-2 py-1 text-[10px] font-mono text-gray-200 placeholder:text-neutral/30 outline-none focus:border-accent/50"
         />
       </div>
@@ -172,13 +180,14 @@ function CreateAlertForm({ onClose }: { onClose: () => void }) {
         disabled={!name.trim() || !condition.trim() || createAlert.isPending}
         className="w-full py-1.5 bg-accent/20 text-accent text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
-        {createAlert.isPending ? 'Creating...' : 'Create Alert'}
+        {createAlert.isPending ? t('creating') : t('createAlert')}
       </button>
     </div>
   );
 }
 
 export function AlertsPanel() {
+  const t = useT();
   const [showCreate, setShowCreate] = useState(false);
   const { data: alerts, isLoading, error } = useAlerts();
   const updateAlert = useUpdateAlert();
@@ -189,7 +198,7 @@ export function AlertsPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <Bell className="w-3 h-3" />
-          ALERTS
+          {t('alerts')}
         </span>
       }
       headerRight={
@@ -214,17 +223,17 @@ export function AlertsPanel() {
       <div className="flex-1 overflow-auto no-scrollbar">
         {isLoading && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Loading...
+            {t('loading')}
           </div>
         )}
         {error && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-bearish/60 uppercase tracking-widest">
-            Failed to load alerts
+            {t('failedToLoadAlerts')}
           </div>
         )}
         {!isLoading && !error && (!alerts || alerts.length === 0) && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No alerts configured
+            {t('noAlertsConfigured')}
           </div>
         )}
         {alerts?.map((alert) => (

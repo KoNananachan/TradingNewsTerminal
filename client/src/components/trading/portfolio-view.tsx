@@ -3,6 +3,7 @@ import { useAccount } from 'wagmi';
 import { useUserState, useStockUserState, useSpotBalances, usePerpMetaAndCtxs, useStockPerps, useCombinedMids } from '../../hooks/use-hyperliquid';
 import { useQueryClient } from '@tanstack/react-query';
 import { Wallet, Loader2, X } from 'lucide-react';
+import { useT } from '../../i18n';
 import {
   buildOrderAction,
   formatPrice,
@@ -24,6 +25,7 @@ function displayCoin(coin: string): string {
 }
 
 export function PortfolioView() {
+  const t = useT();
   const { isConnected, address } = useAccount();
   const { data: userState, isLoading: loadingPerps } = useUserState();
   const { data: stockState, isLoading: loadingStock } = useStockUserState();
@@ -40,7 +42,7 @@ export function PortfolioView() {
     if (!address) return;
     if (closingRef.current) return; // Prevent concurrent close requests
     const agent = getAgentWallet(address);
-    if (!agent) { setCloseError('No trading key. Set up in TRADE tab first.'); return; }
+    if (!agent) { setCloseError(t('noTradingKey')); return; }
 
     closingRef.current = true;
     setClosingCoin(coin);
@@ -131,25 +133,25 @@ export function PortfolioView() {
         if (String(errMsg).includes('does not exist')) {
           // Agent wallet approval expired — need to re-approve in TRADE tab
           removeAgentWallet(address);
-          setCloseError('Trading key expired. Re-setup in TRADE tab.');
+          setCloseError(t('tradingKeyExpired'));
         } else {
           setCloseError(String(errMsg));
         }
       }
     } catch (err: unknown) {
-      setCloseError(err instanceof Error ? err.message : 'Unknown error');
+      setCloseError(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       closingRef.current = false;
       setClosingCoin(null);
     }
-  }, [address, perpData, stockPerps, mids, queryClient]);
+  }, [address, perpData, stockPerps, mids, queryClient, t]);
 
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-3">
         <Wallet className="w-6 h-6 text-neutral/40" />
         <span className="text-[10px] font-mono text-neutral/50 uppercase tracking-widest">
-          Connect wallet to view portfolio
+          {t('connectWalletPortfolio')}
         </span>
       </div>
     );
@@ -159,7 +161,7 @@ export function PortfolioView() {
     return (
       <div className="flex items-center justify-center py-8">
         <span className="text-[10px] font-mono text-accent animate-pulse uppercase">
-          Loading portfolio...
+          {t('loadingPortfolio')}
         </span>
       </div>
     );
@@ -202,9 +204,9 @@ export function PortfolioView() {
     <div className="flex flex-col gap-1">
       {/* Account Summary */}
       <div className="grid grid-cols-3 border-b border-border/30 bg-black/40">
-        <SummaryCell label="Account Value" value={`$${fmtUsd(totalAccountValue)}`} />
-        <SummaryCell label="Margin Used" value={`$${fmtUsd(totalMarginUsed)}`} />
-        <SummaryCell label="Withdrawable" value={`$${fmtUsd(withdrawable)}`} />
+        <SummaryCell label={t('accountValue')} value={`$${fmtUsd(totalAccountValue)}`} />
+        <SummaryCell label={t('marginUsed')} value={`$${fmtUsd(totalMarginUsed)}`} />
+        <SummaryCell label={t('withdrawable')} value={`$${fmtUsd(withdrawable)}`} />
       </div>
 
       {/* Error banner */}
@@ -219,17 +221,17 @@ export function PortfolioView() {
         <div>
           <div className="px-3 py-1.5 bg-black/60 border-b border-border/20">
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-              Perpetual Positions ({positions.length})
+              {t('perpetualPositions')} ({positions.length})
             </span>
           </div>
           <table className="w-full">
             <thead>
               <tr className="text-[8px] text-neutral/50 uppercase tracking-[0.15em]">
-                <th className="text-left px-3 py-1.5 font-black">Asset</th>
-                <th className="text-right px-3 py-1.5 font-black">Size</th>
-                <th className="text-right px-3 py-1.5 font-black">Value</th>
-                <th className="text-right px-3 py-1.5 font-black">Entry</th>
-                <th className="text-right px-3 py-1.5 font-black">uPnL</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('asset')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('size')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('value')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('entry')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('uPnl')}</th>
                 <th className="text-right px-3 py-1.5 font-black"></th>
               </tr>
             </thead>
@@ -245,7 +247,7 @@ export function PortfolioView() {
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[9px] font-black px-1 border ${isLong ? 'text-bullish border-bullish/30' : 'text-bearish border-bearish/30'}`}>
-                          {isLong ? 'LONG' : 'SHORT'}
+                          {isLong ? t('longLabel') : t('shortLabel')}
                         </span>
                         <span className="font-mono font-bold text-white text-[11px]">
                           {displayCoin(pos.coin)}
@@ -276,7 +278,7 @@ export function PortfolioView() {
                       >
                         {closingCoin === pos.coin
                           ? <Loader2 className="w-3 h-3 animate-spin" />
-                          : 'Close'
+                          : t('closePosition')
                         }
                       </button>
                     </td>
@@ -293,15 +295,15 @@ export function PortfolioView() {
         <div>
           <div className="px-3 py-1.5 bg-black/60 border-b border-border/20">
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-              Spot Balances ({spotBalances.length})
+              {t('spotBalances')} ({spotBalances.length})
             </span>
           </div>
           <table className="w-full">
             <thead>
               <tr className="text-[8px] text-neutral/50 uppercase tracking-[0.15em]">
-                <th className="text-left px-3 py-1.5 font-black">Token</th>
-                <th className="text-right px-3 py-1.5 font-black">Total</th>
-                <th className="text-right px-3 py-1.5 font-black">Available</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('token')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('total')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('available')}</th>
               </tr>
             </thead>
             <tbody>
@@ -323,7 +325,7 @@ export function PortfolioView() {
 
       {positions.length === 0 && spotBalances.length === 0 && (
         <div className="text-center py-6 text-neutral/40 text-[10px] font-mono uppercase tracking-widest">
-          No open positions
+          {t('noOpenPositions')}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNewsById } from '../../api/hooks/use-news';
+import { useNewsById, getLocalizedTitle, getLocalizedReason } from '../../api/hooks/use-news';
 import { useStockNames } from '../../api/hooks/use-stocks';
 import { useHyperliquidAssets } from '../../hooks/use-hyperliquid';
 import { cleanTitle } from '../../utils/clean-title';
@@ -128,7 +128,7 @@ export function NewsDetail() {
 
                   {/* Title */}
                   <h2 className="text-3xl font-black text-white leading-[1.1] mb-8 tracking-tighter drop-shadow-sm">
-                    {cleanTitle(article.title)}
+                    {cleanTitle(getLocalizedTitle(article))}
                   </h2>
 
                   {/* Meta Grid */}
@@ -187,7 +187,7 @@ export function NewsDetail() {
                               <button
                                 onClick={() => isTradeable && handleTrade(rec.symbol)}
                                 disabled={!isTradeable}
-                                title={isTradeable ? `Trade ${rec.symbol} on Hyperliquid` : 'Not available on Hyperliquid'}
+                                title={isTradeable ? t('tradeOnHl').replace('{symbol}', rec.symbol) : t('notAvailableOnHl')}
                                 className={`shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1text-[9px] font-black uppercase tracking-[0.1em] border transition-all ${
                                   isTradeable
                                     ? 'bg-bullish/10 text-bullish border-bullish/40 hover:bg-bullish/20 hover:border-bullish/60 cursor-pointer'
@@ -200,7 +200,7 @@ export function NewsDetail() {
                             </div>
                             {rec.reason && (
                               <p className="text-[12px] text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
-                                {rec.reason}
+                                {getLocalizedReason(rec)}
                               </p>
                             )}
                           </div>

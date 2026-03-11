@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
       select: {
         id: true,
         title: true,
+        titleTranslations: true,
         summary: true,
         url: true,
         imageUrl: true,

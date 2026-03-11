@@ -3,6 +3,7 @@ import { GlassCard } from '../common/glass-card';
 import { useEarningsCalendar, type EarningsEntry } from '../../api/hooks/use-earnings';
 import { useAppStore } from '../../stores/use-app-store';
 import { Calendar } from 'lucide-react';
+import { useT } from '../../i18n';
 
 const DAYS_OPTIONS = [7, 14, 30] as const;
 
@@ -26,6 +27,7 @@ function isToday(dateStr: string): boolean {
 }
 
 export function EarningsCalendarPanel() {
+  const t = useT();
   const [days, setDays] = useState<number>(14);
   const { data, isLoading, error } = useEarningsCalendar(days);
   const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol);
@@ -47,19 +49,19 @@ export function EarningsCalendarPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <Calendar className="w-3 h-3" />
-          EARNINGS CALENDAR
+          {t('earningsCalendar')}
         </span>
       }
       headerRight={
         <span className="text-[8px] font-mono text-neutral/50">
-          {data?.length ?? 0} events
+          {t('eventsCount').replace('{count}', String(data?.length ?? 0))}
         </span>
       }
       className="h-full"
     >
       {/* Days selector */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-black/20">
-        <span className="text-[8px] font-mono text-neutral/50 uppercase">Range:</span>
+        <span className="text-[8px] font-mono text-neutral/50 uppercase">{t('range')}:</span>
         <div className="flex items-center gap-0.5">
           {DAYS_OPTIONS.map((d) => (
             <button
@@ -82,18 +84,18 @@ export function EarningsCalendarPanel() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loading')}</span>
           </div>
         )}
         {error && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load earnings</span>
-            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">{t('failedEarnings')}</span>
+            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">{t('retry')}</button>
           </div>
         )}
         {!isLoading && !error && grouped.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No upcoming earnings
+            {t('noUpcomingEarnings')}
           </div>
         )}
 
@@ -109,21 +111,21 @@ export function EarningsCalendarPanel() {
                     : 'bg-black/40 text-neutral/60'
                 }`}
               >
-                {dateKey !== 'Unknown' ? formatDate(dateKey) : 'TBD'}
+                {dateKey !== 'Unknown' ? formatDate(dateKey) : t('tbd')}
                 {today && (
                   <span className="ml-2 px-1 py-0.5 text-[7px] bg-accent/20 text-accent border border-accent/30">
-                    TODAY
+                    {t('today')}
                   </span>
                 )}
               </div>
 
               {/* Table header */}
               <div className="grid grid-cols-[60px_1fr_70px_70px_80px] text-[8px] font-mono text-neutral/40 uppercase tracking-wider px-3 py-1 border-b border-border/10 bg-black/10">
-                <span>Symbol</span>
-                <span>Company</span>
-                <span className="text-right">EPS Est.</span>
-                <span className="text-right">EPS Act.</span>
-                <span className="text-right">Rev Est.</span>
+                <span>{t('symbol')}</span>
+                <span>{t('company')}</span>
+                <span className="text-right">{t('epsEstimate')}</span>
+                <span className="text-right">{t('epsActual')}</span>
+                <span className="text-right">{t('revenueEstimate')}</span>
               </div>
 
               {/* Rows */}

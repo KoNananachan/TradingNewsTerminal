@@ -165,7 +165,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
       setAmount('');
       setLimitPrice('');
     } catch (err: any) {
-      const msg = err?.shortMessage || err?.message || 'Transaction rejected';
+      const msg = err?.shortMessage || err?.message || t('transactionRejected');
       setResult({ ok: false, msg });
       addLogEntry({ type: 'alert', message: `[Polymarket] Error: ${msg}` });
     } finally {
@@ -200,7 +200,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
           className="text-[8px] font-mono text-violet-400/60 hover:text-violet-400 flex items-center gap-1 mt-1"
         >
           <ExternalLink className="w-2.5 h-2.5" />
-          View on Polymarket
+          {t('viewOnPolymarket')}
         </a>
       </div>
 
@@ -285,7 +285,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
             </div>
             <span className="text-[11px] font-mono font-bold text-white">
               {isWrongChain ? (
-                <span className="text-amber-400 text-[9px]">Switch to Polygon</span>
+                <span className="text-amber-400 text-[9px]">{t('switchToPolygon')}</span>
               ) : availableUsd != null ? (
                 <>
                   ${availableUsd.toFixed(2)}
@@ -303,7 +303,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
               {t('predAmount')} (USDC)
             </label>
             {minSize > 0 && (
-              <span className="text-[7px] font-mono text-neutral/30">Min: ${minSize}</span>
+              <span className="text-[7px] font-mono text-neutral/30">{t('minAmount')} ${minSize}</span>
             )}
           </div>
           <input
@@ -379,7 +379,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
             onClick={() => switchChain({ chainId: polygon.id })}
             className="py-2.5 text-[11px] font-black uppercase tracking-widest border bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
           >
-            Switch to Polygon
+            {t('switchToPolygon')}
           </button>
         ) : (
           <button
@@ -392,7 +392,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
             }`}
           >
             <Shield className="w-3 h-3" />
-            {submitting ? 'Signing...' : `${t('buy')} ${outcomes[selectedOutcome] || 'Yes'}`}
+            {submitting ? t('signingOrder') : `${t('buy')} ${outcomes[selectedOutcome] || 'Yes'}`}
           </button>
         )}
 

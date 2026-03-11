@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { signL1Action, getAgentWallet } from '../../lib/hyperliquid/agent-wallet';
 import { getDexOffsets, getDexPrefix } from '../../lib/hyperliquid/signing';
 import { X, Loader2 } from 'lucide-react';
+import { useT } from '../../i18n';
 
 const HL_EXCHANGE_URL = 'https://api.hyperliquid.xyz/exchange';
 
@@ -16,6 +17,7 @@ function displayCoin(coin: string): string {
 }
 
 export function RecentFills() {
+  const t = useT();
   const { isConnected, address } = useAccount();
   const { data: fills } = useUserFills();
   const { data: openOrders } = useOpenOrders();
@@ -91,15 +93,15 @@ export function RecentFills() {
         queryClient.invalidateQueries({ queryKey: ['hl', 'stockUserState'] });
         queryClient.invalidateQueries({ queryKey: ['hl', 'spotBalances'] });
       } else {
-        const errMsg = data.response?.payload || data.response || 'Cancel failed';
+        const errMsg = data.response?.payload || data.response || t('cancelFailed');
         setCancelError(String(errMsg));
       }
     } catch (err) {
-      setCancelError(err instanceof Error ? err.message : 'Cancel failed');
+      setCancelError(err instanceof Error ? err.message : t('cancelFailed'));
     } finally {
       setCancellingOid(null);
     }
-  }, [address, queryClient, resolveAssetIndex]);
+  }, [address, queryClient, resolveAssetIndex, t]);
 
   if (!isConnected) return null;
 
@@ -119,16 +121,16 @@ export function RecentFills() {
         <div>
           <div className="px-3 py-1.5 bg-black/60 border-b border-border/20">
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-              Open Orders ({orders.length})
+              {t('openOrders')} ({orders.length})
             </span>
           </div>
           <table className="w-full">
             <thead>
               <tr className="text-[8px] text-neutral/50 uppercase tracking-[0.15em]">
-                <th className="text-left px-3 py-1.5 font-black">Asset</th>
-                <th className="text-left px-3 py-1.5 font-black">Side</th>
-                <th className="text-right px-3 py-1.5 font-black">Price</th>
-                <th className="text-right px-3 py-1.5 font-black">Size</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('asset')}</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('side')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('price')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('size')}</th>
                 <th className="text-right px-3 py-1.5 font-black"></th>
               </tr>
             </thead>
@@ -142,7 +144,7 @@ export function RecentFills() {
                     </td>
                     <td className="px-3 py-1.5">
                       <span className={`text-[9px] font-black px-1 border ${isBuy ? 'text-bullish border-bullish/30' : 'text-bearish border-bearish/30'}`}>
-                        {isBuy ? 'BUY' : 'SELL'}
+                        {isBuy ? t('buyLabel') : t('sellLabel')}
                       </span>
                     </td>
                     <td className="text-right px-3 py-1.5 font-mono text-[10px] text-gray-300">
@@ -176,23 +178,23 @@ export function RecentFills() {
       <div>
         <div className="px-3 py-1.5 bg-black/60 border-b border-border/20">
           <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-            Recent Fills ({recentFills.length})
+            {t('recentFills')} ({recentFills.length})
           </span>
         </div>
         {recentFills.length === 0 ? (
           <div className="text-center py-4 text-neutral/40 text-[9px] font-mono uppercase tracking-widest">
-            No recent fills
+            {t('noRecentFills')}
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="text-[8px] text-neutral/50 uppercase tracking-[0.15em]">
-                <th className="text-left px-3 py-1.5 font-black">Time</th>
-                <th className="text-left px-3 py-1.5 font-black">Asset</th>
-                <th className="text-left px-3 py-1.5 font-black">Side</th>
-                <th className="text-right px-3 py-1.5 font-black">Price</th>
-                <th className="text-right px-3 py-1.5 font-black">Size</th>
-                <th className="text-right px-3 py-1.5 font-black">PnL</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('time')}</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('asset')}</th>
+                <th className="text-left px-3 py-1.5 font-black">{t('side')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('price')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('size')}</th>
+                <th className="text-right px-3 py-1.5 font-black">{t('pnl')}</th>
               </tr>
             </thead>
             <tbody>
@@ -209,7 +211,7 @@ export function RecentFills() {
                     </td>
                     <td className="px-3 py-1.5">
                       <span className={`text-[9px] font-black px-1 border ${isBuy ? 'text-bullish border-bullish/30' : 'text-bearish border-bearish/30'}`}>
-                        {isBuy ? 'BUY' : 'SELL'}
+                        {isBuy ? t('buyLabel') : t('sellLabel')}
                       </span>
                     </td>
                     <td className="text-right px-3 py-1.5 font-mono text-[10px] text-gray-300">

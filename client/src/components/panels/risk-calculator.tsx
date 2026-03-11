@@ -2,10 +2,19 @@ import { useState, useMemo } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useAppStore } from '../../stores/use-app-store';
 import { useStockDetail } from '../../api/hooks/use-stocks';
+import { useT } from '../../i18n';
 import { Calculator } from 'lucide-react';
 
 const TABS = ['Position', 'R:R', 'ATR Stop', 'Kelly', 'Max DD'] as const;
 type Tab = typeof TABS[number];
+
+const TAB_KEYS: Record<Tab, 'riskPosition' | 'riskRR' | 'riskAtrStopTab' | 'riskKellyTab' | 'riskMaxDDTab'> = {
+  'Position': 'riskPosition',
+  'R:R': 'riskRR',
+  'ATR Stop': 'riskAtrStopTab',
+  'Kelly': 'riskKellyTab',
+  'Max DD': 'riskMaxDDTab',
+};
 
 function InputField({
   label,
@@ -48,6 +57,7 @@ function ResultRow({ label, value, accent }: { label: string; value: string; acc
 }
 
 function PositionSizer() {
+  const t = useT();
   const [account, setAccount] = useState('10000');
   const [riskPct, setRiskPct] = useState('2');
   const [entry, setEntry] = useState('');
@@ -68,17 +78,17 @@ function PositionSizer() {
   return (
     <div className="p-3 space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <InputField label="Account Size" value={account} onChange={setAccount} prefix="$" />
-        <InputField label="Risk" value={riskPct} onChange={setRiskPct} suffix="%" />
-        <InputField label="Entry Price" value={entry} onChange={setEntry} prefix="$" />
-        <InputField label="Stop Loss" value={stop} onChange={setStop} prefix="$" />
+        <InputField label={t('rcAccountSize')} value={account} onChange={setAccount} prefix="$" />
+        <InputField label={t('rcRisk')} value={riskPct} onChange={setRiskPct} suffix="%" />
+        <InputField label={t('rcEntryPrice')} value={entry} onChange={setEntry} prefix="$" />
+        <InputField label={t('rcStopLoss')} value={stop} onChange={setStop} prefix="$" />
       </div>
       {result && (
         <div className="mt-3 border border-border/20 bg-black/20 p-2">
-          <ResultRow label="Position Size" value={`${result.positionSize} shares`} accent />
-          <ResultRow label="Risk Amount" value={`$${result.riskAmount.toFixed(2)}`} />
-          <ResultRow label="Per-Share Risk" value={`$${result.perShareRisk.toFixed(2)}`} />
-          <ResultRow label="Total Value" value={`$${result.totalValue.toFixed(2)}`} />
+          <ResultRow label={t('rcPositionSize')} value={`${result.positionSize} ${t('rcShares')}`} accent />
+          <ResultRow label={t('rcRiskAmount')} value={`$${result.riskAmount.toFixed(2)}`} />
+          <ResultRow label={t('rcPerShareRisk')} value={`$${result.perShareRisk.toFixed(2)}`} />
+          <ResultRow label={t('rcTotalValue')} value={`$${result.totalValue.toFixed(2)}`} />
         </div>
       )}
     </div>
@@ -86,6 +96,7 @@ function PositionSizer() {
 }
 
 function RiskReward() {
+  const t = useT();
   const [entry, setEntry] = useState('');
   const [stop, setStop] = useState('');
   const [target, setTarget] = useState('');
@@ -110,9 +121,9 @@ function RiskReward() {
   return (
     <div className="p-3 space-y-2">
       <div className="grid grid-cols-3 gap-2">
-        <InputField label="Entry" value={entry} onChange={setEntry} prefix="$" />
-        <InputField label="Stop" value={stop} onChange={setStop} prefix="$" />
-        <InputField label="Target" value={target} onChange={setTarget} prefix="$" />
+        <InputField label={t('rcEntry')} value={entry} onChange={setEntry} prefix="$" />
+        <InputField label={t('rcStop')} value={stop} onChange={setStop} prefix="$" />
+        <InputField label={t('rcTarget')} value={target} onChange={setTarget} prefix="$" />
       </div>
       {result && (
         <div className="mt-3 space-y-2">
@@ -132,9 +143,9 @@ function RiskReward() {
             </div>
           </div>
           <div className="border border-border/20 bg-black/20 p-2">
-            <ResultRow label="R:R Ratio" value={`1:${result.ratio.toFixed(2)}`} accent />
-            <ResultRow label="Risk" value={`$${result.risk.toFixed(2)}`} />
-            <ResultRow label="Reward" value={`$${result.reward.toFixed(2)}`} />
+            <ResultRow label={t('rcRRRatio')} value={`1:${result.ratio.toFixed(2)}`} accent />
+            <ResultRow label={t('rcRiskLabel')} value={`$${result.risk.toFixed(2)}`} />
+            <ResultRow label={t('rcReward')} value={`$${result.reward.toFixed(2)}`} />
           </div>
         </div>
       )}
@@ -143,6 +154,7 @@ function RiskReward() {
 }
 
 function AtrStop() {
+  const t = useT();
   const selectedSymbol = useAppStore((s) => s.selectedSymbol);
   const { data } = useStockDetail(selectedSymbol, { range: '3mo' });
 
@@ -174,23 +186,23 @@ function AtrStop() {
     <div className="p-3 space-y-2">
       {!selectedSymbol && (
         <div className="text-[10px] font-mono text-neutral/40 uppercase text-center py-4">
-          Select a symbol first
+          {t('selectSymbolFirst')}
         </div>
       )}
       {selectedSymbol && !atrResult && (
         <div className="text-[10px] font-mono text-neutral/40 uppercase text-center py-4">
-          Loading ATR data...
+          {t('loadingAtrData')}
         </div>
       )}
       {selectedSymbol && atrResult && (
         <div className="border border-border/20 bg-black/20 p-2">
           <div className="text-[9px] font-mono text-accent uppercase tracking-wider mb-2">{selectedSymbol}</div>
-          <ResultRow label="ATR (14)" value={atrResult.atr.toFixed(2)} accent />
-          <ResultRow label="Last Close" value={`$${atrResult.lastClose.toFixed(2)}`} />
-          <ResultRow label="Long Stop (2x ATR)" value={`$${atrResult.stopLong.toFixed(2)}`} />
-          <ResultRow label="Short Stop (2x ATR)" value={`$${atrResult.stopShort.toFixed(2)}`} />
+          <ResultRow label={t('rcAtr14')} value={atrResult.atr.toFixed(2)} accent />
+          <ResultRow label={t('rcLastClose')} value={`$${atrResult.lastClose.toFixed(2)}`} />
+          <ResultRow label={t('rcLongStop')} value={`$${atrResult.stopLong.toFixed(2)}`} />
+          <ResultRow label={t('rcShortStop')} value={`$${atrResult.stopShort.toFixed(2)}`} />
           <div className="mt-2 text-[8px] font-mono text-neutral/40">
-            Suggested stop = Entry - 2 x ATR for long positions
+            {t('rcAtrSuggestion')}
           </div>
         </div>
       )}
@@ -199,6 +211,7 @@ function AtrStop() {
 }
 
 function KellyCriterion() {
+  const t = useT();
   const [winRate, setWinRate] = useState('55');
   const [winLossRatio, setWinLossRatio] = useState('1.5');
 
@@ -213,8 +226,8 @@ function KellyCriterion() {
   return (
     <div className="p-3 space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <InputField label="Win Rate" value={winRate} onChange={setWinRate} suffix="%" />
-        <InputField label="Win/Loss Ratio" value={winLossRatio} onChange={setWinLossRatio} />
+        <InputField label={t('rcWinRate')} value={winRate} onChange={setWinRate} suffix="%" />
+        <InputField label={t('rcWinLossRatio')} value={winLossRatio} onChange={setWinLossRatio} />
       </div>
       <div className="text-[8px] font-mono text-neutral/40 mt-1">
         f* = W - (1-W) / (W/L)
@@ -222,17 +235,17 @@ function KellyCriterion() {
       {result && (
         <div className="mt-3 border border-border/20 bg-black/20 p-2">
           <ResultRow
-            label="Kelly Fraction"
+            label={t('rcKellyFraction')}
             value={`${(result.kelly * 100).toFixed(2)}%`}
             accent
           />
           <ResultRow
-            label="Half-Kelly (safer)"
+            label={t('rcHalfKelly')}
             value={`${(result.halfKelly * 100).toFixed(2)}%`}
           />
           {result.kelly < 0 && (
             <div className="mt-1 text-[8px] font-mono text-bearish">
-              Negative edge: do not bet
+              {t('rcNegativeEdge')}
             </div>
           )}
         </div>
@@ -242,6 +255,7 @@ function KellyCriterion() {
 }
 
 function MaxDrawdown() {
+  const t = useT();
   const [equityInput, setEquityInput] = useState('10000,10500,9800,10200,9500,9900,10100');
 
   const result = useMemo(() => {
@@ -278,7 +292,7 @@ function MaxDrawdown() {
     <div className="p-3 space-y-2">
       <div className="flex flex-col gap-0.5">
         <label className="text-[8px] font-mono text-neutral/50 uppercase tracking-wider">
-          Equity Curve (comma-separated)
+          {t('rcEquityCurveLabel')}
         </label>
         <textarea
           value={equityInput}
@@ -290,10 +304,10 @@ function MaxDrawdown() {
       </div>
       {result && (
         <div className="mt-3 border border-border/20 bg-black/20 p-2">
-          <ResultRow label="Max Drawdown" value={`$${result.maxDD.toFixed(2)}`} accent />
-          <ResultRow label="Max Drawdown %" value={`${result.maxDDPct.toFixed(2)}%`} accent />
-          <ResultRow label="Peak" value={`$${result.peak.toFixed(2)}`} />
-          <ResultRow label="Trough" value={`$${result.trough.toFixed(2)}`} />
+          <ResultRow label={t('rcMaxDrawdown')} value={`$${result.maxDD.toFixed(2)}`} accent />
+          <ResultRow label={t('rcMaxDrawdownPct')} value={`${result.maxDDPct.toFixed(2)}%`} accent />
+          <ResultRow label={t('rcPeak')} value={`$${result.peak.toFixed(2)}`} />
+          <ResultRow label={t('rcTrough')} value={`$${result.trough.toFixed(2)}`} />
         </div>
       )}
     </div>
@@ -301,6 +315,7 @@ function MaxDrawdown() {
 }
 
 export function RiskCalculator() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<Tab>('Position');
 
   return (
@@ -308,7 +323,7 @@ export function RiskCalculator() {
       title={
         <span className="flex items-center gap-1.5">
           <Calculator className="w-3 h-3" />
-          RISK CALCULATOR
+          {t('riskCalculator')}
         </span>
       }
       className="h-full"
@@ -325,7 +340,7 @@ export function RiskCalculator() {
                 : 'border-transparent text-neutral/50 hover:text-gray-300'
             }`}
           >
-            {tab}
+            {t(TAB_KEYS[tab])}
           </button>
         ))}
       </div>

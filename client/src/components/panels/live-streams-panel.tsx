@@ -12,7 +12,7 @@ interface LiveStream {
 
 const STREAMS: LiveStream[] = [
   { id: 'yahoo', name: 'Yahoo Finance', handle: '@YahooFinance' },
-  { id: 'bloomberg', name: 'Bloomberg TV', handle: '@business' },
+  { id: 'bloomberg', name: 'Bloomberg Originals', handle: '@business' },
   { id: 'cnbc', name: 'CNBC', handle: '@CNBC' },
   { id: 'foxbusiness', name: 'Fox Business', handle: '@FoxBusiness' },
   { id: 'cnn', name: 'CNN', handle: '@CNN' },
@@ -161,7 +161,7 @@ export function LiveStreamsPanel() {
         {loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading stream...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loadingStream')}</span>
           </div>
         ) : showFallback ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
@@ -170,7 +170,7 @@ export function LiveStreamsPanel() {
               {activeStream.name}
             </span>
             <span className="text-[9px] font-mono text-neutral/30 uppercase tracking-widest text-center px-4">
-              {embedError ? 'Embed restricted by channel' : 'No live stream detected'}
+              {embedError ? t('embedRestricted') : t('noLiveStream')}
             </span>
             <a
               href={youtubeLink}
@@ -179,7 +179,7 @@ export function LiveStreamsPanel() {
               className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono text-accent border border-accent/40 hover:bg-accent/10 transition-colors uppercase tracking-wider"
             >
               <ExternalLink size={11} />
-              Watch on YouTube
+              {t('watchOnYouTube')}
             </a>
           </div>
         ) : (

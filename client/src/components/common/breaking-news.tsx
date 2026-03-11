@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, TrendingUp, TrendingDown, Zap, X } from 'lucide-react';
 import { useAppStore } from '../../stores/use-app-store';
+import { getLocalizedTitle } from '../../api/hooks/use-news';
 
 interface FlashArticle {
   id: number;
   title: string;
+  titleTranslations?: string | null;
   sentiment: string | null;
   symbols: string[];
 }
@@ -54,7 +56,7 @@ export function BreakingNewsFlash() {
             
             <div className="p-4" onClick={() => { setSelectedArticleId(activeNews.id); setActiveNews(null); }}>
               <h4 className="text-sm font-bold text-white leading-tight mb-3 cursor-pointer hover:text-orange transition-colors">
-                {activeNews.title}
+                {getLocalizedTitle(activeNews)}
               </h4>
               
               <div className="flex items-center gap-3">

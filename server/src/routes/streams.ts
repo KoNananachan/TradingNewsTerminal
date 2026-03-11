@@ -40,17 +40,17 @@ router.get('/live-id', async (req, res) => {
 
     const html = await resp.text();
 
-    // Look for canonical video URL or videoId in the page
-    // Pattern 1: <link rel="canonical" href="https://www.youtube.com/watch?v=VIDEO_ID">
-    const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/watch\?v=([^"&]{1,20})"/);
-    // Pattern 2: "videoId":"VIDEO_ID" in JSON data
-    const jsonMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
-    // Pattern 3: Check if it's actually a live stream (has "isLive":true or "isLiveContent":true)
-    const isLive = html.includes('"isLive":true') || html.includes('"isLiveContent":true') || html.includes('"isLiveBroadcast":true');
+    const isLive = html.includes('"isLive":true') || html.includes('"isLiveContent":true');
 
     let videoId: string | null = null;
     if (isLive) {
-      videoId = canonicalMatch?.[1] || jsonMatch?.[1] || null;
+      // Priority 1: videoDetails object contains the actual playing video's ID
+      const detailsMatch = html.match(/"videoDetails":\{"videoId":"([a-zA-Z0-9_-]{11})"/);
+      // Priority 2: currentVideoEndpoint URL
+      const endpointMatch = html.match(/"currentVideoEndpoint"[^}]*"url":"\/watch\?v=([a-zA-Z0-9_-]{11})/);
+      // Priority 3: canonical link (sometimes set to "undefined" by YouTube)
+      const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/);
+      videoId = detailsMatch?.[1] || endpointMatch?.[1] || canonicalMatch?.[1] || null;
     }
 
     // Evict oldest entries if cache is full

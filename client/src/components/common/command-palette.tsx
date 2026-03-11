@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
 import { Terminal, Search, Globe, TrendingUp, Cpu, X, Command } from 'lucide-react';
 import { useCategories } from '../../api/hooks/use-categories';
+import { useT } from '../../i18n';
 
 export function CommandPalette() {
   const isOpen = useAppStore((s) => s.commandPaletteOpen);
@@ -11,6 +12,7 @@ export function CommandPalette() {
   const setSelectedCategory = useAppStore((s) => s.setSelectedCategory);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
   
+  const t = useT();
   const [input, setInput] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -43,9 +45,9 @@ export function CommandPalette() {
   useEffect(() => {
     if (!input) {
       setResults([
-        { type: 'command', id: 'news', label: 'NEWS - View All News', icon: <Terminal className="w-4 h-4" />, action: () => setSelectedCategory(null) },
-        { type: 'command', id: 'ai', label: 'AI - Intelligence Feed', icon: <Cpu className="w-4 h-4" />, action: () => {} },
-        { type: 'command', id: 'map', label: 'MAP - Global Events', icon: <Globe className="w-4 h-4" />, action: () => {} },
+        { type: 'command', id: 'news', label: t('cmdNews'), icon: <Terminal className="w-4 h-4" />, action: () => setSelectedCategory(null) },
+        { type: 'command', id: 'ai', label: t('cmdAi'), icon: <Cpu className="w-4 h-4" />, action: () => {} },
+        { type: 'command', id: 'map', label: t('cmdMap'), icon: <Globe className="w-4 h-4" />, action: () => {} },
       ]);
       return;
     }
@@ -121,7 +123,7 @@ export function CommandPalette() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Enter ticker (e.g. .AAPL), command, or search term..."
+              placeholder={t('cmdPlaceholder')}
               className="flex-1 bg-transparent border-none outline-none text-gray-100 font-mono text-sm placeholder:text-neutral"
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
@@ -155,14 +157,14 @@ export function CommandPalette() {
                   <span className="flex-1 text-left font-mono">{item.label}</span>
                   {index === activeIndex && (
                     <span className="text-[10px] font-bold text-accent/60 flex items-center gap-1 uppercase tracking-tighter">
-                      Execute <Terminal className="w-3 h-3" />
+                      {t('execute')} <Terminal className="w-3 h-3" />
                     </span>
                   )}
                 </button>
               ))
             ) : (
               <div className="py-8 text-center text-neutral text-xs italic">
-                No matching terminal commands found.
+                {t('cmdNoResults')}
               </div>
             )}
           </div>
@@ -170,10 +172,10 @@ export function CommandPalette() {
           <div className="px-4 py-2 border-t border-border/30 bg-bg/30 flex justify-between items-center">
             <div className="flex gap-4">
               <span className="text-[10px] text-neutral flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-panel border border-border/50">↑↓</kbd> Navigate
+                <kbd className="px-1.5 py-0.5 rounded bg-panel border border-border/50">↑↓</kbd> {t('navigate')}
               </span>
               <span className="text-[10px] text-neutral flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-panel border border-border/50">Enter</kbd> Select
+                <kbd className="px-1.5 py-0.5 rounded bg-panel border border-border/50">Enter</kbd> {t('execute')}
               </span>
             </div>
             <span className="text-[10px] font-bold text-accent/50 uppercase tracking-widest">

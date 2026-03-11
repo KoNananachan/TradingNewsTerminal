@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
       where,
       include: {
         article: {
-          select: { id: true, title: true, sentiment: true, sentimentScore: true, scrapedAt: true },
+          select: { id: true, title: true, titleTranslations: true, sentiment: true, sentimentScore: true, scrapedAt: true },
         },
       },
       orderBy: { createdAt: 'desc' },

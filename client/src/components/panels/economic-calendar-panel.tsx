@@ -5,6 +5,7 @@ import {
   useUpcomingEvents,
   type EconomicEvent,
 } from '../../api/hooks/use-calendar';
+import { useT } from '../../i18n';
 import { CalendarDays } from 'lucide-react';
 
 type ViewMode = 'calendar' | 'upcoming';
@@ -33,15 +34,15 @@ const COUNTRY_FLAGS: Record<string, string> = {
   DE: '\u{1F1E9}\u{1F1EA}',
 };
 
-function ImpactBadge({ impact }: { impact: string }) {
+function ImpactBadge({ impact, t }: { impact: string; t: (key: import('../../i18n').TranslationKey) => string }) {
   const lower = impact.toLowerCase();
   if (lower === 'high') {
-    return <span className="text-[8px]" title="High Impact">{'\u{1F534}'}</span>;
+    return <span className="text-[8px]" title={t('highImpactTitle')}>{'\u{1F534}'}</span>;
   }
   if (lower === 'medium') {
-    return <span className="text-[8px]" title="Medium Impact">{'\u{1F7E1}'}</span>;
+    return <span className="text-[8px]" title={t('mediumImpactTitle')}>{'\u{1F7E1}'}</span>;
   }
-  return <span className="text-[8px]" title="Low Impact">{'\u{1F7E2}'}</span>;
+  return <span className="text-[8px]" title={t('lowImpactTitle')}>{'\u{1F7E2}'}</span>;
 }
 
 function formatTime(dateStr: string): string {
@@ -54,7 +55,7 @@ function formatDateGroup(dateStr: string): string {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function EventRow({ event, flash }: { event: EconomicEvent; flash: boolean }) {
+function EventRow({ event, flash, t }: { event: EconomicEvent; flash: boolean; t: (key: import('../../i18n').TranslationKey) => string }) {
   const rowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,7 +78,7 @@ function EventRow({ event, flash }: { event: EconomicEvent; flash: boolean }) {
       <span className="text-neutral/50">{formatTime(event.date)}</span>
       <span>{COUNTRY_FLAGS[event.country] ?? event.country}</span>
       <span className="text-gray-300 truncate pr-2">{event.event}</span>
-      <span className="text-center"><ImpactBadge impact={event.impact} /></span>
+      <span className="text-center"><ImpactBadge impact={event.impact} t={t} /></span>
       <span
         className={`text-right font-bold ${
           event.actual
@@ -98,6 +99,7 @@ function EventRow({ event, flash }: { event: EconomicEvent; flash: boolean }) {
 }
 
 function CalendarView() {
+  const t = useT();
   const [country, setCountry] = useState<string>('all');
   const [impact, setImpact] = useState<string>('all');
   const [prevActualMap, setPrevActualMap] = useState<Record<string, string | null>>({});
@@ -151,7 +153,7 @@ function CalendarView() {
     <>
       {/* Filters */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-1 border-b border-border/20 bg-black/10 flex-wrap">
-        <span className="text-[8px] font-mono text-neutral/40 uppercase">Country:</span>
+        <span className="text-[8px] font-mono text-neutral/40 uppercase">{t('countryFilter')}</span>
         {COUNTRIES.map((c) => (
           <button
             key={c.code}
@@ -162,52 +164,60 @@ function CalendarView() {
                 : 'text-neutral/40 hover:text-white'
             }`}
           >
-            {'flag' in c ? `${c.flag} ` : ''}{c.label}
+            {'flag' in c ? `${c.flag} ` : ''}{c.code === 'all' ? t('allCountries') : c.label}
           </button>
         ))}
         <span className="text-border/30">|</span>
-        <span className="text-[8px] font-mono text-neutral/40 uppercase">Impact:</span>
-        {IMPACT_LEVELS.map((lvl) => (
-          <button
-            key={lvl}
-            onClick={() => setImpact(lvl)}
-            className={`px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase transition-all ${
-              impact === lvl
-                ? 'bg-accent/20 text-accent'
-                : 'text-neutral/40 hover:text-white'
-            }`}
-          >
-            {lvl}
-          </button>
-        ))}
+        <span className="text-[8px] font-mono text-neutral/40 uppercase">{t('impactFilter')}</span>
+        {IMPACT_LEVELS.map((lvl) => {
+          const impactLabels: Record<string, string> = {
+            all: t('allCountries'),
+            high: t('highImpact'),
+            medium: t('mediumImpact'),
+            low: t('lowImpact'),
+          };
+          return (
+            <button
+              key={lvl}
+              onClick={() => setImpact(lvl)}
+              className={`px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase transition-all ${
+                impact === lvl
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-neutral/40 hover:text-white'
+              }`}
+            >
+              {impactLabels[lvl] ?? lvl}
+            </button>
+          );
+        })}
       </div>
 
       {/* Table header */}
       <div className="shrink-0 grid grid-cols-[50px_30px_1fr_35px_60px_60px_60px] text-[8px] font-mono text-neutral/40 uppercase tracking-wider px-3 py-1 border-b border-border/10 bg-black/10">
-        <span>Time</span>
+        <span>{t('calendarTime')}</span>
         <span></span>
-        <span>Event</span>
-        <span className="text-center">Imp</span>
-        <span className="text-right">Actual</span>
-        <span className="text-right">Prev</span>
-        <span className="text-right">Est</span>
+        <span>{t('calendarEvent')}</span>
+        <span className="text-center">{t('calendarImp')}</span>
+        <span className="text-right">{t('calendarActual')}</span>
+        <span className="text-right">{t('calendarPrev')}</span>
+        <span className="text-right">{t('calendarEst')}</span>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto no-scrollbar">
         {isLoading && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Loading...
+            {t('loading')}
           </div>
         )}
         {error && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-bearish/60 uppercase tracking-widest">
-            Failed to load calendar
+            {t('failedToLoadCalendar')}
           </div>
         )}
         {!isLoading && !error && grouped.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No events
+            {t('noEvents')}
           </div>
         )}
         {grouped.map(([dateKey, evts]) => (
@@ -216,7 +226,7 @@ function CalendarView() {
               {formatDateGroup(evts[0].date)}
             </div>
             {evts.map((e) => (
-              <EventRow key={e.id} event={e} flash={flashIds.has(e.id)} />
+              <EventRow key={e.id} event={e} flash={flashIds.has(e.id)} t={t} />
             ))}
           </div>
         ))}
@@ -226,39 +236,40 @@ function CalendarView() {
 }
 
 function UpcomingView() {
+  const t = useT();
   const { data: events, isLoading, error } = useUpcomingEvents();
 
   return (
     <>
       {/* Table header */}
       <div className="shrink-0 grid grid-cols-[50px_30px_1fr_35px_60px_60px_60px] text-[8px] font-mono text-neutral/40 uppercase tracking-wider px-3 py-1 border-b border-border/10 bg-black/10">
-        <span>Time</span>
+        <span>{t('calendarTime')}</span>
         <span></span>
-        <span>Event</span>
-        <span className="text-center">Imp</span>
-        <span className="text-right">Actual</span>
-        <span className="text-right">Prev</span>
-        <span className="text-right">Est</span>
+        <span>{t('calendarEvent')}</span>
+        <span className="text-center">{t('calendarImp')}</span>
+        <span className="text-right">{t('calendarActual')}</span>
+        <span className="text-right">{t('calendarPrev')}</span>
+        <span className="text-right">{t('calendarEst')}</span>
       </div>
 
       <div className="flex-1 overflow-auto no-scrollbar">
         {isLoading && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Loading...
+            {t('loading')}
           </div>
         )}
         {error && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-bearish/60 uppercase tracking-widest">
-            Failed to load events
+            {t('failedToLoadEvents')}
           </div>
         )}
         {!isLoading && !error && (!events || events.length === 0) && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No upcoming events
+            {t('noUpcomingEvents')}
           </div>
         )}
         {events?.map((e) => (
-          <EventRow key={e.id} event={e} flash={false} />
+          <EventRow key={e.id} event={e} flash={false} t={t} />
         ))}
       </div>
     </>
@@ -266,7 +277,13 @@ function UpcomingView() {
 }
 
 export function EconomicCalendarContent() {
+  const t = useT();
   const [view, setView] = useState<ViewMode>('calendar');
+
+  const viewLabels: Record<ViewMode, string> = {
+    calendar: t('calendar'),
+    upcoming: t('upcoming'),
+  };
 
   return (
     <>
@@ -282,7 +299,7 @@ export function EconomicCalendarContent() {
                 : 'border-transparent text-neutral/50 hover:text-gray-300'
             }`}
           >
-            {v}
+            {viewLabels[v]}
           </button>
         ))}
       </div>
@@ -293,12 +310,13 @@ export function EconomicCalendarContent() {
 }
 
 export function EconomicCalendarPanel() {
+  const t = useT();
   return (
     <GlassCard
       title={
         <span className="flex items-center gap-1.5">
           <CalendarDays className="w-3 h-3" />
-          ECONOMIC CALENDAR
+          {t('econCalendar')}
         </span>
       }
       className="h-full"

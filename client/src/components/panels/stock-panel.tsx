@@ -9,7 +9,8 @@ import {
   type WatchlistItem,
 } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
-import { useT } from '../../i18n';
+import { useT, type TranslationKey } from '../../i18n';
+import { getLocalizedTitle } from '../../api/hooks/use-news';
 import { GlassCard } from '../common/glass-card';
 import { Sparkline } from '../common/sparkline';
 import { ConfirmDialog } from '../common/confirm-dialog';
@@ -119,6 +120,9 @@ function WatchlistView({
   const compareSymbols = useAppStore(s => s.compareSymbols);
   const setStockPanelView = useAppStore(s => s.setStockPanelView);
   const addLogEntry = useAppStore(s => s.addLogEntry);
+
+  const TAB_KEYS: Record<string, TranslationKey> = { WATCHLIST: 'watchlist', HOLDING: 'holding' };
+  const tabLabel = (tab: string) => TAB_KEYS[tab] ? t(TAB_KEYS[tab]) : tab;
 
   // Price Flash detection
   useEffect(() => {
@@ -237,7 +241,7 @@ function WatchlistView({
                     : 'border-transparent text-neutral hover:text-gray-300 hover:bg-white/5'
                 }`}
               >
-                {tab}
+                {tabLabel(tab)}
                 {tab !== 'WATCHLIST' && tab !== 'HOLDING' && (
                   <X 
                     className="w-2.5 h-2.5 opacity-0 group-hover/tab:opacity-100 hover:text-bearish transition-all" 
@@ -295,7 +299,7 @@ function WatchlistView({
               setHighlightIdx(-1);
             }}
             onFocus={() => input && setShowDropdown(true)}
-            placeholder={t('addToTab').replace('{tab}', activeTab)}
+            placeholder={t('addToTab').replace('{tab}', tabLabel(activeTab))}
             className="w-full bg-black/40 border border-border/50 pl-9 pr-3 py-1.5 text-xs font-mono text-gray-200 placeholder:text-neutral/50 outline-none focus:border-accent/50 transition-all"
             maxLength={20}
           />
@@ -404,7 +408,7 @@ function WatchlistView({
             {filteredItems.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-neutral/40 text-[10px] font-mono uppercase tracking-[0.2em]">
-                  {t('noDataInTab').replace('{tab}', activeTab)}
+                  {t('noDataInTab').replace('{tab}', tabLabel(activeTab))}
                 </td>
               </tr>
             )}
@@ -588,7 +592,7 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] text-gray-300 leading-snug line-clamp-2 group-hover:text-white">
-                    {cleanTitle(rec.article.title)}
+                    {cleanTitle(getLocalizedTitle(rec.article))}
                   </p>
                   <span className="text-[8px] font-mono text-neutral/40">
                     {new Date(rec.article.scrapedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}

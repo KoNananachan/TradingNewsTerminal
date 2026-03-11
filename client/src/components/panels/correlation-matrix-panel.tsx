@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useCorrelationMatrix } from '../../api/hooks/use-correlations';
 import { Grid3X3 } from 'lucide-react';
+import { useT } from '../../i18n';
 
 const PERIODS = ['1M', '3M', '6M', '1Y'] as const;
 type Period = typeof PERIODS[number];
@@ -28,6 +29,7 @@ function getTextColor(value: number): string {
 }
 
 export function CorrelationMatrixPanel() {
+  const t = useT();
   const [period, setPeriod] = useState<Period>('3M');
   const { data, isLoading, error } = useCorrelationMatrix(period);
 
@@ -36,14 +38,14 @@ export function CorrelationMatrixPanel() {
       title={
         <span className="flex items-center gap-1.5">
           <Grid3X3 className="w-3 h-3" />
-          CORRELATION MATRIX
+          {t('correlationMatrix')}
         </span>
       }
       className="h-full"
     >
       {/* Period selector */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-black/20">
-        <span className="text-[8px] font-mono text-neutral/50 uppercase">Period:</span>
+        <span className="text-[8px] font-mono text-neutral/50 uppercase">{t('correlationPeriod')}:</span>
         <div className="flex items-center gap-0.5">
           {PERIODS.map((p) => (
             <button
@@ -66,13 +68,13 @@ export function CorrelationMatrixPanel() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loading')}</span>
           </div>
         )}
         {error && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load data</span>
-            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">{t('failedCorrelations')}</span>
+            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">{t('retry')}</button>
           </div>
         )}
         {!isLoading && !error && data && (
@@ -125,22 +127,22 @@ export function CorrelationMatrixPanel() {
             <div className="flex items-center justify-center gap-3 mt-3">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-blue-500/60 border border-border/20" />
-                <span className="text-[7px] font-mono text-neutral/40">-1 (Inverse)</span>
+                <span className="text-[7px] font-mono text-neutral/40">{t('legendInverse')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-transparent border border-border/20" />
-                <span className="text-[7px] font-mono text-neutral/40">0 (None)</span>
+                <span className="text-[7px] font-mono text-neutral/40">{t('legendNone')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-red-500/60 border border-border/20" />
-                <span className="text-[7px] font-mono text-neutral/40">+1 (Direct)</span>
+                <span className="text-[7px] font-mono text-neutral/40">{t('legendDirect')}</span>
               </div>
             </div>
           </div>
         )}
         {!isLoading && !error && !data && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No correlation data
+            {t('noCorrelationData')}
           </div>
         )}
       </div>

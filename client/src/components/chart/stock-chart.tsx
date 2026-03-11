@@ -14,6 +14,7 @@ import { sma, ema } from '../../lib/indicators';
 import { rsi } from '../../lib/indicators/rsi';
 import { macd } from '../../lib/indicators/macd';
 import { IndicatorToolbar } from './indicator-toolbar';
+import { useT } from '../../i18n';
 
 const RANGE_OPTIONS = ['1D', '5D', '1M', '3M', '6M', '1Y', 'ALL'] as const;
 type RangeOption = (typeof RANGE_OPTIONS)[number];
@@ -120,6 +121,7 @@ interface StockChartProps {
 }
 
 export function StockChart({ symbol, range, onRangeChange }: StockChartProps) {
+  const t = useT();
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
   const macdContainerRef = useRef<HTMLDivElement>(null);
@@ -657,7 +659,7 @@ export function StockChart({ symbol, range, onRangeChange }: StockChartProps) {
       {/* Active drawing tool indicator */}
       {activeDrawingTool && (
         <div className="shrink-0 px-3 py-0.5 bg-accent/10 text-[8px] font-mono text-accent border-b border-accent/20">
-          Drawing: {activeDrawingTool.toUpperCase()} - Click on chart to place points ({activeDrawingTool === 'hline' ? '1 click' : '2 clicks'})
+          {t('drawingTool').replace('{tool}', activeDrawingTool.toUpperCase()).replace('{clicks}', activeDrawingTool === 'hline' ? t('oneClick') : t('twoClicks'))}
         </div>
       )}
 
@@ -679,7 +681,7 @@ export function StockChart({ symbol, range, onRangeChange }: StockChartProps) {
       {showRSI && (
         <>
           <div className="shrink-0 px-3 py-0.5 bg-black/20 text-[8px] font-mono text-neutral/40 border-y border-border/20">
-            RSI (14) - <span className="text-amber-400">Overbought 70</span> / <span className="text-green-400">Oversold 30</span>
+            RSI (14) - <span className="text-amber-400">{t('overbought')} 70</span> / <span className="text-green-400">{t('oversold')} 30</span>
           </div>
           <div ref={rsiContainerRef} className="w-full" style={{ flex: '1' }} />
         </>
@@ -689,7 +691,7 @@ export function StockChart({ symbol, range, onRangeChange }: StockChartProps) {
       {showMACD && (
         <>
           <div className="shrink-0 px-3 py-0.5 bg-black/20 text-[8px] font-mono text-neutral/40 border-y border-border/20">
-            MACD (12, 26, 9) - <span className="text-blue-400">MACD</span> / <span className="text-orange-400">Signal</span>
+            MACD (12, 26, 9) - <span className="text-blue-400">MACD</span> / <span className="text-orange-400">{t('signalLine')}</span>
           </div>
           <div ref={macdContainerRef} className="w-full" style={{ flex: '1' }} />
         </>

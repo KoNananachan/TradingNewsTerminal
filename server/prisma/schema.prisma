@@ -29,6 +29,7 @@ model NewsArticle {
   latitude     Float?
   longitude    Float?
   isConflict   Boolean @default(false)
+  titleTranslations String? // JSON: { zh: "...", ja: "...", ko: "...", es: "...", fr: "..." }
 
   recommendations StockRecommendation[]
   aiLogs          AiAnalysisLog[]
@@ -61,6 +62,7 @@ model StockRecommendation {
   action     String   // BUY, SELL, HOLD, WATCH
   confidence Float    // 0-1
   reason     String?
+  reasonTranslations String? // JSON: { zh: "...", ja: "...", ko: "...", es: "...", fr: "..." }
 
   createdAt DateTime @default(now())
 

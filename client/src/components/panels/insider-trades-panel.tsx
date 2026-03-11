@@ -4,14 +4,15 @@ import { useInsiderTrades, type InsiderTrade } from '../../api/hooks/use-insider
 import { useWatchlist } from '../../api/hooks/use-watchlist';
 import { useAppStore } from '../../stores/use-app-store';
 import { Users } from 'lucide-react';
+import { useT, type TranslationKey } from '../../i18n';
 
 const DAYS_OPTIONS = [7, 14, 30, 90] as const;
-const TYPE_FILTERS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'PS', label: 'Buy/Sell' },
-  { value: 'P', label: 'Buy' },
-  { value: 'S', label: 'Sell' },
-] as const;
+const TYPE_FILTERS: { value: string; key: TranslationKey }[] = [
+  { value: 'ALL', key: 'insiderFilterAll' },
+  { value: 'PS', key: 'insiderFilterBuySell' },
+  { value: 'P', key: 'buy' },
+  { value: 'S', key: 'sell' },
+];
 
 function formatCompact(n: number | null | undefined): string {
   if (n == null) return '--';
@@ -27,6 +28,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function InsiderTradesContent() {
+  const t = useT();
   const [days, setDays] = useState<number>(30);
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
@@ -64,7 +66,7 @@ export function InsiderTradesContent() {
       {/* Filters */}
       <div className="shrink-0 flex items-center gap-3 px-3 py-1.5 border-b border-border/30 bg-black/20">
         <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono text-neutral/50 uppercase">Range:</span>
+          <span className="text-[8px] font-mono text-neutral/50 uppercase">{t('range')}:</span>
           <div className="flex items-center gap-0.5">
             {DAYS_OPTIONS.map((d) => (
               <button
@@ -82,7 +84,7 @@ export function InsiderTradesContent() {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono text-neutral/50 uppercase">Type:</span>
+          <span className="text-[8px] font-mono text-neutral/50 uppercase">{t('alertType')}:</span>
           <div className="flex items-center gap-0.5">
             {TYPE_FILTERS.map((f) => (
               <button
@@ -94,7 +96,7 @@ export function InsiderTradesContent() {
                     : 'text-neutral/50 hover:text-white'
                 }`}
               >
-                {f.label}
+                {t(f.key)}
               </button>
             ))}
           </div>
@@ -103,14 +105,14 @@ export function InsiderTradesContent() {
 
       {/* Table header */}
       <div className="shrink-0 grid grid-cols-[55px_50px_1fr_55px_30px_55px_55px_60px] text-[7px] font-mono text-neutral/40 uppercase tracking-wider px-3 py-1 border-b border-border/10 bg-black/10">
-        <span>Date</span>
-        <span>Symbol</span>
-        <span>Insider</span>
-        <span>Title</span>
-        <span>Type</span>
-        <span className="text-right">Shares</span>
-        <span className="text-right">Price</span>
-        <span className="text-right">Value</span>
+        <span>{t('date')}</span>
+        <span>{t('symbol')}</span>
+        <span>{t('insider')}</span>
+        <span>{t('title')}</span>
+        <span>{t('alertType')}</span>
+        <span className="text-right">{t('shares')}</span>
+        <span className="text-right">{t('price')}</span>
+        <span className="text-right">{t('value')}</span>
       </div>
 
       {/* Content */}
@@ -118,23 +120,23 @@ export function InsiderTradesContent() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent animate-spin" />
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">{t('loading')}</span>
           </div>
         )}
         {error && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load insider data</span>
-            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">RETRY</button>
+            <span className="text-[10px] font-mono text-bearish/60 uppercase tracking-widest">{t('insiderLoadFailed')}</span>
+            <button onClick={() => window.location.reload()} className="text-[9px] font-mono text-accent hover:text-white border border-accent/30 px-2 py-0.5 transition-colors">{t('retry')}</button>
           </div>
         )}
         {!isLoading && !error && symbols.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            Add symbols to watchlist
+            {t('addToWatchlist')}
           </div>
         )}
         {!isLoading && !error && symbols.length > 0 && trades.length === 0 && (
           <div className="flex items-center justify-center py-8 text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-            No insider trades found
+            {t('noInsiderTrades')}
           </div>
         )}
 
@@ -182,12 +184,13 @@ export function InsiderTradesContent() {
 }
 
 export function InsiderTradesPanel() {
+  const t = useT();
   return (
     <GlassCard
       title={
         <span className="flex items-center gap-1.5">
           <Users className="w-3 h-3" />
-          INSIDER TRADES
+          {t('insiderTrades')}
         </span>
       }
       className="h-full"

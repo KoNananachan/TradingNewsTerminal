@@ -1,10 +1,12 @@
 import { useL2Book, useCombinedMids } from '../../hooks/use-hyperliquid';
+import { useT } from '../../i18n';
 
 interface OrderbookProps {
   coin: string;
 }
 
 export function Orderbook({ coin }: OrderbookProps) {
+  const t = useT();
   const { data: book } = useL2Book(coin);
   const { data: mids } = useCombinedMids();
 
@@ -22,9 +24,9 @@ export function Orderbook({ coin }: OrderbookProps) {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="grid grid-cols-3 px-3 py-1 border-b border-border/30 bg-black/60 text-[8px] font-black text-neutral/50 uppercase tracking-[0.15em]">
-        <span>Price</span>
-        <span className="text-right">Size</span>
-        <span className="text-right">Total</span>
+        <span>{t('price')}</span>
+        <span className="text-right">{t('size')}</span>
+        <span className="text-right">{t('total')}</span>
       </div>
 
       {/* Asks (sells) - top */}
@@ -50,7 +52,7 @@ export function Orderbook({ coin }: OrderbookProps) {
         <span className="text-[13px] font-mono font-black text-white">
           {midPrice ? fmtPx(String(midPrice)) : '---'}
         </span>
-        <span className="text-[9px] font-mono text-neutral/50 ml-2 uppercase">Mid</span>
+        <span className="text-[9px] font-mono text-neutral/50 ml-2 uppercase">{t('mid')}</span>
       </div>
 
       {/* Bids (buys) - bottom */}
