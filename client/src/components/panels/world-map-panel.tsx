@@ -178,7 +178,7 @@ export function WorldMapPanel() {
       if (destroyed) return;
       // Style loaded, initializing layers
 
-      // Conflict data source + layers (rendered below news dots)
+      // Conflict heatmap source (rendered below news dots for background glow)
       map.addSource(CONFLICT_SOURCE, {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -189,32 +189,19 @@ export function WorldMapPanel() {
         type: 'heatmap',
         source: CONFLICT_SOURCE,
         paint: {
-          'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0.2, 500, 0.6, 5000, 1, 50000, 2],
-          'heatmap-intensity': 1.2,
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 8, 5, 25, 10, 40],
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'count'], 0, 0.4, 10, 0.7, 100, 1, 500, 1.5],
+          'heatmap-intensity': 1.5,
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 12, 5, 30, 10, 45],
           'heatmap-color': [
             'interpolate', ['linear'], ['heatmap-density'],
             0, 'rgba(0,0,0,0)',
-            0.2, 'rgba(255,100,0,0.3)',
-            0.4, 'rgba(255,80,0,0.5)',
-            0.6, 'rgba(255,50,0,0.65)',
-            0.8, 'rgba(220,20,0,0.8)',
+            0.15, 'rgba(255,100,0,0.3)',
+            0.3, 'rgba(255,80,0,0.5)',
+            0.5, 'rgba(255,50,0,0.65)',
+            0.7, 'rgba(220,20,0,0.8)',
             1, 'rgba(180,0,0,0.9)',
           ],
           'heatmap-opacity': 0.7,
-        },
-      });
-
-      map.addLayer({
-        id: CONFLICT_POINTS_LAYER,
-        type: 'circle',
-        source: CONFLICT_SOURCE,
-        paint: {
-          'circle-color': '#ef4444',
-          'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 0, 3, 500, 5, 5000, 7, 50000, 10],
-          'circle-opacity': 0.6,
-          'circle-stroke-width': 0.5,
-          'circle-stroke-color': 'rgba(255,100,100,0.4)',
         },
       });
 
@@ -274,6 +261,20 @@ export function WorldMapPanel() {
           'circle-radius': 10,
           'circle-blur': 1.5,
           'circle-opacity': 0.6,
+        },
+      });
+
+      // Conflict points layer — rendered ABOVE news dots so they're always visible
+      map.addLayer({
+        id: CONFLICT_POINTS_LAYER,
+        type: 'circle',
+        source: CONFLICT_SOURCE,
+        paint: {
+          'circle-color': '#ef4444',
+          'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 5, 10, 7, 50, 9, 200, 12],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,200,200,0.6)',
         },
       });
 
