@@ -1,18 +1,18 @@
 # Terms of Service
 
-**TradingNewsTerminal** — operated by Bauhinia AI Limited
+**Neuberg** — operated by Bauhinia AI Limited
 
 Last updated: March 2026
 
 ---
 
-By accessing or using TradingNewsTerminal, you agree to be bound by these Terms of Service. If you do not agree, do not use the service.
+By accessing or using Neuberg, you agree to be bound by these Terms of Service. If you do not agree, do not use the service.
 
 ---
 
 ## 1. Service Description
 
-TradingNewsTerminal is a web-based platform that provides:
+Neuberg is a web-based platform that provides:
 
 - Real-time trading news aggregation from multiple sources
 - AI-powered analysis, including sentiment scoring and summarization
@@ -25,7 +25,7 @@ TradingNewsTerminal is a web-based platform that provides:
 
 **This is important — please read carefully.**
 
-TradingNewsTerminal provides tools and information only. All content, AI-generated analysis, sentiment scores, trading signals, and recommendations available through the service are for **informational purposes only** and do **not** constitute financial, investment, or trading advice.
+Neuberg provides tools and information only. All content, AI-generated analysis, sentiment scores, trading signals, and recommendations available through the service are for **informational purposes only** and do **not** constitute financial, investment, or trading advice.
 
 We are not a registered financial advisor, broker-dealer, or investment company. Nothing on this platform should be interpreted as a recommendation to buy, sell, or hold any financial instrument.
 
@@ -74,7 +74,7 @@ Violation of these terms may result in immediate account suspension or terminati
 
 ## 6. Pro Subscription
 
-TradingNewsTerminal offers a paid Pro subscription with additional features.
+Neuberg offers a paid Pro subscription with additional features.
 
 - Payments are processed through **Stripe**.
 - Subscriptions renew automatically at the end of each billing period.
@@ -86,18 +86,18 @@ TradingNewsTerminal offers a paid Pro subscription with additional features.
 
 ## 7. Third-Party Integrations
 
-TradingNewsTerminal connects to third-party services including, but not limited to, Alpaca Markets, Polymarket, and external market data providers.
+Neuberg connects to third-party services including, but not limited to, Alpaca Markets, Polymarket, and external market data providers.
 
 - We are **not responsible** for the availability, accuracy, or conduct of third-party services.
 - You connect third-party accounts **at your own risk**.
 - Third-party services are governed by their own terms of service and privacy policies.
-- If a third-party service experiences downtime, data loss, or errors, we are not liable for any resulting impact on your use of TradingNewsTerminal.
+- If a third-party service experiences downtime, data loss, or errors, we are not liable for any resulting impact on your use of Neuberg.
 
 ---
 
 ## 8. Intellectual Property
 
-TradingNewsTerminal is licensed under the **Business Source License 1.1 (BSL 1.1)**.
+Neuberg is licensed under the **Business Source License 1.1 (BSL 1.1)**.
 
 - You may view and use the source code for non-commercial purposes as permitted by the license.
 - **Commercial use requires a separate license** from Bauhinia AI Limited.

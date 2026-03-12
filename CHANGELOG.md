@@ -271,7 +271,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Scraper `FETCH_LIMIT` increased from 10 to 100 for faster initial data population
-- Renamed top-bar branding from "Bloomberg" to "TradingNewsTerminal"
+- Renamed top-bar branding from "Bloomberg" to "Neuberg"
 
 ### Fixed
 - WebSocket connect/disconnect loop caused by missing browser-visible heartbeat
@@ -297,7 +297,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Initial project setup with npm workspaces (client + server)
-- News scraper pulling from TradingNews API
+- News scraper pulling from Neuberg API
 - AI analysis pipeline (Gemini) for sentiment, categories, geo-location, and stock recommendations
 - Real-time WebSocket push for news, quotes, and trading signals
 - Bloomberg-style dashboard with dockable FlexLayout panels

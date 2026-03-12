@@ -5,7 +5,7 @@
  * If not set, scraping is skipped (the app works fine without a news source —
  * it just won't receive new articles).
  *
- * The default implementation expects the TradingNews API response format.
+ * The default implementation expects the Neuberg API response format.
  * To use a different news source, either:
  *   1. Set up an adapter proxy that converts your source to this format, or
  *   2. Implement the NewsSource interface (see news-source.ts) and register it
@@ -18,7 +18,7 @@ import type { NewsSource, NewsItem, NewsItemAsset } from './news-source.js';
 
 const FETCH_LIMIT = 100;
 
-// ── TradingNews API response types ──
+// ── Neuberg API response types ──
 
 interface ApiAsset {
   type: string;
@@ -47,7 +47,7 @@ interface ApiItem {
   raw_news: ApiRawNews;
 }
 
-// ── TradingNews API adapter (implements NewsSource) ──
+// ── Neuberg API adapter (implements NewsSource) ──
 
 function longShortToAction(ls: string): 'BUY' | 'SELL' | 'HOLD' {
   switch (ls) {
@@ -66,8 +66,8 @@ function longShortToConfidence(ls: string, impact: string): number {
   }
 }
 
-export class TradingNewsSource implements NewsSource {
-  name = 'tradingnews';
+export class NeubergSource implements NewsSource {
+  name = 'neuberg';
   private apiUrl: string;
 
   constructor(apiUrl: string) {
@@ -76,7 +76,7 @@ export class TradingNewsSource implements NewsSource {
 
   async fetchArticles(limit: number): Promise<NewsItem[]> {
     const resp = await fetch(`${this.apiUrl}?limit=${limit}`, {
-      headers: { 'User-Agent': 'TradingNewsWeb/1.0' },
+      headers: { 'User-Agent': 'Neuberg/1.0' },
       signal: AbortSignal.timeout(15_000),
     });
 
@@ -148,7 +148,7 @@ export function createNewsSource(): NewsSource | null {
     console.warn('[Scraper] NEWS_API_URL not configured — scraping disabled');
     return null;
   }
-  return new TradingNewsSource(url);
+  return new NeubergSource(url);
 }
 
 export async function scrapeArticles(source?: NewsSource | null): Promise<number> {

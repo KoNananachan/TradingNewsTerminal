@@ -7,11 +7,11 @@
 
 ## Project Identity
 
-- **Name**: TradingNewsTerminal
+- **Name**: Neuberg
 - **Repo**: github.com/KoNananachan/TradingNewsTerminal
 - **License**: BSL 1.1 (perpetual, non-commercial)
 - **Licensor**: Bauhinia AI Limited
-- **Production URL**: https://terminal.tradingnews.press
+- **Production URL**: https://neuberg.ai
 - **GCP Project**: tradingnewsterminal (us-central1)
 
 ---
@@ -55,7 +55,7 @@
 - Build: `gcloud builds submit --tag gcr.io/tradingnewsterminal/tradingnewsweb:vX.Y.Z`
 - Deploy via Cloud Run REST API (gcloud run deploy broken with Python 3.9)
 - Use `CLOUDSDK_PYTHON=/usr/bin/python3` prefix for all gcloud commands
-- Always verify health check after deploy: `curl https://terminal.tradingnews.press/api/health`
+- Always verify health check after deploy: `curl https://neuberg.ai/api/health`
 - Never bake secrets into Docker image; inject via Cloud Run env vars
 
 ---

@@ -147,7 +147,7 @@ router.post('/email/send', async (req, res) => {
         body: JSON.stringify({
           from: env.RESEND_FROM_EMAIL,
           to: email,
-          subject: 'TradingNewsTerminal - Verification Code',
+          subject: 'Neuberg - Verification Code',
           html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code expires in 10 minutes.</p>`,
         }),
       });

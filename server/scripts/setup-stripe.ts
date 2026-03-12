@@ -44,12 +44,12 @@ if (!secretKey || !secretKey.startsWith('sk_')) {
 const stripe = new Stripe(secretKey);
 
 async function main() {
-  console.log('\n🔧 Setting up Stripe for TradingNewsTerminal...\n');
+  console.log('\n🔧 Setting up Stripe for Neuberg...\n');
 
   // 1. Create Product
   console.log('Creating product...');
   const product = await stripe.products.create({
-    name: 'TradingNewsTerminal Pro',
+    name: 'Neuberg Pro',
     description: 'Full access to AI-powered trading intelligence — all ticker recommendations, impact analysis, AI Chat, AI Insights, and priority data access.',
   });
   console.log(`  ✅ Product created: ${product.id}`);
@@ -69,7 +69,7 @@ async function main() {
   try {
     await stripe.billingPortal.configurations.create({
       business_profile: {
-        headline: 'Manage your TradingNewsTerminal Pro subscription',
+        headline: 'Manage your Neuberg Pro subscription',
       },
       features: {
         subscription_cancel: { enabled: true, mode: 'at_period_end' },

@@ -1,11 +1,11 @@
-# TradingNewsWeb
+# Neuberg
 
 A real-time trading news terminal with AI-powered analysis, prediction markets, and multi-asset trading — all in a Bloomberg-style dashboard.
 
 [![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/6dr83qcJ)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-yellow.svg)](LICENSE)
 
-**[Live Demo](https://terminal.tradingnews.press)** · **[Discord](https://discord.gg/6dr83qcJ)**
+**[Live Demo](https://neuberg.ai)** · **[Discord](https://discord.gg/6dr83qcJ)**
 
 ## Features
 
@@ -63,7 +63,7 @@ See [.env.example](.env.example) for all configuration options.
 ## Project Structure
 
 ```
-TradingNewsWeb/
+Neuberg/
 ├── client/                 # React frontend (Vite)
 │   └── src/
 │       ├── api/hooks/      # React Query data hooks
@@ -112,7 +112,7 @@ Environment variables are injected via Cloud Run configuration (not baked into t
 ## Community
 
 - **Discord** — [discord.gg/6dr83qcJ](https://discord.gg/6dr83qcJ)
-- **Issues** — [GitHub Issues](https://github.com/KoNananachan/TradingNewsWeb/issues)
+- **Issues** — [GitHub Issues](https://github.com/KoNananachan/TradingNewsTerminal/issues)
 
 ## License
 

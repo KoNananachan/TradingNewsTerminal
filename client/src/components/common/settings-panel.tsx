@@ -178,9 +178,9 @@ export function SettingsPanel() {
               <div className="pl-5 space-y-1.5">
                 <RadioOption
                   name="dataSource"
-                  value="tradingnews"
-                  label={t('tradingNewsOfficial')}
-                  checked={settings.dataSource === 'tradingnews'}
+                  value="neuberg"
+                  label={t('neubergOfficial')}
+                  checked={settings.dataSource === 'neuberg'}
                   onChange={(v) => set('dataSource', v)}
                 />
                 <p className="text-[9px] text-neutral/40 font-mono pl-5">{t('comingSoon')}</p>
@@ -196,9 +196,9 @@ export function SettingsPanel() {
               <div className="pl-5 space-y-1.5">
                 <RadioOption
                   name="aiProvider"
-                  value="tradingnews"
-                  label={t('tradingNewsOfficial')}
-                  checked={settings.aiProvider === 'tradingnews'}
+                  value="neuberg"
+                  label={t('neubergOfficial')}
+                  checked={settings.aiProvider === 'neuberg'}
                   onChange={(v) => set('aiProvider', v)}
                 />
                 <p className="text-[9px] text-neutral/40 font-mono pl-5">{t('comingSoon')}</p>

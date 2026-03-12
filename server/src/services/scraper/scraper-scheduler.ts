@@ -1,4 +1,4 @@
-import { scrapeArticles, createNewsSource } from './tradingnews-scraper.js';
+import { scrapeArticles, createNewsSource } from './neuberg-scraper.js';
 import { analyzeUnprocessedArticles } from '../ai/news-analyzer.js';
 import { clusterRecentNews } from '../ai/news-clusterer.js';
 import type { NewsSource } from './news-source.js';

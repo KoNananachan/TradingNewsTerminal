@@ -18,7 +18,7 @@ function getSafeOrigin(req: Request): string {
   if (!fallback) {
     console.error('[Billing] ALLOWED_ORIGINS not configured — cannot determine safe redirect URL');
   }
-  return fallback || 'https://terminal.tradingnews.press';
+  return fallback || 'https://neuberg.ai';
 }
 
 const router = Router();

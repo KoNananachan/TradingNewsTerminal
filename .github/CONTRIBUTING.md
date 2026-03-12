@@ -1,13 +1,13 @@
-# Contributing to TradingNewsTerminal
+# Contributing to Neuberg
 
-Thank you for your interest in contributing to TradingNewsTerminal. This guide will help you get started.
+Thank you for your interest in contributing to Neuberg. This guide will help you get started.
 
 ## Getting Started
 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/AICausalNews/TradingNewsTerminal.git
+   git clone https://github.com/KoNananachan/TradingNewsTerminal.git
    cd TradingNewsTerminal
    ```
 
@@ -50,4 +50,4 @@ Pull requests require at least one approving review before they can be merged.
 
 ## License
 
-By contributing to TradingNewsTerminal, you agree that your contributions will be licensed under the Business Source License 1.1 (BSL 1.1), as held by Bauhinia AI Limited.
+By contributing to Neuberg, you agree that your contributions will be licensed under the Business Source License 1.1 (BSL 1.1), as held by Bauhinia AI Limited.

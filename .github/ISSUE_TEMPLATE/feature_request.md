@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature for TradingNewsTerminal
+about: Suggest a new feature for Neuberg
 title: "[FEATURE] "
 labels: enhancement
 assignees: ''

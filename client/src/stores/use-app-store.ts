@@ -35,8 +35,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   autoRefreshInterval: 30,
   tickerSpeed: 80,
   theme: 'dark',
-  dataSource: 'tradingnews',
-  aiProvider: 'tradingnews',
+  dataSource: 'neuberg',
+  aiProvider: 'neuberg',
   tradingChannel: 'hyperliquid',
 };
 

@@ -1,12 +1,12 @@
 # Privacy Policy
 
-**TradingNewsTerminal** — operated by Bauhinia AI Limited
+**Neuberg** — operated by Bauhinia AI Limited
 
 Last updated: March 2026
 
 ---
 
-This Privacy Policy explains what data we collect, how we use it, and your rights regarding that data. By using TradingNewsTerminal, you agree to the practices described below.
+This Privacy Policy explains what data we collect, how we use it, and your rights regarding that data. By using Neuberg, you agree to the practices described below.
 
 ---
 
@@ -41,7 +41,7 @@ We do not sell your data to third parties. We do not use your data for advertisi
 
 ## 3. Third-Party Services
 
-TradingNewsTerminal integrates with the following third-party services:
+Neuberg integrates with the following third-party services:
 
 | Service | Purpose |
 |---|---|
@@ -116,7 +116,7 @@ In the event of a data breach that is likely to result in a risk to your rights 
 
 ## 9. International Data Transfers
 
-TradingNewsTerminal is hosted on **Google Cloud Platform** in the United States (us-central1). If you access the service from outside the United States, your data will be transferred to and processed in the United States.
+Neuberg is hosted on **Google Cloud Platform** in the United States (us-central1). If you access the service from outside the United States, your data will be transferred to and processed in the United States.
 
 We rely on the following safeguards for international data transfers:
 
@@ -124,13 +124,13 @@ We rely on the following safeguards for international data transfers:
 - Encryption of all data in transit (HTTPS/TLS) and at rest (AES-256-GCM for sensitive credentials).
 - Our commitment to the data protection principles described in this Privacy Policy.
 
-By using TradingNewsTerminal, you consent to the transfer and processing of your data in the United States.
+By using Neuberg, you consent to the transfer and processing of your data in the United States.
 
 ---
 
 ## 10. Children
 
-TradingNewsTerminal is not intended for users under the age of 18. We do not knowingly collect data from minors. If you believe a minor has created an account, please contact us so we can remove it.
+Neuberg is not intended for users under the age of 18. We do not knowingly collect data from minors. If you believe a minor has created an account, please contact us so we can remove it.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug to help us improve TradingNewsTerminal
+about: Report a bug to help us improve Neuberg
 title: "[BUG] "
 labels: bug
 assignees: ''

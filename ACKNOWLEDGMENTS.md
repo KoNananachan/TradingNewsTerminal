@@ -1,6 +1,6 @@
 # Acknowledgments
 
-TradingNewsTerminal is built on the shoulders of many excellent open-source projects. We are grateful to the maintainers and contributors of every library listed below.
+Neuberg is built on the shoulders of many excellent open-source projects. We are grateful to the maintainers and contributors of every library listed below.
 
 ---
 
