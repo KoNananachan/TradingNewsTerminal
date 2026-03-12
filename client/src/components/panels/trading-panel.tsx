@@ -7,6 +7,7 @@ import { RecentFills } from '../trading/recent-fills';
 import { MarketOverview, type MarketType } from '../trading/market-overview';
 import { AlpacaTrading } from '../trading/alpaca-trading';
 import { useAppStore } from '../../stores/use-app-store';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { useT } from '../../i18n';
 import { Wallet, BookOpen, ArrowRightLeft, History, BarChart3, FlaskConical } from 'lucide-react';
 
@@ -15,6 +16,7 @@ type Channel = 'hyperliquid' | 'alpaca';
 
 export function TradingPanel() {
   const { isConnected } = useAccount();
+  const hasAlpaca = useAuthStore((s) => s.user)?.hasAlpaca ?? false;
   const [channel, setChannel] = useState<Channel>('hyperliquid');
   const [activeTab, setActiveTab] = useState<TradingTab>('trade');
   const [selectedCoin, setSelectedCoin] = useState('xyz:NVDA');
@@ -23,14 +25,20 @@ export function TradingPanel() {
   const setTradingCoin = useAppStore((s) => s.setTradingCoin);
   const t = useT();
 
-  // Respond to external coin selection from news detail
+  // Respond to external coin selection from news detail or stock panel
   useEffect(() => {
     if (tradingCoin) {
-      setSelectedCoin(tradingCoin);
-      setActiveTab('trade');
-      setTradingCoin(null); // consume the signal
+      // Plain stock symbols (no prefix) → switch to Alpaca channel
+      // Hyperliquid coins have xyz: prefix or are crypto
+      if (!tradingCoin.includes(':')) {
+        setChannel('alpaca');
+      } else {
+        setSelectedCoin(tradingCoin);
+        setActiveTab('trade');
+      }
+      // AlpacaTrading will consume tradingCoin internally via useAppStore
     }
-  }, [tradingCoin, setTradingCoin]);
+  }, [tradingCoin]);
 
   const tabs: { id: TradingTab; label: string; icon: React.ReactNode }[] = [
     { id: 'trade', label: t('trade'), icon: <ArrowRightLeft className="w-3 h-3" /> },
@@ -60,6 +68,12 @@ export function TradingPanel() {
           </div>
         </div>
         {channel === 'hyperliquid' && isConnected && (
+          <span className="text-[9px] font-mono text-bullish flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-bullish inline-block" />
+            {t('connected')}
+          </span>
+        )}
+        {channel === 'alpaca' && hasAlpaca && (
           <span className="text-[9px] font-mono text-bullish flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-bullish inline-block" />
             {t('connected')}

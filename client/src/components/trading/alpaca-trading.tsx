@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../../stores/use-auth-store';
 import { useAppStore } from '../../stores/use-app-store';
-import { Link2, Unlink, RefreshCw, ArrowRightLeft, Wallet, History, AlertTriangle } from 'lucide-react';
+import { Link2, Unlink, RefreshCw, ArrowRightLeft, Wallet, History, AlertTriangle, X, DollarSign, Hash } from 'lucide-react';
 import { useT } from '../../i18n';
 
 interface AlpacaAccount {
@@ -13,9 +13,13 @@ interface AlpacaAccount {
   portfolio_value: string;
   equity: string;
   last_equity: string;
+  long_market_value: string;
+  short_market_value: string;
   pattern_day_trader: boolean;
   trading_blocked: boolean;
   account_blocked: boolean;
+  daytrade_count: number;
+  daytrading_buying_power: string;
 }
 
 interface AlpacaPosition {
@@ -29,21 +33,30 @@ interface AlpacaPosition {
   unrealized_plpc: string;
   current_price: string;
   avg_entry_price: string;
+  change_today: string;
 }
 
 interface AlpacaOrder {
   id: string;
   symbol: string;
   qty: string;
+  filled_qty: string;
   notional: string | null;
   side: string;
   type: string;
+  time_in_force: string;
   status: string;
+  limit_price: string | null;
+  stop_price: string | null;
   filled_avg_price: string | null;
   created_at: string;
 }
 
 type Tab = 'trade' | 'positions' | 'orders';
+type OrderType = 'market' | 'limit' | 'stop' | 'stop_limit';
+type TimeInForce = 'day' | 'gtc';
+type SizeMode = 'qty' | 'notional';
+type OrderFilter = 'all' | 'open' | 'closed';
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/alpaca${path}`, {
@@ -81,12 +94,18 @@ export function AlpacaTrading() {
   const tradingCoin = useAppStore((s) => s.tradingCoin);
   const [symbol, setSymbol] = useState('AAPL');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
-  const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
+  const [orderType, setOrderType] = useState<OrderType>('market');
+  const [tif, setTif] = useState<TimeInForce>('day');
+  const [sizeMode, setSizeMode] = useState<SizeMode>('qty');
   const [qty, setQty] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
+  const [stopPrice, setStopPrice] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderResult, setOrderResult] = useState('');
+  const [confirmOrder, setConfirmOrder] = useState(false);
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const addLogEntry = useAppStore((s) => s.addLogEntry);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (tradingCoin) setSymbol(tradingCoin);
@@ -100,19 +119,26 @@ export function AlpacaTrading() {
       const [acc, pos, ord] = await Promise.all([
         apiFetch<AlpacaAccount>('/account'),
         apiFetch<AlpacaPosition[]>('/positions'),
-        apiFetch<AlpacaOrder[]>('/orders?status=all&limit=10'),
+        apiFetch<AlpacaOrder[]>(`/orders?status=${orderFilter}&limit=50`),
       ]);
       setAccount(acc);
       setPositions(pos);
       setOrders(ord);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  }, [hasAlpaca]);
+  }, [hasAlpaca, orderFilter]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Auto-refresh every 15s
+  useEffect(() => {
+    if (!hasAlpaca) return;
+    refreshTimer.current = setInterval(loadData, 15_000);
+    return () => { if (refreshTimer.current) clearInterval(refreshTimer.current); };
+  }, [hasAlpaca, loadData]);
 
   const handleConnect = async () => {
     if (!apiKey || !secretKey) return;
@@ -123,15 +149,14 @@ export function AlpacaTrading() {
         method: 'POST',
         body: JSON.stringify({ apiKey, secretKey, paper }),
       });
-      // Refresh user state
       const res = await fetch('/api/auth/me', { credentials: 'include' });
       const data = await res.json();
       if (data.user) useAuthStore.getState().setUser(data.user);
       setApiKey('');
       setSecretKey('');
       loadData();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Connection failed');
     } finally {
       setConnecting(false);
     }
@@ -150,29 +175,96 @@ export function AlpacaTrading() {
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!qty || !symbol) return;
+    // Show confirmation first
+    if (!confirmOrder) {
+      setConfirmOrder(true);
+      return;
+    }
+    setConfirmOrder(false);
     setOrderLoading(true);
     setOrderResult('');
     try {
-      const payload: Record<string, unknown> = { symbol, side, type: orderType, qty: parseFloat(qty) };
-      if (orderType === 'limit' && limitPrice) payload.limit_price = parseFloat(limitPrice);
+      const payload: Record<string, unknown> = {
+        symbol,
+        side,
+        type: orderType,
+        time_in_force: tif,
+      };
+      if (sizeMode === 'qty') payload.qty = parseFloat(qty);
+      else payload.notional = parseFloat(qty);
+      if ((orderType === 'limit' || orderType === 'stop_limit') && limitPrice) {
+        payload.limit_price = parseFloat(limitPrice);
+      }
+      if ((orderType === 'stop' || orderType === 'stop_limit') && stopPrice) {
+        payload.stop_price = parseFloat(stopPrice);
+      }
       const order = await apiFetch<AlpacaOrder>('/orders', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      const desc = `${side.toUpperCase()} ${qty} ${symbol} @ ${orderType.toUpperCase()}`;
-      setOrderResult(`Order ${order.status}: ${desc}`);
+      const sizeStr = sizeMode === 'notional' ? `$${qty}` : `${qty}`;
+      const desc = `${side.toUpperCase()} ${sizeStr} ${symbol} @ ${orderType.toUpperCase()}`;
+      setOrderResult(`${order.status}: ${desc}`);
       addLogEntry({ type: 'trade', message: `[Alpaca] ${desc}` });
       setQty('');
       setLimitPrice('');
+      setStopPrice('');
       loadData();
-    } catch (err: any) {
-      setOrderResult(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      setOrderResult(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
     } finally {
       setOrderLoading(false);
     }
   };
 
-  // Not connected — show feature testing placeholder
+  const handleClosePosition = async (pos: AlpacaPosition) => {
+    try {
+      const closeSide = pos.side === 'long' ? 'sell' : 'buy';
+      await apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          symbol: pos.symbol,
+          side: closeSide,
+          type: 'market',
+          qty: Math.abs(parseFloat(pos.qty)),
+          time_in_force: 'day',
+        }),
+      });
+      addLogEntry({ type: 'trade', message: `[Alpaca] CLOSE ${pos.symbol} ${pos.qty} shares @ MKT` });
+      loadData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to close position');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await apiFetch(`/orders/${orderId}`, { method: 'DELETE' });
+      addLogEntry({ type: 'trade', message: `[Alpaca] Cancelled order ${orderId.slice(0, 8)}` });
+      loadData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel order');
+    }
+  };
+
+  const handlePositionClick = (pos: AlpacaPosition) => {
+    setSymbol(pos.symbol);
+    setActiveTab('trade');
+  };
+
+  const applyQtyPct = (pct: number) => {
+    if (!account) return;
+    const bp = parseFloat(account.buying_power);
+    if (sizeMode === 'notional') {
+      setQty((bp * pct).toFixed(2));
+    } else {
+      // Can't calculate shares without price, just set notional mode
+      setSizeMode('notional');
+      setQty((bp * pct).toFixed(2));
+    }
+  };
+
+  // Feature not yet available — show placeholder
   if (!hasAlpaca) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 gap-4">
@@ -187,10 +279,18 @@ export function AlpacaTrading() {
     );
   }
 
-  // Connected
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  // Day P&L
+  const equity = account ? parseFloat(account.equity) : 0;
+  const lastEquity = account ? parseFloat(account.last_equity) : 0;
+  const dayPl = equity - lastEquity;
+  const dayPlPct = lastEquity > 0 ? (dayPl / lastEquity) * 100 : 0;
+
+  // Total unrealized P&L
+  const totalUnrealizedPl = positions.reduce((sum, p) => sum + parseFloat(p.unrealized_pl || '0'), 0);
+
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'trade', label: t('trade'), icon: <ArrowRightLeft className="w-3 h-3" /> },
-    { id: 'positions', label: t('positions'), icon: <Wallet className="w-3 h-3" /> },
+    { id: 'positions', label: t('positions'), icon: <Wallet className="w-3 h-3" />, badge: positions.length > 0 ? String(positions.length) : undefined },
     { id: 'orders', label: t('orders'), icon: <History className="w-3 h-3" /> },
   ];
 
@@ -198,25 +298,43 @@ export function AlpacaTrading() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Account summary bar */}
       {account && (
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 bg-black/40 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono text-neutral">
-              {t('equity')} <span className="text-white font-bold">${fmtUsd(parseFloat(account.equity))}</span>
-            </span>
-            <span className="text-[10px] font-mono text-neutral">
-              {t('buyingPower')} <span className="text-accent font-bold">${fmtUsd(parseFloat(account.buying_power))}</span>
-            </span>
+        <div className="flex flex-col border-b border-border/30 bg-black/40 shrink-0">
+          <div className="flex items-center justify-between px-3 py-1.5">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-mono text-neutral">
+                {t('equity')} <span className="text-white font-bold">${fmtUsd(equity)}</span>
+              </span>
+              <span className={`text-[10px] font-mono font-bold ${dayPl >= 0 ? 'text-bullish' : 'text-bearish'}`}>
+                {dayPl >= 0 ? '+' : ''}{fmtUsd(dayPl)} ({dayPlPct >= 0 ? '+' : ''}{dayPlPct.toFixed(2)}%)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {alpacaPaper && (
+                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30">{t('paperBadge')}</span>
+              )}
+              <button onClick={loadData} className="text-neutral hover:text-accent p-0.5" title="Refresh">
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button onClick={handleDisconnect} className="text-neutral hover:text-bearish p-0.5" title="Disconnect">
+                <Unlink className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {alpacaPaper && (
-              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30">{t('paperBadge')}</span>
+          <div className="flex items-center gap-4 px-3 pb-1.5">
+            <span className="text-[9px] font-mono text-neutral/60">
+              {t('buyingPower')} <span className="text-accent/80">${fmtUsd(parseFloat(account.buying_power))}</span>
+            </span>
+            <span className="text-[9px] font-mono text-neutral/60">
+              Cash <span className="text-white/60">${fmtUsd(parseFloat(account.cash))}</span>
+            </span>
+            {parseFloat(account.long_market_value) > 0 && (
+              <span className="text-[9px] font-mono text-neutral/60">
+                Long <span className="text-white/60">${fmtUsd(parseFloat(account.long_market_value))}</span>
+              </span>
             )}
-            <button onClick={loadData} className="text-neutral hover:text-accent p-0.5" title="Refresh">
-              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-            <button onClick={handleDisconnect} className="text-neutral hover:text-bearish p-0.5" title="Disconnect">
-              <Unlink className="w-3 h-3" />
-            </button>
+            {account.pattern_day_trader && (
+              <span className="text-[8px] font-black uppercase tracking-widest px-1 py-0.5 bg-bearish/20 text-bearish border border-bearish/30">PDT</span>
+            )}
           </div>
         </div>
       )}
@@ -235,6 +353,9 @@ export function AlpacaTrading() {
           >
             {tab.icon}
             {tab.label}
+            {tab.badge && (
+              <span className="text-[8px] bg-accent/20 text-accent px-1 min-w-[14px] text-center">{tab.badge}</span>
+            )}
           </button>
         ))}
       </div>
@@ -243,13 +364,15 @@ export function AlpacaTrading() {
         {error && (
           <div className="px-3 py-2 bg-bearish/10 border-b border-bearish/30 flex items-center gap-2">
             <AlertTriangle className="w-3 h-3 text-bearish shrink-0" />
-            <span className="text-[10px] font-mono text-bearish">{error}</span>
+            <span className="text-[10px] font-mono text-bearish flex-1">{error}</span>
+            <button onClick={() => setError('')} className="text-bearish/60 hover:text-bearish"><X className="w-3 h-3" /></button>
           </div>
         )}
 
         {/* Trade Tab */}
         {activeTab === 'trade' && (
           <form onSubmit={handleOrder} className="flex flex-col gap-2 p-3">
+            {/* Symbol */}
             <input
               type="text"
               value={symbol}
@@ -257,6 +380,8 @@ export function AlpacaTrading() {
               placeholder={t('symbolPlaceholder')}
               className="w-full bg-black/60 border border-border/40 px-3 py-2 text-[12px] font-mono text-white placeholder:text-neutral/30"
             />
+
+            {/* Side */}
             <div className="grid grid-cols-2 gap-1">
               <button type="button" onClick={() => setSide('buy')}
                 className={`py-2 text-[11px] font-black uppercase tracking-widest border ${side === 'buy' ? 'bg-bullish/20 text-bullish border-bullish' : 'bg-black text-neutral/50 border-border/30'}`}>
@@ -267,36 +392,104 @@ export function AlpacaTrading() {
                 {t('sell')}
               </button>
             </div>
-            <div className="flex gap-2">
-              {(['market', 'limit'] as const).map((ot) => (
+
+            {/* Order Type */}
+            <div className="flex gap-1">
+              {(['market', 'limit', 'stop', 'stop_limit'] as const).map((ot) => (
                 <button key={ot} type="button" onClick={() => setOrderType(ot)}
-                  className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-widest border ${orderType === ot ? 'text-accent border-accent bg-accent/5' : 'text-neutral/40 border-border/20'}`}>
-                  {t(ot)}
+                  className={`flex-1 py-1 text-[8px] font-bold uppercase tracking-widest border ${orderType === ot ? 'text-accent border-accent bg-accent/5' : 'text-neutral/40 border-border/20'}`}>
+                  {ot === 'stop_limit' ? 'STP LMT' : ot === 'stop' ? 'STOP' : t(ot)}
                 </button>
               ))}
             </div>
-            <input
-              type="number" step="any" value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              placeholder={t('quantity')}
-              className="w-full bg-black/60 border border-border/40 px-3 py-2 text-[12px] font-mono text-white placeholder:text-neutral/30"
-            />
-            {orderType === 'limit' && (
+
+            {/* Time in Force */}
+            <div className="flex gap-1">
+              {(['day', 'gtc'] as const).map((v) => (
+                <button key={v} type="button" onClick={() => setTif(v)}
+                  className={`flex-1 py-1 text-[8px] font-bold uppercase tracking-widest border ${tif === v ? 'text-white border-white/30 bg-white/5' : 'text-neutral/30 border-border/20'}`}>
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            {/* Size mode + input */}
+            <div className="flex gap-1">
+              <button type="button" onClick={() => setSizeMode('qty')}
+                className={`p-1.5 border ${sizeMode === 'qty' ? 'text-accent border-accent/40' : 'text-neutral/30 border-border/20'}`}
+                title="Shares">
+                <Hash className="w-3 h-3" />
+              </button>
+              <button type="button" onClick={() => setSizeMode('notional')}
+                className={`p-1.5 border ${sizeMode === 'notional' ? 'text-accent border-accent/40' : 'text-neutral/30 border-border/20'}`}
+                title="Dollar amount">
+                <DollarSign className="w-3 h-3" />
+              </button>
+              <input
+                type="number" step="any" value={qty}
+                onChange={(e) => { setQty(e.target.value); setConfirmOrder(false); }}
+                placeholder={sizeMode === 'qty' ? t('quantity') : 'USD Amount'}
+                className="flex-1 bg-black/60 border border-border/40 px-3 py-2 text-[12px] font-mono text-white placeholder:text-neutral/30"
+              />
+            </div>
+
+            {/* Quick size buttons */}
+            <div className="flex gap-1">
+              {[0.25, 0.5, 0.75, 1].map((pct) => (
+                <button key={pct} type="button" onClick={() => applyQtyPct(pct)}
+                  className="flex-1 py-1 text-[8px] font-bold text-neutral/40 border border-border/20 hover:text-accent hover:border-accent/30 transition-colors">
+                  {pct * 100}%
+                </button>
+              ))}
+            </div>
+
+            {/* Limit price */}
+            {(orderType === 'limit' || orderType === 'stop_limit') && (
               <input
                 type="number" step="any" value={limitPrice}
-                onChange={(e) => setLimitPrice(e.target.value)}
+                onChange={(e) => { setLimitPrice(e.target.value); setConfirmOrder(false); }}
                 placeholder={t('limitPriceLabel')}
                 className="w-full bg-black/60 border border-border/40 px-3 py-2 text-[12px] font-mono text-white placeholder:text-neutral/30"
               />
             )}
-            <button type="submit" disabled={orderLoading || !qty || !symbol}
-              className={`py-2.5 text-[11px] font-black uppercase tracking-widest border ${
-                side === 'buy'
-                  ? 'bg-bullish/20 text-bullish border-bullish disabled:opacity-30'
-                  : 'bg-bearish/20 text-bearish border-bearish disabled:opacity-30'
-              }`}>
-              {orderLoading ? t('submitting') : `${t(side)} ${symbol}`}
-            </button>
+
+            {/* Stop price */}
+            {(orderType === 'stop' || orderType === 'stop_limit') && (
+              <input
+                type="number" step="any" value={stopPrice}
+                onChange={(e) => { setStopPrice(e.target.value); setConfirmOrder(false); }}
+                placeholder={t('stopLoss')}
+                className="w-full bg-black/60 border border-border/40 px-3 py-2 text-[12px] font-mono text-white placeholder:text-neutral/30"
+              />
+            )}
+
+            {/* Submit / Confirm */}
+            {confirmOrder ? (
+              <div className="flex gap-1">
+                <button type="submit" disabled={orderLoading}
+                  className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest border ${
+                    side === 'buy'
+                      ? 'bg-bullish/30 text-bullish border-bullish animate-pulse'
+                      : 'bg-bearish/30 text-bearish border-bearish animate-pulse'
+                  }`}>
+                  {orderLoading ? t('submitting') : t('confirm')}
+                </button>
+                <button type="button" onClick={() => setConfirmOrder(false)}
+                  className="px-3 py-2.5 text-[11px] font-black uppercase tracking-widest border border-border/30 text-neutral hover:text-white">
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button type="submit" disabled={orderLoading || !qty || !symbol}
+                className={`py-2.5 text-[11px] font-black uppercase tracking-widest border ${
+                  side === 'buy'
+                    ? 'bg-bullish/20 text-bullish border-bullish disabled:opacity-30'
+                    : 'bg-bearish/20 text-bearish border-bearish disabled:opacity-30'
+                }`}>
+                {orderLoading ? t('submitting') : `${t(side)} ${symbol}`}
+              </button>
+            )}
+
             {orderResult && (
               <p className={`text-[10px] font-mono ${orderResult.startsWith('Error') ? 'text-bearish' : 'text-bullish'}`}>{orderResult}</p>
             )}
@@ -306,6 +499,15 @@ export function AlpacaTrading() {
         {/* Positions Tab */}
         {activeTab === 'positions' && (
           <div className="flex flex-col">
+            {/* Portfolio summary */}
+            {positions.length > 0 && (
+              <div className="px-3 py-2 border-b border-border/30 bg-black/20 flex items-center justify-between">
+                <span className="text-[9px] font-mono text-neutral uppercase">{positions.length} {t('positions')}</span>
+                <span className={`text-[10px] font-mono font-bold ${totalUnrealizedPl >= 0 ? 'text-bullish' : 'text-bearish'}`}>
+                  {t('unrealizedPl')}: {totalUnrealizedPl >= 0 ? '+' : ''}${fmtUsd(totalUnrealizedPl)}
+                </span>
+              </div>
+            )}
             {positions.length === 0 ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-[10px] font-mono text-neutral uppercase">{t('noOpenPositions')}</span>
@@ -314,18 +516,41 @@ export function AlpacaTrading() {
               positions.map((pos) => {
                 const pl = parseFloat(pos.unrealized_pl);
                 const plPct = parseFloat(pos.unrealized_plpc) * 100;
+                const mktVal = parseFloat(pos.market_value);
+                const curPrice = parseFloat(pos.current_price);
                 return (
-                  <div key={pos.asset_id} className="px-3 py-2 border-b border-border/30 flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-mono font-bold text-white">{pos.symbol}</span>
-                      <span className="text-[9px] font-mono text-neutral ml-2">{pos.qty} shares @ ${fmtUsd(parseFloat(pos.avg_entry_price))}</span>
+                  <div key={pos.asset_id} className="px-3 py-2 border-b border-border/30 hover:bg-white/[0.02] group">
+                    <div className="flex items-center justify-between">
+                      <button onClick={() => handlePositionClick(pos)} className="text-left">
+                        <span className="text-[11px] font-mono font-bold text-white hover:text-accent transition-colors">{pos.symbol}</span>
+                        <span className="text-[9px] font-mono text-neutral ml-2">
+                          {pos.qty} @ ${fmtUsd(parseFloat(pos.avg_entry_price))}
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <span className="text-[10px] font-mono text-white/70">${fmtUsd(curPrice)}</span>
+                          <span className={`text-[10px] font-mono font-bold ml-2 ${pl >= 0 ? 'text-bullish' : 'text-bearish'}`}>
+                            {pl >= 0 ? '+' : ''}{fmtUsd(pl)}
+                          </span>
+                          <span className={`text-[8px] font-mono ml-1 ${pl >= 0 ? 'text-bullish/60' : 'text-bearish/60'}`}>
+                            ({plPct >= 0 ? '+' : ''}{plPct.toFixed(2)}%)
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleClosePosition(pos)}
+                          className="opacity-0 group-hover:opacity-100 text-[8px] font-black uppercase tracking-widest px-2 py-1 border border-bearish/40 text-bearish hover:bg-bearish/20 transition-all"
+                        >
+                          {t('closePosition')}
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`text-[11px] font-mono font-bold ${pl >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                        {pl >= 0 ? '+' : ''}${fmtUsd(pl)}
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-[8px] font-mono text-neutral/40">
+                        MKT ${fmtUsd(mktVal)}
                       </span>
-                      <span className={`text-[9px] font-mono ml-1 ${pl >= 0 ? 'text-bullish/60' : 'text-bearish/60'}`}>
-                        ({plPct >= 0 ? '+' : ''}{plPct.toFixed(2)}%)
+                      <span className="text-[8px] font-mono text-neutral/40">
+                        Cost ${fmtUsd(parseFloat(pos.cost_basis))}
                       </span>
                     </div>
                   </div>
@@ -338,28 +563,79 @@ export function AlpacaTrading() {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="flex flex-col">
+            {/* Filter bar */}
+            <div className="flex gap-1 px-3 py-2 border-b border-border/30 bg-black/20">
+              {(['all', 'open', 'closed'] as const).map((f) => (
+                <button key={f} onClick={() => setOrderFilter(f)}
+                  className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest border ${
+                    orderFilter === f ? 'text-accent border-accent bg-accent/5' : 'text-neutral/40 border-border/20'
+                  }`}>
+                  {f}
+                </button>
+              ))}
+            </div>
             {orders.length === 0 ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-[10px] font-mono text-neutral uppercase">{t('noRecentOrders')}</span>
               </div>
             ) : (
-              orders.map((ord) => (
-                <div key={ord.id} className="px-3 py-2 border-b border-border/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 border ${
-                        ord.side === 'buy' ? 'text-bullish border-bullish/30 bg-bullish/10' : 'text-bearish border-bearish/30 bg-bearish/10'
-                      }`}>{ord.side}</span>
-                      <span className="text-[11px] font-mono font-bold text-white">{ord.symbol}</span>
-                      <span className="text-[9px] font-mono text-neutral">{ord.qty || ord.notional} × {ord.type}</span>
+              orders.map((ord) => {
+                const isOpen = ['new', 'accepted', 'pending_new', 'partially_filled'].includes(ord.status);
+                return (
+                  <div key={ord.id} className="px-3 py-2 border-b border-border/30 hover:bg-white/[0.02] group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 border ${
+                          ord.side === 'buy' ? 'text-bullish border-bullish/30 bg-bullish/10' : 'text-bearish border-bearish/30 bg-bearish/10'
+                        }`}>{ord.side}</span>
+                        <span className="text-[11px] font-mono font-bold text-white">{ord.symbol}</span>
+                        <span className="text-[9px] font-mono text-neutral">
+                          {ord.qty || `$${ord.notional}`} × {ord.type.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-mono font-bold uppercase ${
+                          ord.status === 'filled' ? 'text-bullish' : ord.status === 'canceled' ? 'text-neutral/40' : 'text-accent'
+                        }`}>{ord.status.replace('_', ' ')}</span>
+                        {isOpen && (
+                          <button
+                            onClick={() => handleCancelOrder(ord.id)}
+                            className="opacity-0 group-hover:opacity-100 text-[8px] font-black uppercase px-1.5 py-0.5 border border-bearish/40 text-bearish hover:bg-bearish/20 transition-all"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[9px] font-mono font-bold uppercase ${
-                      ord.status === 'filled' ? 'text-bullish' : ord.status === 'canceled' ? 'text-neutral' : 'text-accent'
-                    }`}>{ord.status}</span>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {ord.filled_avg_price && (
+                        <span className="text-[8px] font-mono text-neutral/50">
+                          Fill ${fmtUsd(parseFloat(ord.filled_avg_price))}
+                        </span>
+                      )}
+                      {ord.limit_price && (
+                        <span className="text-[8px] font-mono text-neutral/50">
+                          Lmt ${fmtUsd(parseFloat(ord.limit_price))}
+                        </span>
+                      )}
+                      {ord.stop_price && (
+                        <span className="text-[8px] font-mono text-neutral/50">
+                          Stp ${fmtUsd(parseFloat(ord.stop_price))}
+                        </span>
+                      )}
+                      <span className="text-[8px] font-mono text-neutral/40 uppercase">{ord.time_in_force}</span>
+                      {ord.filled_qty && ord.filled_qty !== '0' && ord.filled_qty !== ord.qty && (
+                        <span className="text-[8px] font-mono text-amber-400/60">
+                          {ord.filled_qty}/{ord.qty} filled
+                        </span>
+                      )}
+                      <span className="text-[8px] font-mono text-neutral/30 ml-auto">
+                        {new Date(ord.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[8px] font-mono text-neutral/50">{new Date(ord.created_at).toLocaleString()}</span>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -370,7 +646,7 @@ export function AlpacaTrading() {
 
 function fmtUsd(n: number): string {
   if (isNaN(n)) return '0.00';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1_000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return n.toFixed(2);
 }

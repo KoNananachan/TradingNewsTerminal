@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useAccount, useBalance, useSwitchChain, useSignTypedData } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAuthStore } from '../../stores/use-auth-store';
@@ -75,33 +75,6 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
     if (availableUsd == null) return;
     setAmount((availableUsd * pct).toFixed(2));
   };
-
-  // Derive CLOB API key via EIP-712 signature
-  const deriveClobApiKey = useCallback(async () => {
-    if (!address) throw new Error('Wallet not connected');
-
-    const timestamp = String(Math.floor(Date.now() / 1000));
-    const nonce = BigInt(Date.now());
-
-    const signature = await signTypedDataAsync({
-      domain: CLOB_AUTH_DOMAIN,
-      types: CLOB_AUTH_TYPES,
-      primaryType: 'ClobAuth',
-      message: {
-        address: address,
-        timestamp,
-        nonce,
-        message: 'This message attests that I control the given wallet',
-      },
-    });
-
-    const resp = await api.post<{ apiKey: string; secret: string; passphrase: string }>(
-      '/polymarket/clob/auth/derive-api-key',
-      {},
-    );
-
-    return { signature, timestamp, nonce: Number(nonce), ...resp };
-  }, [address, signTypedDataAsync]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,7 +167,7 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
           )}
         </div>
         <a
-          href={`https://polymarket.com/event/${market.slug}`}
+          href={`https://polymarket.com/event/${market.events?.[0]?.slug || market.slug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[8px] font-mono text-violet-400/60 hover:text-violet-400 flex items-center gap-1 mt-1"

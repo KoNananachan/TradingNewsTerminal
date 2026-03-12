@@ -1,7 +1,7 @@
 import { useState, useMemo, memo } from 'react';
 import { usePolymarketMarkets } from '../../hooks/use-polymarket';
 import { useT } from '../../i18n';
-import { Search, TrendingUp, Clock, BarChart3 } from 'lucide-react';
+import { Search, Clock, BarChart3, ArrowUpDown } from 'lucide-react';
 import { parseJsonArray, type PolymarketMarket, type MarketCategory } from '../../lib/polymarket/types';
 import { PolymarketSparkline } from './polymarket-sparkline';
 
@@ -16,6 +16,8 @@ const CATEGORIES: { id: MarketCategory; key: TranslationKey }[] = [
   { id: 'pop-culture', key: 'predCatCulture' },
 ];
 
+type SortMode = 'competitive' | 'volume' | 'newest' | 'ending';
+
 interface PolymarketMarketsProps {
   onSelectMarket: (market: PolymarketMarket) => void;
   selectedMarketId: string | null;
@@ -25,6 +27,7 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
   const t = useT();
   const [filter, setFilter] = useState('');
   const [category, setCategory] = useState<MarketCategory>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('competitive');
 
   const { data: markets, isLoading } = usePolymarketMarkets({
     limit: 50,
@@ -37,13 +40,35 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
     const list = filter
       ? active.filter((m) => m.question.toLowerCase().includes(filter.toLowerCase()))
       : active;
-    // Sort: markets with balanced odds first, 99%+ certainty last
+
     return list.slice().sort((a, b) => {
-      const maxA = Math.max(...parseJsonArray<number>(a.outcomePrices));
-      const maxB = Math.max(...parseJsonArray<number>(b.outcomePrices));
-      return maxA - maxB;
+      switch (sortMode) {
+        case 'competitive': {
+          // Balanced odds first (max price closest to 0.5), near-decided last
+          const pricesA = parseJsonArray<number>(a.outcomePrices);
+          const pricesB = parseJsonArray<number>(b.outcomePrices);
+          const maxA = pricesA.length > 0 ? Math.max(...pricesA) : 1;
+          const maxB = pricesB.length > 0 ? Math.max(...pricesB) : 1;
+          return maxA - maxB;
+        }
+        case 'volume': {
+          const volA = parseFloat(a.volume24hr || '0');
+          const volB = parseFloat(b.volume24hr || '0');
+          return volB - volA;
+        }
+        case 'newest': {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        case 'ending': {
+          const endA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
+          const endB = b.endDate ? new Date(b.endDate).getTime() : Infinity;
+          return endA - endB;
+        }
+        default:
+          return 0;
+      }
     });
-  }, [markets, filter]);
+  }, [markets, filter, sortMode]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -64,16 +89,34 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
         ))}
       </div>
 
-      {/* Search */}
-      <div className="relative px-2 py-1.5 border-b border-border/30 bg-black/40 shrink-0">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral/50" />
-        <input
-          type="text"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={t('filterPredictions')}
-          className="w-full bg-black/60 border border-border/30 pl-7 pr-2 py-1 text-[10px] font-mono text-white placeholder:text-neutral/30"
-        />
+      {/* Search + sort */}
+      <div className="px-2 py-1.5 border-b border-border/30 bg-black/40 shrink-0 space-y-1">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral/50" />
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={t('filterPredictions')}
+            className="w-full bg-black/60 border border-border/30 pl-7 pr-2 py-1 text-[10px] font-mono text-white placeholder:text-neutral/30"
+          />
+        </div>
+        <div className="flex items-center gap-0.5">
+          <ArrowUpDown className="w-2.5 h-2.5 text-neutral/30 shrink-0" />
+          {(['competitive', 'volume', 'newest', 'ending'] as SortMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setSortMode(mode)}
+              className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider transition-colors ${
+                sortMode === mode
+                  ? 'bg-violet-400/20 text-violet-400'
+                  : 'text-neutral/30 hover:text-neutral/60'
+              }`}
+            >
+              {t(`predSort_${mode}` as TranslationKey)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Market list */}
@@ -90,12 +133,13 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
           </div>
         )}
 
-        {filtered.map((market) => (
+        {filtered.map((market, idx) => (
           <MarketCard
             key={market.id}
             market={market}
             selected={selectedMarketId === market.id}
             onSelect={() => onSelectMarket(market)}
+            showSparkline={idx < 15}
           />
         ))}
       </div>
@@ -103,10 +147,11 @@ export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: Polymark
   );
 }
 
-const MarketCard = memo(function MarketCard({ market, selected, onSelect }: {
+const MarketCard = memo(function MarketCard({ market, selected, onSelect, showSparkline }: {
   market: PolymarketMarket;
   selected: boolean;
   onSelect: () => void;
+  showSparkline: boolean;
 }) {
   const outcomes = parseJsonArray<string>(market.outcomes);
   const prices = parseJsonArray<number>(market.outcomePrices);
@@ -165,8 +210,8 @@ const MarketCard = memo(function MarketCard({ market, selected, onSelect }: {
             </div>
           </div>
 
-          {/* Sparkline */}
-          {market.conditionId && (
+          {/* Sparkline — only for first N visible to limit API calls */}
+          {showSparkline && market.conditionId && (
             <PolymarketSparkline conditionId={market.conditionId} />
           )}
 

@@ -37,8 +37,8 @@ export function PolymarketSparkline({ conditionId, width = 80, height = 16 }: Po
   if (!pathD) return null;
 
   // Determine trend color based on first vs last price
-  const firstPrice = history && history.length > 1 ? history[0]?.p : 0;
-  const lastPrice = history && history.length > 1 ? history[history.length - 1]?.p : 0;
+  const firstPrice = history && history.length > 1 ? (history[0]?.p ?? 0) : 0;
+  const lastPrice = history && history.length > 1 ? (history[history.length - 1]?.p ?? 0) : 0;
   const color = lastPrice >= firstPrice ? '#22c55e' : '#ef4444';
 
   return (

@@ -449,7 +449,6 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
   );
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const addChatContext = useAppStore((s) => s.addChatContext);
-
   const handleAskAi = () => {
     addChatContext({ type: 'chart', symbol, label: `${symbol} Chart` });
   };

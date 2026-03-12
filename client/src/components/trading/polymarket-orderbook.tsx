@@ -29,6 +29,15 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
     return Math.max(...allSizes, 1);
   }, [bids, asks]);
 
+  // Calculate spread between best bid and best ask
+  const spread = useMemo(() => {
+    if (!book?.bids?.length || !book?.asks?.length) return null;
+    const bestBid = parseFloat(book.bids[0].price);
+    const bestAsk = parseFloat(book.asks[0].price);
+    if (isNaN(bestBid) || isNaN(bestAsk)) return null;
+    return bestAsk - bestBid;
+  }, [book]);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -38,9 +47,10 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
         </span>
       </div>
 
-      <div className="grid grid-cols-2 px-3 py-0.5 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider">
+      <div className="grid grid-cols-3 px-3 py-0.5 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider">
         <span>{t('price')}</span>
-        <span className="text-right">{t('size')}</span>
+        <span className="text-center">{t('size')}</span>
+        <span className="text-right">{t('predTotal')}</span>
       </div>
 
       {/* Asks (sells) */}
@@ -49,26 +59,35 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
           <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noAsks')}</div>
         )}
         {asks.map((level, i) => {
-          const size = parseFloat(level.size);
+          const size = parseFloat(level.size) || 0;
+          const price = parseFloat(level.price) || 0;
           const pct = (size / maxSize) * 100;
           return (
-            <div key={`a-${i}`} className="grid grid-cols-2 px-3 py-[1px] relative text-[10px] font-mono">
+            <div key={`a-${i}`} className="grid grid-cols-3 px-3 py-[1px] relative text-[10px] font-mono">
               <div className="absolute right-0 top-0 bottom-0 bg-bearish/8" style={{ width: `${pct}%` }} />
               <span className="text-bearish font-bold relative z-10">{fmtPrice(level.price)}</span>
-              <span className="text-right text-gray-500 relative z-10">${fmtSize(size)}</span>
+              <span className="text-center text-gray-500 relative z-10">{fmtSize(size)}</span>
+              <span className="text-right text-gray-600 relative z-10">${fmtNotional(size * price)}</span>
             </div>
           );
         })}
       </div>
 
-      {/* Mid price */}
-      <div className="px-3 py-1 border-y border-border/30 bg-black/80 text-center">
-        <span className="text-[12px] font-mono font-black text-white">
-          {midPrice != null ? `${(midPrice * 100).toFixed(1)}%` : '—'}
-        </span>
-        <span className="text-[8px] font-mono text-neutral/40 ml-1.5">
-          {midPrice != null ? `$${midPrice.toFixed(3)}` : ''}
-        </span>
+      {/* Mid price + spread */}
+      <div className="px-3 py-1 border-y border-border/30 bg-black/80 flex items-center justify-center gap-3">
+        <div>
+          <span className="text-[12px] font-mono font-black text-white">
+            {midPrice != null ? `${(midPrice * 100).toFixed(1)}%` : '—'}
+          </span>
+          <span className="text-[8px] font-mono text-neutral/40 ml-1.5">
+            {midPrice != null ? `$${midPrice.toFixed(3)}` : ''}
+          </span>
+        </div>
+        {spread != null && (
+          <span className="text-[8px] font-mono text-neutral/30">
+            {t('predSpread')}: {(spread * 100).toFixed(1)}%
+          </span>
+        )}
       </div>
 
       {/* Bids (buys) */}
@@ -77,13 +96,15 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
           <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noBids')}</div>
         )}
         {bids.map((level, i) => {
-          const size = parseFloat(level.size);
+          const size = parseFloat(level.size) || 0;
+          const price = parseFloat(level.price) || 0;
           const pct = (size / maxSize) * 100;
           return (
-            <div key={`b-${i}`} className="grid grid-cols-2 px-3 py-[1px] relative text-[10px] font-mono">
+            <div key={`b-${i}`} className="grid grid-cols-3 px-3 py-[1px] relative text-[10px] font-mono">
               <div className="absolute right-0 top-0 bottom-0 bg-bullish/8" style={{ width: `${pct}%` }} />
               <span className="text-bullish font-bold relative z-10">{fmtPrice(level.price)}</span>
-              <span className="text-right text-gray-500 relative z-10">${fmtSize(size)}</span>
+              <span className="text-center text-gray-500 relative z-10">{fmtSize(size)}</span>
+              <span className="text-right text-gray-600 relative z-10">${fmtNotional(size * price)}</span>
             </div>
           );
         })}
@@ -98,6 +119,12 @@ function fmtPrice(px: string): string {
 }
 
 function fmtSize(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toFixed(0);
+}
+
+function fmtNotional(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
   return n.toFixed(0);
 }

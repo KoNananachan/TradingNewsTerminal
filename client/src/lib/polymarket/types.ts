@@ -21,6 +21,7 @@ export interface PolymarketMarket {
   groupItemTitle?: string;
   orderPriceMinTickSize?: number;
   orderMinSize?: number;
+  events?: { slug: string }[];
 }
 
 export interface PolymarketEvent {

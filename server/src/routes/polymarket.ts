@@ -44,54 +44,97 @@ function extractPolyHeaders(req: Request): Record<string, string> {
 // ---------------------------------------------------------------------------
 
 // GET /markets - list markets
+// When a tag is specified, uses events API (tag_slug) and flattens markets,
+// because the Gamma /markets endpoint does not support tag filtering.
 router.get('/markets', async (req: Request, res: Response) => {
   try {
-    const params = new URLSearchParams();
-    params.set('closed', String(req.query.closed ?? 'false'));
-    params.set('limit', String(req.query.limit ?? '20'));
-    params.set('order', String(req.query.order ?? 'volume24hr'));
-    params.set('ascending', String(req.query.ascending ?? 'false'));
-    params.set('active', 'true');
-    if (req.query.offset) {
-      const offset = parseInt(String(req.query.offset));
-      if (!isNaN(offset) && offset >= 0) params.set('offset', String(offset));
-    }
-    if (req.query.tag) {
-      const tag = String(req.query.tag).slice(0, 100);
-      if (/^[a-zA-Z0-9_ -]+$/.test(tag)) params.set('tag', tag);
-    }
+    const tag = req.query.tag ? String(req.query.tag).slice(0, 100) : '';
+    const hasTag = tag && /^[a-zA-Z0-9_ -]+$/.test(tag);
+    const limit = parseInt(String(req.query.limit ?? '20'));
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
 
-    const cacheKey = params.toString();
+    const offset = req.query.offset ? parseInt(String(req.query.offset)) : 0;
+    const safeOffset = !isNaN(offset) && offset >= 0 ? offset : 0;
+    const cacheKey = `markets:${tag || 'all'}:${safeLimit}:${safeOffset}`;
     const cached = marketsCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt) {
       return res.json(cached.data);
     }
 
-    const response = await fetch(`${GAMMA_API}/markets?${params}`);
-    if (!response.ok) {
-      console.error('[Polymarket] markets upstream error:', response.status);
-      return res.status(502).json({ error: 'Polymarket API error' });
+    let markets: any[];
+
+    if (hasTag) {
+      // Use events API with tag_slug — the only way to filter by category
+      const params = new URLSearchParams();
+      params.set('closed', 'false');
+      params.set('active', 'true');
+      params.set('limit', '20');
+      params.set('order', 'volume24hr');
+      params.set('ascending', 'false');
+      params.set('tag_slug', tag);
+
+      const response = await fetch(`${GAMMA_API}/events?${params}`);
+      if (!response.ok) {
+        console.error('[Polymarket] events upstream error:', response.status);
+        return res.status(502).json({ error: 'Polymarket API error' });
+      }
+      const events = await response.json();
+      // Flatten: extract markets from each event
+      markets = [];
+      if (Array.isArray(events)) {
+        for (const event of events) {
+          if (Array.isArray(event.markets)) {
+            for (const m of event.markets) {
+              if (!m.closed && m.active) {
+                // Attach event info for link generation
+                if (!m.events) m.events = [{ slug: event.slug }];
+                markets.push(m);
+              }
+            }
+          }
+        }
+      }
+      // Sort by 24h volume descending and limit
+      markets.sort((a: any, b: any) => {
+        const volA = parseFloat(a.volume24hr || a.volumeNum || '0');
+        const volB = parseFloat(b.volume24hr || b.volumeNum || '0');
+        return volB - volA;
+      });
+      markets = markets.slice(0, safeLimit);
+    } else {
+      // No tag — use markets API directly
+      const params = new URLSearchParams();
+      params.set('closed', 'false');
+      params.set('limit', String(safeLimit));
+      params.set('order', 'volume24hr');
+      params.set('ascending', 'false');
+      params.set('active', 'true');
+      if (safeOffset > 0) params.set('offset', String(safeOffset));
+
+      const response = await fetch(`${GAMMA_API}/markets?${params}`);
+      if (!response.ok) {
+        console.error('[Polymarket] markets upstream error:', response.status);
+        return res.status(502).json({ error: 'Polymarket API error' });
+      }
+      const data = await response.json();
+      markets = Array.isArray(data)
+        ? data.filter((m: any) => !m.closed && m.active)
+        : [];
     }
-    const data = await response.json();
-    // Filter out closed/inactive markets only; keep all active markets
-    // even if one outcome has high probability (e.g. 99%)
-    const filtered = Array.isArray(data)
-      ? data.filter((m: any) => !m.closed && m.active)
-      : data;
-    // Evict expired entries and enforce max cache size
+
+    // Cache management
     if (marketsCache.size >= MARKETS_CACHE_MAX) {
       const now = Date.now();
       for (const [k, v] of marketsCache) {
         if (now > v.expiresAt) marketsCache.delete(k);
       }
-      // If still over limit, clear oldest
       if (marketsCache.size >= MARKETS_CACHE_MAX) {
         const first = marketsCache.keys().next().value;
         if (first) marketsCache.delete(first);
       }
     }
-    marketsCache.set(cacheKey, { data: filtered, expiresAt: Date.now() + MARKETS_CACHE_TTL });
-    res.json(filtered);
+    marketsCache.set(cacheKey, { data: markets, expiresAt: Date.now() + MARKETS_CACHE_TTL });
+    res.json(markets);
   } catch (err) {
     console.error('[Polymarket] markets error:', err);
     res.status(502).json({ error: 'Failed to fetch Polymarket markets' });
@@ -229,7 +272,7 @@ router.get('/clob/price', async (req: Request, res: Response) => {
 router.get('/clob/prices-history', async (req: Request, res: Response) => {
   try {
     const market = String(req.query.market || '');
-    if (!market || !/^0x[a-fA-F0-9]{1,200}$/.test(market)) {
+    if (!market || !/^0x[a-fA-F0-9]{1,128}$/.test(market)) {
       return res.status(400).json({ error: 'Valid market query parameter is required' });
     }
 
@@ -344,7 +387,7 @@ router.get('/clob/data/position', requireAuth, async (req: Request, res: Respons
     if (!user || !/^0x[a-fA-F0-9]{40}$/.test(user)) {
       return res.status(400).json({ error: 'Valid user address is required' });
     }
-    if (!market || !/^0x[a-fA-F0-9]{1,200}$/.test(market)) {
+    if (!market || !/^0x[a-fA-F0-9]{1,128}$/.test(market)) {
       return res.status(400).json({ error: 'Valid market query parameter is required' });
     }
 
