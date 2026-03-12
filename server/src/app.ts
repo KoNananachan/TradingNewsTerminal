@@ -118,6 +118,17 @@ export function createApp() {
     maxAge: 3600, // Cache preflight for 1h
   }));
 
+  // ── Domain redirect — old domains → neuberg.ai ──
+  if (isProd) {
+    app.use((req, res, next) => {
+      const host = req.hostname;
+      if (host && host !== 'neuberg.ai') {
+        return res.redirect(301, `https://neuberg.ai${req.originalUrl}`);
+      }
+      next();
+    });
+  }
+
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' })); // Cap body size
   app.use(attachUser);
