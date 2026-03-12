@@ -31,8 +31,8 @@ export function StatusBar() {
 
       <div className="hidden lg:flex items-center gap-3 text-neutral/40 text-[9px]">
         <span className="animate-pulse-soft">{t('disclaimer')}</span>
-        <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer" className="hover:text-neutral uppercase tracking-widest">{t('privacyPolicy')}</a>
-        <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/TERMS_OF_SERVICE.md" target="_blank" rel="noopener noreferrer" className="hover:text-neutral uppercase tracking-widest">{t('termsOfService')}</a>
+        <a href="https://github.com/KoNananachan/Neuberg/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer" className="hover:text-neutral uppercase tracking-widest">{t('privacyPolicy')}</a>
+        <a href="https://github.com/KoNananachan/Neuberg/blob/main/TERMS_OF_SERVICE.md" target="_blank" rel="noopener noreferrer" className="hover:text-neutral uppercase tracking-widest">{t('termsOfService')}</a>
       </div>
 
       <div className="flex items-center gap-4">

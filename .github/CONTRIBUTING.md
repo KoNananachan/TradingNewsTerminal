@@ -7,8 +7,8 @@ Thank you for your interest in contributing to Neuberg. This guide will help you
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/KoNananachan/TradingNewsTerminal.git
-   cd TradingNewsTerminal
+   git clone https://github.com/KoNananachan/Neuberg.git
+   cd Neuberg
    ```
 
 2. **Install dependencies**

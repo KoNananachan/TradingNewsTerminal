@@ -183,7 +183,7 @@ export function TopBar() {
 
           {/* GitHub */}
           <a
-            href="https://github.com/KoNananachan/TradingNewsTerminal"
+            href="https://github.com/KoNananachan/Neuberg"
             target="_blank"
             rel="noopener noreferrer"
             className="text-neutral hover:text-white transition-colors p-1.5"

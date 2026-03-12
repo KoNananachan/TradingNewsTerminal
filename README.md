@@ -112,7 +112,7 @@ Environment variables are injected via Cloud Run configuration (not baked into t
 ## Community
 
 - **Discord** — [discord.gg/6dr83qcJ](https://discord.gg/6dr83qcJ)
-- **Issues** — [GitHub Issues](https://github.com/KoNananachan/TradingNewsTerminal/issues)
+- **Issues** — [GitHub Issues](https://github.com/KoNananachan/Neuberg/issues)
 
 ## License
 

@@ -7,7 +7,7 @@
   "author": "Bauhinia AI Limited",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KoNananachan/TradingNewsTerminal.git"
+    "url": "https://github.com/KoNananachan/Neuberg.git"
   },
   "engines": {
     "node": ">=20.0.0"

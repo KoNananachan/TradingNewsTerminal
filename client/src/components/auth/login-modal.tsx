@@ -197,9 +197,9 @@ export function LoginModal() {
         {step !== 'email-verify' && (
           <p className="mt-4 text-[9px] font-mono text-neutral/50 text-center leading-relaxed">
             {t('cookieConsent')}{' '}
-            <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/TERMS_OF_SERVICE.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('termsOfService')}</a>
+            <a href="https://github.com/KoNananachan/Neuberg/blob/main/TERMS_OF_SERVICE.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('termsOfService')}</a>
             {' '}{t('and')}{' '}
-            <a href="https://github.com/KoNananachan/TradingNewsTerminal/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('privacyPolicy')}</a>.
+            <a href="https://github.com/KoNananachan/Neuberg/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer" className="text-accent/60 hover:text-accent">{t('privacyPolicy')}</a>.
           </p>
         )}
 

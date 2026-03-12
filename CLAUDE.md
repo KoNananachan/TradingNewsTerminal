@@ -8,7 +8,7 @@
 ## Project Identity
 
 - **Name**: Neuberg
-- **Repo**: github.com/KoNananachan/TradingNewsTerminal
+- **Repo**: github.com/KoNananachan/Neuberg
 - **License**: BSL 1.1 (perpetual, non-commercial)
 - **Licensor**: Bauhinia AI Limited
 - **Production URL**: https://neuberg.ai
@@ -196,7 +196,7 @@ client/src/
 - `.gitignore` covers: `.env`, `*.db`, `node_modules/`, `dist/`, deployment configs
 - No large binary files in git (images go to CDN or separate branch)
 - Commit history: clean, meaningful messages, no merge commits on main
-- Remote: `https://github.com/KoNananachan/TradingNewsTerminal.git`
+- Remote: `https://github.com/KoNananachan/Neuberg.git`
 
 ---
 
