@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect, useRef } from 'react';
 import { usePolymarketMarkets } from '../../hooks/use-polymarket';
 import { useT } from '../../i18n';
 import { Search, Clock, BarChart3, ArrowUpDown } from 'lucide-react';
@@ -26,22 +26,31 @@ interface PolymarketMarketsProps {
 export function PolymarketMarkets({ onSelectMarket, selectedMarketId }: PolymarketMarketsProps) {
   const t = useT();
   const [filter, setFilter] = useState('');
+  const [debouncedFilter, setDebouncedFilter] = useState('');
   const [category, setCategory] = useState<MarketCategory>('all');
   const [sortMode, setSortMode] = useState<SortMode>('competitive');
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Debounce search input — send to server after 400ms idle
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedFilter(filter.trim());
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [filter]);
 
   const { data: markets, isLoading } = usePolymarketMarkets({
-    limit: 50,
+    limit: 100,
     tag: category === 'all' ? undefined : category,
+    q: debouncedFilter || undefined,
   });
 
   const filtered = useMemo(() => {
     if (!markets) return [];
     const active = markets.filter((m) => !m.closed && m.active);
-    const list = filter
-      ? active.filter((m) => m.question.toLowerCase().includes(filter.toLowerCase()))
-      : active;
 
-    return list.slice().sort((a, b) => {
+    return active.slice().sort((a, b) => {
       switch (sortMode) {
         case 'competitive': {
           // Balanced odds first (max price closest to 0.5), near-decided last

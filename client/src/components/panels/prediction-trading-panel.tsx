@@ -5,14 +5,11 @@ import { PolymarketMarketDetail } from '../trading/polymarket-market-detail';
 import { PolymarketTradeForm } from '../trading/polymarket-trade-form';
 import { parseJsonArray, type PolymarketMarket } from '../../lib/polymarket/types';
 import { useT } from '../../i18n';
-import { TrendingUp, Target, FlaskConical, BookOpen, ShoppingCart } from 'lucide-react';
-
-type DetailTab = 'orderbook' | 'trade';
+import { TrendingUp, Target, FlaskConical } from 'lucide-react';
 
 export function PredictionTradingPanel() {
   const [selectedMarket, setSelectedMarket] = useState<PolymarketMarket | null>(null);
   const [selectedOutcomeIdx, setSelectedOutcomeIdx] = useState(0);
-  const [detailTab, setDetailTab] = useState<DetailTab>('orderbook');
   const t = useT();
 
   const tokenIds = selectedMarket ? parseJsonArray<string>(selectedMarket.clobTokenIds) : [];
@@ -65,72 +62,43 @@ export function PredictionTradingPanel() {
               {/* Market detail header */}
               <PolymarketMarketDetail market={selectedMarket} />
 
-              {/* Orderbook / Trade toggle */}
-              <div className="flex border-b border-border/20 bg-black/60 shrink-0">
-                <button
-                  onClick={() => setDetailTab('orderbook')}
-                  className={`flex items-center gap-1 px-3 py-1 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-                    detailTab === 'orderbook'
-                      ? 'border-violet-400 text-violet-400'
-                      : 'border-transparent text-neutral/40 hover:text-neutral'
-                  }`}
-                >
-                  <BookOpen className="w-2.5 h-2.5" />
-                  {t('orderbookTitle')}
-                </button>
-                <button
-                  onClick={() => setDetailTab('trade')}
-                  className={`flex items-center gap-1 px-3 py-1 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-                    detailTab === 'trade'
-                      ? 'border-violet-400 text-violet-400'
-                      : 'border-transparent text-neutral/40 hover:text-neutral'
-                  }`}
-                >
-                  <ShoppingCart className="w-2.5 h-2.5" />
-                  {t('trade')}
-                </button>
-              </div>
-
-              {detailTab === 'orderbook' && (
-                <>
-                  {/* Outcome toggle for orderbook */}
-                  {outcomes.length > 0 && (
-                    <div className="flex border-b border-border/20 bg-black/60 shrink-0">
-                      {outcomes.map((out, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedOutcomeIdx(i)}
-                          className={`flex-1 py-1 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-                            selectedOutcomeIdx === i
-                              ? out.toLowerCase() === 'yes'
-                                ? 'border-bullish text-bullish'
-                                : 'border-bearish text-bearish'
-                              : 'border-transparent text-neutral/40 hover:text-neutral'
-                          }`}
-                        >
-                          {out}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {selectedTokenId ? (
-                    <PolymarketOrderbook
-                      tokenId={selectedTokenId}
-                      outcomeName={outcomes[selectedOutcomeIdx] || 'Yes'}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-neutral/30 text-[9px] font-mono uppercase">
-                      {t('noTokenData')}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {detailTab === 'trade' && (
-                <div className="flex-1 overflow-auto no-scrollbar">
-                  <PolymarketTradeForm market={selectedMarket} />
+              {/* Outcome toggle */}
+              {outcomes.length > 0 && (
+                <div className="flex border-b border-border/20 bg-black/60 shrink-0">
+                  {outcomes.map((out, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedOutcomeIdx(i)}
+                      className={`flex-1 py-1 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
+                        selectedOutcomeIdx === i
+                          ? out.toLowerCase() === 'yes'
+                            ? 'border-bullish text-bullish'
+                            : 'border-bearish text-bearish'
+                          : 'border-transparent text-neutral/40 hover:text-neutral'
+                      }`}
+                    >
+                      {out}
+                    </button>
+                  ))}
                 </div>
               )}
+
+              {/* Orderbook + Trade form — single scrollable view */}
+              <div className="flex-1 overflow-auto no-scrollbar">
+                {selectedTokenId ? (
+                  <PolymarketOrderbook
+                    tokenId={selectedTokenId}
+                    outcomeName={outcomes[selectedOutcomeIdx] || 'Yes'}
+                    compact
+                  />
+                ) : (
+                  <div className="flex items-center justify-center py-8 text-neutral/30 text-[9px] font-mono uppercase">
+                    {t('noTokenData')}
+                  </div>
+                )}
+
+                <PolymarketTradeForm market={selectedMarket} compact />
+              </div>
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">

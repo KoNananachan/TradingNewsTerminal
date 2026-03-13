@@ -11,6 +11,45 @@ const marketsCache = new Map<string, { data: any; expiresAt: number }>();
 const MARKETS_CACHE_TTL = 30_000; // 30 seconds
 const MARKETS_CACHE_MAX = 50;
 
+// Large background cache for text search (Gamma API has no search param)
+let searchPool: { markets: any[]; expiresAt: number } = { markets: [], expiresAt: 0 };
+const SEARCH_POOL_TTL = 120_000; // 2 minutes
+const SEARCH_POOL_SIZE = 500;
+
+async function getSearchPool(): Promise<any[]> {
+  if (searchPool.markets.length > 0 && Date.now() < searchPool.expiresAt) {
+    return searchPool.markets;
+  }
+  // Fetch multiple pages to build a large pool
+  const allMarkets: any[] = [];
+  const pageSize = 100;
+  for (let offset = 0; offset < SEARCH_POOL_SIZE; offset += pageSize) {
+    try {
+      const params = new URLSearchParams({
+        closed: 'false',
+        active: 'true',
+        limit: String(pageSize),
+        offset: String(offset),
+        order: 'volume24hr',
+        ascending: 'false',
+      });
+      const resp = await fetch(`${GAMMA_API}/markets?${params}`);
+      if (!resp.ok) break;
+      const data = await resp.json();
+      if (!Array.isArray(data) || data.length === 0) break;
+      allMarkets.push(...data.filter((m: any) => !m.closed && m.active));
+      if (data.length < pageSize) break; // no more pages
+    } catch {
+      break;
+    }
+  }
+  if (allMarkets.length > 0) {
+    searchPool = { markets: allMarkets, expiresAt: Date.now() + SEARCH_POOL_TTL };
+    console.log(`[Polymarket] Search pool refreshed: ${allMarkets.length} markets`);
+  }
+  return searchPool.markets;
+}
+
 // Headers that should be forwarded to the CLOB API for authenticated requests
 const POLY_HEADERS = [
   'POLY_ADDRESS',
@@ -52,9 +91,30 @@ router.get('/markets', async (req: Request, res: Response) => {
     const hasTag = tag && /^[a-zA-Z0-9_ -]+$/.test(tag);
     const limit = parseInt(String(req.query.limit ?? '20'));
     const safeLimit = Math.min(Math.max(limit, 1), 200);
+    const searchQuery = req.query.q ? String(req.query.q).slice(0, 200).trim().toLowerCase() : '';
 
     const offset = req.query.offset ? parseInt(String(req.query.offset)) : 0;
     const safeOffset = !isNaN(offset) && offset >= 0 ? offset : 0;
+
+    // Text search — search against a large cached pool
+    if (searchQuery) {
+      const pool = await getSearchPool();
+      const terms = searchQuery.split(/\s+/).filter(Boolean);
+      let results = pool.filter((m: any) => {
+        const text = (m.question || '').toLowerCase();
+        return terms.every((t: string) => text.includes(t));
+      });
+      // If tag, further filter
+      if (hasTag) {
+        results = results.filter((m: any) =>
+          Array.isArray(m.tags) && m.tags.some((t: any) =>
+            (typeof t === 'string' ? t : t?.slug || '').toLowerCase().includes(tag.toLowerCase())
+          )
+        );
+      }
+      return res.json(results.slice(0, safeLimit));
+    }
+
     const cacheKey = `markets:${tag || 'all'}:${safeLimit}:${safeOffset}`;
     const cached = marketsCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt) {

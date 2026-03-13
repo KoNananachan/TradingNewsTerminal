@@ -18,9 +18,10 @@ import { Wallet, ExternalLink, Clock, TrendingUp, AlertTriangle, Zap, Shield } f
 
 interface PolymarketTradeFormProps {
   market: PolymarketMarket;
+  compact?: boolean;
 }
 
-export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
+export function PolymarketTradeForm({ market, compact }: PolymarketTradeFormProps) {
   const { isConnected, address, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChain } = useSwitchChain();
@@ -147,38 +148,40 @@ export function PolymarketTradeForm({ market }: PolymarketTradeFormProps) {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-auto no-scrollbar">
-      {/* Market info header */}
-      <div className="p-3 border-b border-border/30 bg-black/60">
-        <div className="text-[11px] font-mono font-bold text-white leading-tight mb-1.5">
-          {market.question}
-        </div>
-        <div className="flex items-center gap-3 text-[8px] font-mono text-neutral/50 flex-wrap">
-          <span className="flex items-center gap-0.5">
-            <TrendingUp className="w-2.5 h-2.5" />
-            Vol ${fmtNum(volume)}
-          </span>
-          <span>Liq ${fmtNum(liquidity)}</span>
-          {endDate && (
+    <div className={compact ? '' : 'flex flex-col h-full overflow-auto no-scrollbar'}>
+      {/* Market info header — hidden in compact mode (shown in parent) */}
+      {!compact && (
+        <div className="p-3 border-b border-border/30 bg-black/60">
+          <div className="text-[11px] font-mono font-bold text-white leading-tight mb-1.5">
+            {market.question}
+          </div>
+          <div className="flex items-center gap-3 text-[8px] font-mono text-neutral/50 flex-wrap">
             <span className="flex items-center gap-0.5">
-              <Clock className="w-2.5 h-2.5" />
-              {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              <TrendingUp className="w-2.5 h-2.5" />
+              Vol ${fmtNum(volume)}
             </span>
-          )}
+            <span>Liq ${fmtNum(liquidity)}</span>
+            {endDate && (
+              <span className="flex items-center gap-0.5">
+                <Clock className="w-2.5 h-2.5" />
+                {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )}
+          </div>
+          <a
+            href={`https://polymarket.com/event/${market.events?.[0]?.slug || market.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[8px] font-mono text-violet-400/60 hover:text-violet-400 flex items-center gap-1 mt-1"
+          >
+            <ExternalLink className="w-2.5 h-2.5" />
+            {t('viewOnPolymarket')}
+          </a>
         </div>
-        <a
-          href={`https://polymarket.com/event/${market.events?.[0]?.slug || market.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[8px] font-mono text-violet-400/60 hover:text-violet-400 flex items-center gap-1 mt-1"
-        >
-          <ExternalLink className="w-2.5 h-2.5" />
-          {t('viewOnPolymarket')}
-        </a>
-      </div>
+      )}
 
       {/* Trade form */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-3">
+      <form onSubmit={handleSubmit} className={`flex flex-col gap-2 ${compact ? 'p-3 border-t border-border/20' : 'p-3'}`}>
         {/* Outcome selector */}
         <div>
           <label className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50 mb-1 block">

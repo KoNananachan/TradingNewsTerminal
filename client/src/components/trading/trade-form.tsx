@@ -11,9 +11,11 @@ import {
   useStockPerps,
 } from '../../hooks/use-hyperliquid';
 import { useAppStore } from '../../stores/use-app-store';
+import { useAuthStore } from '../../stores/use-auth-store';
 import { useT } from '../../i18n';
 import { api } from '../../api/client';
-import { Wallet, ArrowDownUp, Loader2, KeyRound } from 'lucide-react';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { Wallet, ArrowDownUp, Loader2, KeyRound, LogIn } from 'lucide-react';
 import {
   USER_SIGN_DOMAIN,
   USD_TRANSFER_TYPES,
@@ -47,6 +49,9 @@ interface TradeFormProps {
 }
 
 export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
+  const user = useAuthStore((s) => s.user);
+  const setLoginModalOpen = useAuthStore((s) => s.setLoginModalOpen);
+  const { openConnectModal } = useConnectModal();
   const { isConnected, address } = useAccount();
   const { data: mids } = useCombinedMids();
   const { data: userState } = useUserState();
@@ -726,25 +731,43 @@ export function TradeForm({ coin, coinType = 'crypto' }: TradeFormProps) {
         </button>
       )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={!isConnected || !size || submitting || !assetInfo || !agentWallet}
-        className={`py-2.5 text-[11px] font-black uppercase tracking-widest border flex items-center justify-center gap-2 ${
-          side === 'buy'
-            ? 'bg-bullish/20 text-bullish border-bullish hover:bg-bullish/30 disabled:bg-bullish/5 disabled:text-bullish/30 disabled:border-bullish/20'
-            : 'bg-bearish/20 text-bearish border-bearish hover:bg-bearish/30 disabled:bg-bearish/5 disabled:text-bearish/30 disabled:border-bearish/20'
-        }`}
-      >
-        {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
-        {!isConnected
-          ? t('connectWallet')
-          : submitting
+      {/* Submit — state-based: login → connect wallet → trade */}
+      {!user ? (
+        <button
+          type="button"
+          onClick={() => setLoginModalOpen(true)}
+          className="py-2.5 text-[11px] font-black uppercase tracking-widest border border-accent/30 text-accent bg-accent/10 hover:bg-accent/20 transition-colors flex items-center justify-center gap-2"
+        >
+          <LogIn className="w-3.5 h-3.5" />
+          {t('loginToTrade')}
+        </button>
+      ) : !isConnected ? (
+        <button
+          type="button"
+          onClick={() => openConnectModal?.()}
+          className="py-2.5 text-[11px] font-black uppercase tracking-widest border border-accent/30 text-accent bg-accent/10 hover:bg-accent/20 transition-colors flex items-center justify-center gap-2"
+        >
+          <Wallet className="w-3.5 h-3.5" />
+          {t('connectWallet')}
+        </button>
+      ) : (
+        <button
+          type="submit"
+          disabled={!size || submitting || !assetInfo || !agentWallet}
+          className={`py-2.5 text-[11px] font-black uppercase tracking-widest border flex items-center justify-center gap-2 ${
+            side === 'buy'
+              ? 'bg-bullish/20 text-bullish border-bullish hover:bg-bullish/30 disabled:bg-bullish/5 disabled:text-bullish/30 disabled:border-bullish/20'
+              : 'bg-bearish/20 text-bearish border-bearish hover:bg-bearish/30 disabled:bg-bearish/5 disabled:text-bearish/30 disabled:border-bearish/20'
+          }`}
+        >
+          {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
+          {submitting
             ? t('signingOrder')
             : !assetInfo
               ? `Loading ${displayCoin(coin)}...`
               : `${side === 'buy' ? t('long') : t('short')} ${displayCoin(coin)}`}
-      </button>
+        </button>
+      )}
     </form>
   );
 }

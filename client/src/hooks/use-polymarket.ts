@@ -16,6 +16,7 @@ export function usePolymarketMarkets(options?: {
   limit?: number;
   offset?: number;
   tag?: string;
+  q?: string;
 }) {
   return useQuery({
     queryKey: ['polymarket-markets', options],
@@ -24,11 +25,12 @@ export function usePolymarketMarkets(options?: {
       if (options?.limit) params.set('limit', String(options.limit));
       if (options?.offset) params.set('offset', String(options.offset));
       if (options?.tag && options.tag !== 'all') params.set('tag', options.tag);
+      if (options?.q) params.set('q', options.q);
       const qs = params.toString();
       return api.get<PolymarketMarket[]>(`/polymarket/markets${qs ? `?${qs}` : ''}`);
     },
     staleTime: 30_000,
-    refetchInterval: 30_000,
+    refetchInterval: options?.q ? false : 30_000, // Don't auto-refetch during search
   });
 }
 

@@ -5,24 +5,26 @@ import { useT } from '../../i18n';
 interface PolymarketOrderbookProps {
   tokenId: string;
   outcomeName: string;
+  compact?: boolean;
 }
 
-export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderbookProps) {
+export function PolymarketOrderbook({ tokenId, outcomeName, compact }: PolymarketOrderbookProps) {
   const t = useT();
   const { data: book } = useCLOBBook(tokenId);
   const { data: midData } = useCLOBMidpoint(tokenId);
 
   const midPrice = midData?.mid ? parseFloat(midData.mid) : null;
+  const rows = compact ? 5 : 10;
 
   const bids = useMemo(() => {
     if (!book?.bids) return [];
-    return book.bids.slice(0, 10);
-  }, [book]);
+    return book.bids.slice(0, rows);
+  }, [book, rows]);
 
   const asks = useMemo(() => {
     if (!book?.asks) return [];
-    return book.asks.slice(0, 10).reverse();
-  }, [book]);
+    return book.asks.slice(0, rows).reverse();
+  }, [book, rows]);
 
   const maxSize = useMemo(() => {
     const allSizes = [...bids, ...asks].map(l => parseFloat(l.size));
@@ -39,13 +41,15 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
   }, [book]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-black/60 shrink-0">
-        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-400">
-          {outcomeName} {t('orderbookTitle')}
-        </span>
-      </div>
+    <div className={compact ? 'overflow-hidden' : 'flex flex-col h-full overflow-hidden'}>
+      {/* Header — hidden in compact mode */}
+      {!compact && (
+        <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-black/60 shrink-0">
+          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-400">
+            {outcomeName} {t('orderbookTitle')}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 px-3 py-0.5 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider">
         <span>{t('price')}</span>
@@ -54,7 +58,7 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
       </div>
 
       {/* Asks (sells) */}
-      <div className="flex-1 overflow-hidden flex flex-col justify-end">
+      <div className={compact ? '' : 'flex-1 overflow-hidden flex flex-col justify-end'}>
         {asks.length === 0 && (
           <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noAsks')}</div>
         )}
@@ -91,7 +95,7 @@ export function PolymarketOrderbook({ tokenId, outcomeName }: PolymarketOrderboo
       </div>
 
       {/* Bids (buys) */}
-      <div className="flex-1 overflow-hidden">
+      <div className={compact ? '' : 'flex-1 overflow-hidden'}>
         {bids.length === 0 && (
           <div className="text-center py-2 text-neutral/20 text-[8px] font-mono">{t('noBids')}</div>
         )}
